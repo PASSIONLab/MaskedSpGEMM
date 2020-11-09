@@ -1,14 +1,14 @@
-# OuterSpGEMM
-Outer product Sparse Matrix Matrix Multiplication
+## SpGEMM (Sparse Matrix Matrix Multiplication)
 
-![outer_illustration](images/outer_illustration.png)
+Supports heap-, hash-, outer-product-, and inner-product based SpGEMM. 
+
 
 ## Download repository
 
 This project contains submodule, so use recursive option to download them all.
 
 ```bash
-git clone --recursive git@bitbucket.org:azadcse/outerspgemm.git
+git clone --recursive https://github.com/isratnisa/SpGEMM_blocked.git
 ```
 
 ## Compile code
