@@ -1,0 +1,16 @@
+Processing /project/projectdirs/m1982/israt/matrices/amazon_large_original.mtx
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 72.87532687489875 seconds
+Input Matrix: Rows = 14249639, Columns= 14249639, nnz = 230788269
+Converting to csc ... 
+
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 90.50677284807898 seconds
+Input Matrix: Rows = 14249639, Columns= 14249639, nnz = 230788269
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 58443648266
+

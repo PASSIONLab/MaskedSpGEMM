@@ -1,0 +1,429 @@
+Processing 2cubes_sphere.mtx
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 1.028556395089254 seconds
+Input Matrix: Rows = 101492, Columns= 101492, nnz = 1647264
+Converting to csc ... 
+
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 1.240245820023119 seconds
+Input Matrix: Rows = 101492, Columns= 101492, nnz = 1647264
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 54901212
+
+OuterSpGEMM generated 27450606 flops, returned with 8974526 nonzeros. Compression ratio is 3.058725
+OuterSpGEMM with  32 threads computes C = A * B in 59.103617 [milli seconds] (928.897670 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 1.232838758034632 seconds
+Input Matrix: Rows = 101492, Columns= 101492, nnz = 1647264
+Converting to csc ... 
+
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 1.026449484983459 seconds
+Input Matrix: Rows = 101492, Columns= 101492, nnz = 1647264
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 54901212
+
+Evaluation of HashSpGEMM
+HashSpGEMM returned with 8974526 nonzeros. Compression ratio is 3.058725
+HashSpGEMM with  32 threads computes C = A * B in 38.160892 [milli seconds] (1438.677381 [MFLOPS])
+
+Evaluation of HashVectorSpGEMM
+HashVectorSpGEMM returned with 8974526 nonzeros. Compression ratio is 3.058725
+HashVectorSpGEMM with  32 threads computes C = A * B in 58.379444 [milli seconds] (940.420266 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 1.098641271004453 seconds
+Input Matrix: Rows = 101492, Columns= 101492, nnz = 1647264
+Converting to csc ... 
+
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 0.9471083451062441 seconds
+Input Matrix: Rows = 101492, Columns= 101492, nnz = 1647264
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 54901212
+
+HeapSpGEMM returned with 8974526 nonzeros. Compression ratio is 3.058725
+HeapSpGEMM with  32 threads computes C = A * B in 66.337293 [milli seconds] (827.607058 [MFLOPS])
+
+Processing amazon0505.mtx
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 1.696164635941386 seconds
+Input Matrix: Rows = 410236, Columns= 410236, nnz = 3356824
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 1.665986120933667 seconds
+Input Matrix: Rows = 410236, Columns= 410236, nnz = 3356824
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 63823156
+
+OuterSpGEMM generated 31911578 flops, returned with 16148723 nonzeros. Compression ratio is 1.976105
+OuterSpGEMM with  32 threads computes C = A * B in 94.975696 [milli seconds] (671.994613 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 1.634911906905472 seconds
+Input Matrix: Rows = 410236, Columns= 410236, nnz = 3356824
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 1.627039771992713 seconds
+Input Matrix: Rows = 410236, Columns= 410236, nnz = 3356824
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 63823156
+
+Evaluation of HashSpGEMM
+HashSpGEMM returned with 16148723 nonzeros. Compression ratio is 1.976105
+HashSpGEMM with  32 threads computes C = A * B in 79.278939 [milli seconds] (805.045534 [MFLOPS])
+
+Evaluation of HashVectorSpGEMM
+HashVectorSpGEMM returned with 16148723 nonzeros. Compression ratio is 1.976105
+HashVectorSpGEMM with  32 threads computes C = A * B in 105.876844 [milli seconds] (602.805617 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 1.841288378927857 seconds
+Input Matrix: Rows = 410236, Columns= 410236, nnz = 3356824
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 2.607464326079935 seconds
+Input Matrix: Rows = 410236, Columns= 410236, nnz = 3356824
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 63823156
+
+HeapSpGEMM returned with 16148723 nonzeros. Compression ratio is 1.976105
+HeapSpGEMM with  32 threads computes C = A * B in 115.285416 [milli seconds] (553.609971 [MFLOPS])
+
+Processing web-Google.mtx
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 4.415863348171115 seconds
+Input Matrix: Rows = 916428, Columns= 916428, nnz = 5105039
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 3.907156679080799 seconds
+Input Matrix: Rows = 916428, Columns= 916428, nnz = 5105039
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 121375672
+
+OuterSpGEMM generated 60687836 flops, returned with 29710164 nonzeros. Compression ratio is 2.042662
+OuterSpGEMM with  32 threads computes C = A * B in 180.324818 [milli seconds] (673.094658 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 3.855473265051842 seconds
+Input Matrix: Rows = 916428, Columns= 916428, nnz = 5105039
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 3.555151342181489 seconds
+Input Matrix: Rows = 916428, Columns= 916428, nnz = 5105039
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 121375672
+
+Evaluation of HashSpGEMM
+HashSpGEMM returned with 29710164 nonzeros. Compression ratio is 2.042662
+HashSpGEMM with  32 threads computes C = A * B in 143.207324 [milli seconds] (847.552126 [MFLOPS])
+
+Evaluation of HashVectorSpGEMM
+HashVectorSpGEMM returned with 29710164 nonzeros. Compression ratio is 2.042662
+HashVectorSpGEMM with  32 threads computes C = A * B in 196.390602 [milli seconds] (618.031976 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 2.724133263807744 seconds
+Input Matrix: Rows = 916428, Columns= 916428, nnz = 5105039
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 2.427830826025456 seconds
+Input Matrix: Rows = 916428, Columns= 916428, nnz = 5105039
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 121375672
+
+HeapSpGEMM returned with 29710164 nonzeros. Compression ratio is 2.042662
+HeapSpGEMM with  32 threads computes C = A * B in 202.382019 [milli seconds] (599.735455 [MFLOPS])
+
+Processing 2cage12.mtx
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.004260369998519309 seconds
+Input Matrix: Rows = 10922, Columns= 65280, nnz = 0
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.0001714669997454621 seconds
+Input Matrix: Rows = 0, Columns= 65280, nnz = 0
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 0
+
+OuterSpGEMM generated 0 flops, returned with 0 nonzeros. Compression ratio is -nan
+OuterSpGEMM with  32 threads computes C = A * B in 0.517257 [milli seconds] (0.000000 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.0003231410009902902 seconds
+Input Matrix: Rows = 10922, Columns= 16711680, nnz = 0
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.0001846490013122093 seconds
+Input Matrix: Rows = 10922, Columns= 16711680, nnz = 0
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 0
+
+Evaluation of HashSpGEMM
+HashSpGEMM returned with 0 nonzeros. Compression ratio is -nan
+HashSpGEMM with  32 threads computes C = A * B in 0.268576 [milli seconds] (0.000000 [MFLOPS])
+
+Evaluation of HashVectorSpGEMM
+HashVectorSpGEMM returned with 0 nonzeros. Compression ratio is -nan
+HashVectorSpGEMM with  32 threads computes C = A * B in 0.269863 [milli seconds] (0.000000 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.0003841629986709449 seconds
+Input Matrix: Rows = 0, Columns= -39200, nnz = 32767
+Converting to csc ... 
+
+Processing m133-b3.mtx
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.2775885979972372 seconds
+Input Matrix: Rows = 200200, Columns= 200200, nnz = 800800
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.2502639470003487 seconds
+Input Matrix: Rows = 200200, Columns= 200200, nnz = 800800
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 6406400
+
+OuterSpGEMM generated 3203200 flops, returned with 3182751 nonzeros. Compression ratio is 1.006425
+OuterSpGEMM with  32 threads computes C = A * B in 7.576417 [milli seconds] (845.571205 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.2720546359996661 seconds
+Input Matrix: Rows = 200200, Columns= 200200, nnz = 800800
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.2417470899999898 seconds
+Input Matrix: Rows = 200200, Columns= 200200, nnz = 800800
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 6406400
+
+Evaluation of HashSpGEMM
+HashSpGEMM returned with 3182751 nonzeros. Compression ratio is 1.006425
+HashSpGEMM with  32 threads computes C = A * B in 6.064292 [milli seconds] (1056.413441 [MFLOPS])
+
+Evaluation of HashVectorSpGEMM
+HashVectorSpGEMM returned with 3182751 nonzeros. Compression ratio is 1.006425
+HashVectorSpGEMM with  32 threads computes C = A * B in 7.184580 [milli seconds] (891.687488 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.2643490390000807 seconds
+Input Matrix: Rows = 200200, Columns= 200200, nnz = 800800
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.2881262089977099 seconds
+Input Matrix: Rows = 200200, Columns= 200200, nnz = 800800
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 6406400
+
+HeapSpGEMM returned with 3182751 nonzeros. Compression ratio is 1.006425
+HeapSpGEMM with  32 threads computes C = A * B in 7.381846 [milli seconds] (867.858751 [MFLOPS])
+
+Processing majorbasis.mtx
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 1.51874400700035 seconds
+Input Matrix: Rows = 160000, Columns= 160000, nnz = 1750416
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 1.036379897999723 seconds
+Input Matrix: Rows = 160000, Columns= 160000, nnz = 1750416
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 38356128
+
+OuterSpGEMM generated 19178064 flops, returned with 8243392 nonzeros. Compression ratio is 2.326477
+OuterSpGEMM with  32 threads computes C = A * B in 39.282512 [milli seconds] (976.417401 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.9866443589999108 seconds
+Input Matrix: Rows = 160000, Columns= 160000, nnz = 1750416
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.9247463570027321 seconds
+Input Matrix: Rows = 160000, Columns= 160000, nnz = 1750416
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 38356128
+
+Evaluation of HashSpGEMM
+HashSpGEMM returned with 8243392 nonzeros. Compression ratio is 2.326477
+HashSpGEMM with  32 threads computes C = A * B in 27.614211 [milli seconds] (1388.999609 [MFLOPS])
+
+Evaluation of HashVectorSpGEMM
+HashVectorSpGEMM returned with 8243392 nonzeros. Compression ratio is 2.326477
+HashVectorSpGEMM with  32 threads computes C = A * B in 42.255530 [milli seconds] (907.718536 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 1.021067956000479 seconds
+Input Matrix: Rows = 160000, Columns= 160000, nnz = 1750416
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.9579359250019479 seconds
+Input Matrix: Rows = 160000, Columns= 160000, nnz = 1750416
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 38356128
+
+HeapSpGEMM returned with 8243392 nonzeros. Compression ratio is 2.326477
+HeapSpGEMM with  32 threads computes C = A * B in 33.078060 [milli seconds] (1159.564024 [MFLOPS])
+
+Processing patents_main.mtx
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.3477669220010284 seconds
+Input Matrix: Rows = 240547, Columns= 240547, nnz = 560943
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.27180887799841 seconds
+Input Matrix: Rows = 240547, Columns= 240547, nnz = 560943
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 5209580
+
+OuterSpGEMM generated 2604790 flops, returned with 2281308 nonzeros. Compression ratio is 1.141797
+OuterSpGEMM with  32 threads computes C = A * B in 7.373957 [milli seconds] (706.483617 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.2686181999997643 seconds
+Input Matrix: Rows = 240547, Columns= 240547, nnz = 560943
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.3435544899984961 seconds
+Input Matrix: Rows = 240547, Columns= 240547, nnz = 560943
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 5209580
+
+Evaluation of HashSpGEMM
+HashSpGEMM returned with 2281308 nonzeros. Compression ratio is 1.141797
+HashSpGEMM with  32 threads computes C = A * B in 6.482536 [milli seconds] (803.632998 [MFLOPS])
+
+Evaluation of HashVectorSpGEMM
+HashVectorSpGEMM returned with 2281308 nonzeros. Compression ratio is 1.141797
+HashVectorSpGEMM with  32 threads computes C = A * B in 8.180584 [milli seconds] (636.822513 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.3634756899991771 seconds
+Input Matrix: Rows = 240547, Columns= 240547, nnz = 560943
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.3901743879978312 seconds
+Input Matrix: Rows = 240547, Columns= 240547, nnz = 560943
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 5209580
+
+HeapSpGEMM returned with 2281308 nonzeros. Compression ratio is 1.141797
+HeapSpGEMM with  32 threads computes C = A * B in 5.551148 [milli seconds] (938.468994 [MFLOPS])
+
+Processing scircuit.mtx
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.7784328469970205 seconds
+Input Matrix: Rows = 170998, Columns= 170998, nnz = 958936
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.7853312990009726 seconds
+Input Matrix: Rows = 170998, Columns= 170998, nnz = 958936
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 17352626
+
+OuterSpGEMM generated 8676313 flops, returned with 5222525 nonzeros. Compression ratio is 1.661325
+OuterSpGEMM with  32 threads computes C = A * B in 27.299857 [milli seconds] (635.630646 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.8296925489994464 seconds
+Input Matrix: Rows = 170998, Columns= 170998, nnz = 958936
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.7384915660004481 seconds
+Input Matrix: Rows = 170998, Columns= 170998, nnz = 958936
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 17352626
+
+Evaluation of HashSpGEMM
+HashSpGEMM returned with 5222525 nonzeros. Compression ratio is 1.661325
+HashSpGEMM with  32 threads computes C = A * B in 19.213348 [milli seconds] (903.154733 [MFLOPS])
+
+Evaluation of HashVectorSpGEMM
+HashVectorSpGEMM returned with 5222525 nonzeros. Compression ratio is 1.661325
+HashVectorSpGEMM with  32 threads computes C = A * B in 25.336917 [milli seconds] (684.875183 [MFLOPS])
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Converting matrix data from ASCII to COO format: 0.7601900520021445 seconds
+Input Matrix: Rows = 170998, Columns= 170998, nnz = 958936
+Converting to csc ... 
+
+Converting matrix data from ASCII to COO format: 0.8347197170005529 seconds
+Input Matrix: Rows = 170998, Columns= 170998, nnz = 958936
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 17352626
+
+HeapSpGEMM returned with 5222525 nonzeros. Compression ratio is 1.661325
+HeapSpGEMM with  32 threads computes C = A * B in 24.068430 [milli seconds] (720.970404 [MFLOPS])
+

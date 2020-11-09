@@ -1,0 +1,10 @@
+https://sparse.tamu.edu/MM/SNAP/amazon0505.tar.gz
+https://sparse.tamu.edu/MM/GHS_psdef/hood.tar.gz
+https://sparse.tamu.edu/MM/Bova/rma10.tar.gz
+https://sparse.tamu.edu/MM/Boeing/pwtk.tar.gz
+https://sparse.tamu.edu/MM/QLi/majorbasis.tar.gz
+https://sparse.tamu.edu/MM/SNAP/higgs-twitter.tar.gz
+https://sparse.tamu.edu/MM/Hamm/scircuit.tar.gz
+https://sparse.tamu.edu/MM/Pajek/patents_main.tar.gz
+https://sparse.tamu.edu/MM/JGD_Homology/m133-b3.tar.gz
+https://sparse.tamu.edu/MM/Williams/mc2depi.tar.gz

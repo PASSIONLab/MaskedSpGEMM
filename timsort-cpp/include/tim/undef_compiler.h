@@ -1,0 +1,22 @@
+#ifndef TIMSORT_UNDEF_COMPILER_H
+#define TIMSORT_UNDEF_COMPILER_H
+
+
+#ifdef 	COMPILER_LIKELY_ 
+# undef COMPILER_LIKELY_
+#endif
+
+#ifdef 	COMPILER_UNLIKELY_ 
+# undef COMPILER_UNLIKELY_
+#endif
+
+#ifdef 	COMPILER_ASSUME_ 
+# undef COMPILER_ASSUME_
+#endif
+
+#ifdef 	COMPILER_UNREACHABLE_ 
+# undef COMPILER_UNREACHABLE_
+#endif
+
+
+#endif /* TIMSORT_UNDEF_COMPILER_H */

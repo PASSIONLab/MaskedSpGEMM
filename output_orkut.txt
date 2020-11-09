@@ -1,0 +1,57 @@
+Processing /project/projectdirs/m1982/israt/matrices/com-Orkut-permuted.mtx
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Processing /project/projectdirs/m1982/israt/matrices/com-Orkut.mtx
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 68.74549774700426 seconds
+Input Matrix: Rows = 3072441, Columns= 3072441, nnz = 234370166
+Converting to csc ... 
+
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 123.7690143900036 seconds
+Input Matrix: Rows = 3072441, Columns= 3072441, nnz = 234370166
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 182970606616
+
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 71.77477618600096 seconds
+Input Matrix: Rows = 3072441, Columns= 3072441, nnz = 234370166
+Converting to csc ... 
+
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 39.17834516600124 seconds
+Input Matrix: Rows = 3072441, Columns= 3072441, nnz = 234370166
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 182970606616
+
+Evaluation of HashSpGEMM
+Running on 32 processors
+
+reading input matrices in text (ascii)... 
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 63.71212877500511 seconds
+Input Matrix: Rows = 3072441, Columns= 3072441, nnz = 234370166
+Converting to csc ... 
+
+Matrix is symmetric
+Converting matrix data from ASCII to COO format: 86.57821327699639 seconds
+Input Matrix: Rows = 3072441, Columns= 3072441, nnz = 234370166
+Converting to csc ... 
+
+Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): 182970606616
+
