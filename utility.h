@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <vector>
-#include <numa.h>
+//#include <numa.h>
 // #include <tbb/scalable_allocator.h>
 
 using namespace std;

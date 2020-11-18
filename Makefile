@@ -8,7 +8,7 @@ INCLUDE += -I$(SPRNPATH)/include
 CC = g++
 
 # FLAGS = -g -fopenmp -O3 -march=native
-FLAGS = -g -fopenmp -O3 -m64 -march=native -lnuma
+FLAGS = -g -fopenmp -O3 -m64 -march=native #-lnuma
 
 
 # FLAGS = -g -fopenmp -O2 -ffast-math -march=native -ftree-vectorize

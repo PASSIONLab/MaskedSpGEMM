@@ -637,6 +637,7 @@ inline void hash_numeric_vec(const long long int *arpt, const long long int *aco
     }
 }
 
+
 template <bool vectorProbing, bool sortOutput, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
 void HashSpGEMM(const CSR<IT, NT> &a, const CSR<IT, NT> &b, CSR<IT, NT> &c, MultiplyOperation multop, AddOperation addop)
 {

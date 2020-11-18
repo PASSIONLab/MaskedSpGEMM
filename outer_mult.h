@@ -9,7 +9,7 @@
 #include <omp.h>
 #include <unistd.h>
 #include <cstring>
-#include <numa.h>
+//#include <numa.h>
 #include <thread>
 #include <cstdlib>
 #include <chrono>
