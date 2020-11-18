@@ -40,6 +40,7 @@ void SPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, CS
                 }
             }
             row_nz[i] = spastr.Size();
+            spastr.Reset();
         }
     }
     scan(row_nz, C.rowptr, C.rows + 1);

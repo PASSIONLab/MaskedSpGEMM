@@ -500,4 +500,46 @@ template <class IT, class NT> void CSR<IT, NT>::shuffleIds() {
   }
 }
 
+
+// A and B has to have sorted column ids
+// Output will naturally have sorted ids
+template <typename IT, typename NT, typename AddOperation>
+CSR<IT,NT> Intersect(const CSR<IT,NT> & A, const CSR<IT,NT> & B, AddOperation addop)
+{
+    CSR<IT,NT> C;
+    if (A.rows != B.rows || A.cols != B.cols) {
+      printf("Can not intersect due to dimension mismatch... %d:%d, %d:%d\n", A.rows, B.rows, A.cols, B.cols);
+      return C;
+    }
+    C.rows = A.rows;
+    C.cols = A.cols;
+    C.zerobased = A.zerobased;
+    C.rowptr = my_malloc<IT>(C.rows + 1);
+    IT * row_nz = my_malloc<IT>(C.rows);
+    vector<vector<IT>> vec_colids(C.rows);
+    vector<vector<NT>> vec_values(C.rows);
+    
+#pragma omp parallel for
+    for(size_t i=0; i< A.rows; ++i)
+    {
+        IT acur = A.rowptr[i];
+        IT aend = A.rowptr[i+1];
+        IT bcur = B.rowptr[i];
+        IT bend = B.rowptr[i+1];
+        while(acur != aend || bcur != bend)
+        {
+            if(A.colids[acur] < B.colids[bcur]) ++acur;
+            else if(A.colids[acur] > B.colids[bcur]) ++bcur;
+            else    // they are equal
+            {
+                vec_colids[i].push_back(A.colids[acur]);
+                vec_values[i].push_back(addop(A.values[acur], B.values[bcur]));
+            }
+        }
+    }
+    scan(row_nz, C.rowptr, C.rows + 1);
+    my_free<IT>(row_nz);
+    return C;
+}
+
 #endif
