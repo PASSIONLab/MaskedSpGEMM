@@ -73,7 +73,7 @@ template <class IT>
 class SPAStructure
 {
 public:
-    SPAStructure(IT range)
+    SPAStructure(IT range): committed(0)
     {
         flags.resize(range, 0);
     }
@@ -84,6 +84,7 @@ public:
         while(first != last)
         {
             flags[*first] = 1;
+            possible.push_back(*first);
             ++first;
         }
     }
@@ -92,25 +93,26 @@ public:
         if(flags[tkey] == 1)
         {
             flags[tkey] = 2;
-            present.push_back(tkey);
+            ++committed;
         }
     }
     size_t Size()
     {
-        return present.size();
+        return committed;
     }
     
     void Reset()
     {
-        for(auto index:present)
+        for(auto index:possible)
         {
             flags[index] = 0;
         }
-        present.clear();
+        possible.clear();
     }
 
+    IT committed;
     vector<short> flags;  // 0: not-allowed (masked out), 1: allowed, 2: set
-    vector<IT> present;
+    vector<IT> possible;
 };
 
 #endif
