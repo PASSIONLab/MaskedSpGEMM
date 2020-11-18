@@ -108,6 +108,7 @@ public:
             flags[index] = 0;
         }
         possible.clear();
+        committed = 0;
     }
 
     IT committed;
