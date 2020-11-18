@@ -500,6 +500,28 @@ template <class IT, class NT> void CSR<IT, NT>::shuffleIds() {
   }
 }
 
+template <class IT, class NT>
+void CSR<IT,NT>::sortIds()
+{
+#pragma omp parallel for
+    for (IT i = 0; i < rows; ++i)
+    {
+        vector< pair<IT,NT> > tosort;
+        for (IT j = rowptr[i]; j < rowptr[i+1]; ++j)
+        {
+            tosort.push_back(make_pair(colids[j], values[j]));
+        }
+        std::sort(tosort.begin(), tosort.end());
+        auto begitr = tosort.begin();
+        for (IT j = rowptr[i]; j < rowptr[i+1]; ++j)
+        {
+            colids[j] = begitr->first;
+            values[j] = begitr->second;
+            ++begitr;
+        }
+    }
+}
+
 
 // A and B has to have sorted column ids
 // Output will naturally have sorted ids
@@ -526,7 +548,7 @@ CSR<IT,NT> Intersect(const CSR<IT,NT> & A, const CSR<IT,NT> & B, AddOperation ad
         IT aend = A.rowptr[i+1];
         IT bcur = B.rowptr[i];
         IT bend = B.rowptr[i+1];
-        while(acur != aend || bcur != bend)
+        while(acur != aend && bcur != bend)
         {
             if(A.colids[acur] < B.colids[bcur]) ++acur;
             else if(A.colids[acur] > B.colids[bcur]) ++bcur;
@@ -534,11 +556,27 @@ CSR<IT,NT> Intersect(const CSR<IT,NT> & A, const CSR<IT,NT> & B, AddOperation ad
             {
                 vec_colids[i].push_back(A.colids[acur]);
                 vec_values[i].push_back(addop(A.values[acur], B.values[bcur]));
+                ++acur; ++bcur;
             }
         }
+        row_nz[i] = vec_colids[i].size();
     }
+    cout << "Line exit\n";
+
     scan(row_nz, C.rowptr, C.rows + 1);
     my_free<IT>(row_nz);
+    
+    C.nnz = C.rowptr[C.rows];
+    cout << "Nonzeros in the intersection will be " << C.nnz << "\n";
+       
+    C.colids = my_malloc<IT>(C.nnz);
+    C.values = my_malloc<NT>(C.nnz);
+#pragma omp parallel for
+    for(size_t i=0; i< C.rows; ++i)
+    {
+        std::copy(vec_colids[i].begin(), vec_colids[i].end(), C.colids + C.rowptr[i]);
+        std::copy(vec_values[i].begin(), vec_values[i].end(), C.values + C.rowptr[i]);
+    }
     return C;
 }
 

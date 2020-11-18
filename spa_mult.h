@@ -47,7 +47,6 @@ void SPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, CS
     my_free<IT>(row_nz);
 
     C.nnz = C.rowptr[C.rows];
-    cout << "Nonzeros in the output will be " << C.nnz << "\n";
     
     C.colids = my_malloc<IT>(C.nnz);
     C.values = my_malloc<NT>(C.nnz);

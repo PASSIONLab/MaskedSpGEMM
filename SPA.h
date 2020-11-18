@@ -26,6 +26,7 @@ public:
         while(first != last)
         {
             flags[*first] = 1;
+            possible.push_back(*first);
             ++first;
         }
     }
@@ -58,14 +59,19 @@ public:
             (*firstvalue) = values[index];
             ++firstkey;
             ++firstvalue;
-            flags[index] = 0;
         }
         present.clear();
+        for(auto index:possible)
+        {
+            flags[index] = 0;
+        }
+        possible.clear();
     }
 
     vector<NT> values;
     vector<short> flags;  // 0: not-allowed (masked out), 1: allowed, 2: set
     vector<IT> present;
+    vector<IT> possible;
 };
 
 // SPA that is thread-safe but not multithreaded
