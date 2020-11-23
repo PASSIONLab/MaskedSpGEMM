@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
     double start, end, msec, ave_msec, mflops;
 
     /* Execute Hash-SpGEMM */
-    cout << "Evaluation of HashSpGEMM" << endl;
+    cout << "Evaluation of HashSpGEMM (unsorted input/output)" << endl;
     for (int tnum : tnums) {
         omp_set_num_threads(tnum);
 
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
     }
 
     /* Execute SPA-SpGEMM */
-    cout << "Evaluation of MaskedSPASpGEMM" << endl;
+    cout << "Evaluation of MaskedSPASpGEMM (unsorted input/output)" << endl;
     ave_msec = 0;
     for (int tnum : tnums) {
         omp_set_num_threads(tnum);
