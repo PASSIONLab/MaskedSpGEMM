@@ -561,13 +561,11 @@ CSR<IT,NT> Intersect(const CSR<IT,NT> & A, const CSR<IT,NT> & B, AddOperation ad
         }
         row_nz[i] = vec_colids[i].size();
     }
-    cout << "Line exit\n";
 
     scan(row_nz, C.rowptr, C.rows + 1);
     my_free<IT>(row_nz);
     
     C.nnz = C.rowptr[C.rows];
-    cout << "Nonzeros in the intersection will be " << C.nnz << "\n";
        
     C.colids = my_malloc<IT>(C.nnz);
     C.values = my_malloc<NT>(C.nnz);
