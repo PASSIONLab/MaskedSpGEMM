@@ -51,12 +51,14 @@ innerSpGEMM_nohash(const CSR<IT,NT> & A, const CSC<IT,NT> & B, CSR<IT,NT> & C, M
     C.cols = B.cols;
     C.nnz = A.nnz;
     C.zerobased = true;
-    // CSR<IT,NT> M = A;
 
-    // do symbolic?
     C.rowptr = my_malloc<IT>(A.rows + 1);
     C.colids = my_malloc<IT>(A.nnz);
     C.values = my_malloc<NT>(A.nnz);
+
+    for (int i = 0; i < C.rows; ++i) 
+        C.rowptr[i] = A.rowptr[i];
+    
     for (int i = 0; i < A.nnz; ++i) {
         C.colids[i] = A.colids[i];
         C.values[i] = 0;
@@ -81,18 +83,18 @@ innerSpGEMM_nohash(const CSR<IT,NT> & A, const CSC<IT,NT> & B, CSR<IT,NT> & C, M
 
         //*blocks of rows the mask*
         for (i = start_row; i < end_row; ++i) {
-            int j, k, bid, index;
-            int t_acol, hash, key, offset;
-            NT t_aval, t_val = 0; 
+            int j, cur_col, nnz_r, nnz_c;
             int cur_row = i; 
-            int nnz_r = A.rowptr[cur_row]; 
-            
+            NT t_val = 0; 
+       
             //*nonzeros of the row over the mask*  
             for (j = A.rowptr[i]; j < A.rowptr[i + 1]; ++j) {
-                
-                int cur_col = A.colids[cur_row];      
-                int nnz_c = B.colptr[cur_col]; 
+           
+                cur_col = A.colids[j];      
+                nnz_r = A.rowptr[cur_row]; 
+                nnz_c = B.colptr[cur_col]; 
                 t_val = 0;
+
                 //*dot product between row of A and col of B 
                 while(nnz_r < A.rowptr[cur_row+1] && nnz_c < B.colptr[cur_col+1]){
 
@@ -101,9 +103,7 @@ innerSpGEMM_nohash(const CSR<IT,NT> & A, const CSC<IT,NT> & B, CSR<IT,NT> & C, M
                     else if(A.colids[nnz_r] > B.rowids[nnz_c])
                         nnz_c++;
                     else { //A.colids[nnz_r] == B.rowids[nnz_c];
-                        int ac = A.colids[nnz_r];
-                        int br = B.rowids[nnz_c];
-                        t_val += multop(A.values[ac], B.values[br]);
+                        t_val += multop(A.values[nnz_r], B.values[nnz_c]);
                         nnz_r++, 
                         nnz_c++;
                     }
@@ -112,6 +112,7 @@ innerSpGEMM_nohash(const CSR<IT,NT> & A, const CSC<IT,NT> & B, CSR<IT,NT> & C, M
             }          
         }
     }
+    //shrink C
 }
 
 // template <typename IT, typename NT, typename MultiplyOperation, typename AddOperation>

@@ -30,7 +30,7 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-    const bool sortOutput = false;
+    const bool sortOutput = true;
     vector<int> tnums;
     CSC<INDEXTYPE, VALUETYPE> A_csc, B_csc;
 
@@ -88,19 +88,20 @@ int main(int argc, char* argv[])
         HashSpGEMM<false, sortOutput>(A_csr, B_csr, C_csr_tmp, multiplies<VALUETYPE>(), plus<VALUETYPE>());
         
         cout << "Hash SpGEMM wo Mask " << endl;
-        for (int i = 0; i < 10; ++i)
-        	cout << C_csr_tmp.values[i] << " ";
-        cout << endl;
+        
+        // for (int i = 0; i < 10; ++i)
+        // 	cout << C_csr_tmp.colids[i] << " " << C_csr_tmp.values[i] << ", ";
+        // cout << endl << endl;
         C_csr_tmp.make_empty();
         
         /* First execution is excluded from evaluation */
         innerSpGEMM_nohash<false, sortOutput>(A_csr, B_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
         
-        cout << "Dot SpGEMM with Mask" << endl;
-        for (int i = 0; i < 10; ++i)
-        	cout << C_csr.values[i] << " ";
-        cout << endl;
-        C_csr.make_empty();
+        // cout << "Dot SpGEMM with Mask" << endl;
+        // for (int i = 0; i < 10; ++i)
+        // 	cout << C_csr.rowptr[i] << " " << C_csr.colids[i] << " " << C_csr.values[i] << ", ";
+        // cout << endl;
+        // C_csr.make_empty();
 
         ave_msec = 0;
         for (int i = 0; i < ITERS; ++i) {
