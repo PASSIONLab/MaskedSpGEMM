@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
     B_csr.shuffleIds();
 
     /* Count total number of floating-point operations */
-    long long int nfop = 1;//get_flop(A_csr, B_csc);
+    long long int nfop = get_flop(A_csr, B_csr);
     // cout << "Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): " << nfop << endl << endl;
 
     double start, end, msec, ave_msec, mflops;
@@ -82,31 +82,15 @@ int main(int argc, char* argv[])
         omp_set_num_threads(tnum);
 
         CSR<INDEXTYPE,VALUETYPE> C_csr;
-        CSR<INDEXTYPE,VALUETYPE> C_csr_tmp; //correctness check
-
-        /*corrctness check */
-        HashSpGEMM<false, sortOutput>(A_csr, B_csr, C_csr_tmp, multiplies<VALUETYPE>(), plus<VALUETYPE>());
-        
-        cout << "Hash SpGEMM wo Mask " << endl;
-        
-        // for (int i = 0; i < 10; ++i)
-        // 	cout << C_csr_tmp.colids[i] << " " << C_csr_tmp.values[i] << ", ";
-        // cout << endl << endl;
-        C_csr_tmp.make_empty();
         
         /* First execution is excluded from evaluation */
-        innerSpGEMM_nohash<false, sortOutput>(A_csr, B_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
-        
-        // cout << "Dot SpGEMM with Mask" << endl;
-        // for (int i = 0; i < 10; ++i)
-        // 	cout << C_csr.rowptr[i] << " " << C_csr.colids[i] << " " << C_csr.values[i] << ", ";
-        // cout << endl;
-        // C_csr.make_empty();
-
+        innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csr, B_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+        C_csr.make_empty();
+   
         ave_msec = 0;
         for (int i = 0; i < ITERS; ++i) {
             start = omp_get_wtime();
-            innerSpGEMM_nohash<false, sortOutput>(A_csr, B_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csr, B_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
             end = omp_get_wtime();
             msec = (end - start) * 1000;
             ave_msec += msec;
@@ -117,7 +101,7 @@ int main(int argc, char* argv[])
         ave_msec /= ITERS;
         mflops = (double)nfop / ave_msec / 1000;
 
-        // printf("DotSpGEMM returned with %d nonzeros. Compression ratio is %f\n", C_csr.nnz, (float)(nfop / 2) / (float)(C_csr.nnz));
+        printf("DotSpGEMM returned with %d nonzeros. Compression ratio is %f\n", C_csr.nnz, (float)(nfop / 2) / (float)(C_csr.nnz));
         printf("DotSpGEMM with %3d threads computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", tnum, ave_msec, mflops);
 
         C_csr.make_empty();
