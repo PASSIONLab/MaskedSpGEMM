@@ -19,6 +19,7 @@
 
 #include "../hash_mult_hw.h"
 #include "../spa_mult.h"
+#include "../hash_mult.h"
 #include "sample_common.hpp"
 
 using namespace std;
@@ -45,8 +46,8 @@ int main(int argc, char* argv[])
         tnums = {68, 136, 204, 272};
         // tnums = {1, 2, 4, 8, 16, 32, 64, 68, 128, 136, 192, 204, 256, 272}; // for scalability test
 #else
-        cout << "Running on 32, 64 threads" << endl;
-        tnums = {32, 64}; // for hashwell
+        cout << "Running on 4, 8, 16, 32, 64 threads" << endl;
+        tnums = {4, 8, 16, 32, 64}; // for hashwell
 #endif
     }
 	else {
@@ -148,8 +149,47 @@ int main(int argc, char* argv[])
 
         C_csr.make_empty();
     }
+
+
+
+	/* Execute masked hash SpGEMM */
+    cout << "Evaluation of Masked Hash SpGEMM" << endl;
+    ave_msec = 0;
+    for (int tnum : tnums) {
+        omp_set_num_threads(tnum);
+
+        CSR<INDEXTYPE,VALUETYPE> C_csr;
+
+        /* First execution is excluded from evaluation */
+        /* Use A itself as the mask (4th parameter) */
+        mxm_hash_mask(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+        C_csr.make_empty();
+
+        ave_msec = 0;
+        for (int i = 0; i < ITERS; ++i) {
+            start = omp_get_wtime();
+            
+            /* Use A itself as the mask (4th parameter) */
+            mxm_hash_mask(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            end = omp_get_wtime();
+            msec = (end - start) * 1000;
+            ave_msec += msec;
+            if (i < ITERS - 1) {
+                C_csr.make_empty();
+            }
+        }
+        ave_msec /= ITERS;
+        mflops = (double)nfop / ave_msec / 1000;
+
+        printf("mxm_hash_mask returned with %d nonzeros. Compression ratio is %f\n", C_csr.nnz, (float)(nfop / 2) / (float)(C_csr.nnz));
+        printf("mxm_hash_mask with %3d threads computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", tnum, ave_msec, mflops);
+
+        C_csr.make_empty();
+    }
+
+	
     A_csr.make_empty();
-    B_csr.make_empty();
+    B_csr.make_empty(); 
 
     return 0;
 }
