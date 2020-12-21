@@ -116,8 +116,9 @@ int main(int argc, char* argv[])
         C_csr.make_empty();
     }
 
-    /* Execute SPA-SpGEMM */
-    cout << "Evaluation of MaskedSPASpGEMM" << endl;
+
+	/* Execute masked hash SpGEMM */
+    cout << "Evaluation of Masked Hash SpGEMM" << endl;
     ave_msec = 0;
     for (int tnum : tnums) {
         omp_set_num_threads(tnum);
@@ -126,7 +127,7 @@ int main(int argc, char* argv[])
 
         /* First execution is excluded from evaluation */
         /* Use A itself as the mask (4th parameter) */
-        SPASpGEMM(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+        mxm_hash_mask_wobin(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
         C_csr.make_empty();
 
         ave_msec = 0;
@@ -134,7 +135,7 @@ int main(int argc, char* argv[])
             start = omp_get_wtime();
             
             /* Use A itself as the mask (4th parameter) */
-            SPASpGEMM(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            mxm_hash_mask_wobin(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
             end = omp_get_wtime();
             msec = (end - start) * 1000;
             ave_msec += msec;
@@ -145,11 +146,12 @@ int main(int argc, char* argv[])
         ave_msec /= ITERS;
         mflops = (double)nfop / ave_msec / 1000;
 
-        printf("MaskedSPASpGEMM returned with %d nonzeros. Compression ratio is %f\n", C_csr.nnz, (float)(nfop / 2) / (float)(C_csr.nnz));
-        printf("MaskedSPASpGEMM with %3d threads computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", tnum, ave_msec, mflops);
+        printf("mxm_hash_mask_wobin returned with %d nonzeros. Compression ratio is %f\n", C_csr.nnz, (float)(nfop / 2) / (float)(C_csr.nnz));
+        printf("mxm_hash_mask_wobin with %3d threads computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", tnum, ave_msec, mflops);
 
         C_csr.make_empty();
     }
+
 	
     A_csr.make_empty();
     B_csr.make_empty(); 

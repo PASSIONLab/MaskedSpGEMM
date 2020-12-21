@@ -20,11 +20,11 @@
 #include <omp.h>
 
 #include "CSR.h"
-#include "ht.h"
+#include "mask_hash.h"
 #include "utility.h"
 
 
-
+// TODO:: Support bin
 template <typename IT,
 		  typename NT,
 		  typename MultiplyOperation,
