@@ -26,7 +26,7 @@ using namespace std;
 
 #define VALUETYPE double
 #define INDEXTYPE int
-#define ITERS 20
+#define ITERS 10
 
 int main(int argc, char* argv[])
 {
@@ -129,14 +129,14 @@ int main(int argc, char* argv[])
         /* Use A itself as the mask (4th parameter) */
         mxm_hash_mask_wobin(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
 
-        cout << "\nMask hash wo bin" << endl;
-        for (int i = 0; i < 3; ++i){
-            cout << i << " : " << C_csr.rowptr[i] << " ";
-            for (int j = C_csr.rowptr[i];  j < C_csr.rowptr[i+1]; ++j)
-                cout << C_csr.colids[j] << " " << C_csr.values[j] << ", ";
-            cout << endl;
-        }
-        cout << endl;
+        // cout << "\nMask hash wo bin" << endl;
+        // for (int i = A_csr.rows - 3; i < A_csr.rows; ++i){
+        //     cout << i << " : " << C_csr.rowptr[i] << " ";
+        //     for (int j = C_csr.rowptr[i];  j < C_csr.rowptr[i+1]; ++j)
+        //         cout << C_csr.colids[j] << " " << C_csr.values[j] << ", ";
+        //     cout << endl;
+        // }
+        // cout << endl;
         C_csr.make_empty();
 
         ave_msec = 0;
@@ -174,14 +174,14 @@ int main(int argc, char* argv[])
 
         mxm_hash_mask(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
        
-        cout << "Mask hash with bin" << endl;
-        for (int i = 0; i < 3; ++i){
-            cout << i << " : " << C_csr.rowptr[i] << " ";
-            for (int j = C_csr.rowptr[i];  j < C_csr.rowptr[i+1]; ++j)
-                cout << C_csr.colids[j] << " " << C_csr.values[j] << ", ";
-            cout << endl;
-        }
-        cout << endl;
+        // cout << "Mask hash with bin" << endl;
+        // for (int i = A_csr.rows - 3; i < A_csr.rows; ++i){
+        //     cout << i << " : " << C_csr.rowptr[i] << " ";
+        //     for (int j = C_csr.rowptr[i];  j < C_csr.rowptr[i+1]; ++j)
+        //         cout << C_csr.colids[j] << " " << C_csr.values[j] << ", ";
+        //     cout << endl;
+        // }
+        // cout << endl;
         C_csr.make_empty();
 
         ave_msec = 0;

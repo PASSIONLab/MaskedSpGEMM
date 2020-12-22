@@ -63,16 +63,21 @@ mxm_hash_mask
     IT rowPerThread = (M.rows + numThreads -1) / numThreads;
 	#pragma omp parallel
 	{
-		int i, tid, start_row, end_row, col, ra;
+		int i, tid, start_row, end_row, max_row = 0, ra;
 
 	    tid = omp_get_thread_num();
         start_row = rowPerThread * tid;
         end_row = min(rowPerThread * (tid+1), M.rows);
+        
+        for (ra = start_row; ra < end_row; ++ra){
+        	max_row = max(max_row, M.rowptr[ra+1] - M.rowptr[ra]);
+        }
+        map_lp<IT, bool> ht(max_row + 1);
 
  		for (ra = start_row; ra < end_row; ++ra) 
 		// for (IT ra = 0; ra < A.rows; ++ra)
 		{
-			map_lp<IT, bool> ht(M.rowptr[ra+1] - M.rowptr[ra] + 1);
+			// map_lp<IT, bool> ht(M.rowptr[ra+1] - M.rowptr[ra] + 1);
 			for (IT cmptr = M.rowptr[ra]; cmptr < M.rowptr[ra+1]; ++cmptr)
 				ht.insert(M.colids[cmptr], false);
 
@@ -90,6 +95,7 @@ mxm_hash_mask
 					}
 				}
 			}
+			ht.reset();
 		}
 	}
 	
@@ -104,15 +110,21 @@ mxm_hash_mask
 	// {
 	#pragma omp parallel
 	{
-		int i, tid, start_row, end_row, col, ra;
+		int i, tid, start_row, end_row, max_row = 0, ra;
 
 	    tid = omp_get_thread_num();
         start_row = rowPerThread * tid;
         end_row = min(rowPerThread * (tid+1), M.rows);
 
+        for (ra = start_row; ra < end_row; ++ra){
+        	max_row = max(max_row, M.rowptr[ra+1] - M.rowptr[ra]);
+        }
+		
+		map_lp<IT, NT, bool> ht(max_row + 1);
+			
 	 	for (ra = start_row; ra < end_row; ++ra) 	
 	 	{
-			map_lp<IT, NT, bool> ht(M.rowptr[ra+1] - M.rowptr[ra] + 1);
+			// map_lp<IT, NT, bool> ht(M.rowptr[ra+1] - M.rowptr[ra] + 1);
 			for (IT cmptr = M.rowptr[ra]; cmptr < M.rowptr[ra+1]; ++cmptr)
 				ht.insert(M.colids[cmptr], NT(), false);
 

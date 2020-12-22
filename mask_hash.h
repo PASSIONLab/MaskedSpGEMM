@@ -130,6 +130,7 @@ map_lp
 				*val_ptr = get<1>(*it);
 				++idx_ptr;
 				++val_ptr;
+				get<0>(*it) = ne_;
 			}
 		}
 	}
@@ -224,6 +225,15 @@ map_lp<K, V1, void, T>
 	operator[] (T hv)
 	{
 		return v_[hv].second;
+	}
+
+	void reset()
+	{
+		for (auto it = v_.begin(); it < v_.end(); ++it)
+		{
+			get<0>(*it) = ne_;			
+		}
+
 	}
 };
 
