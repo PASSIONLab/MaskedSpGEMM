@@ -88,7 +88,7 @@ mxm_hash_mask_wobin
 			for (IT cbptr = B.rowptr[rb]; cbptr < B.rowptr[rb+1]; ++cbptr)
 			{
 				auto hv = ht.find(B.colids[cbptr]);
-				if (hv != -1 && ht.get2(hv))
+				if (hv != -1 && !ht.get2(hv))
 				{
 					ht.get1(hv) = multop(A.values[captr], B.values[cbptr]);
 					ht.get2(hv) = true;
