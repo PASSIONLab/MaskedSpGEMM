@@ -129,9 +129,9 @@ map_lp
 				*idx_ptr = get<0>(*it);
 				*val_ptr = get<1>(*it);
 				++idx_ptr;
-				++val_ptr;
-				get<0>(*it) = ne_;
+				++val_ptr;		
 			}
+			get<0>(*it) = ne_;
 		}
 	}
 };
