@@ -19,8 +19,6 @@
 
 #include "../hash_mult_hw.h"
 #include "../spa_mult.h"
-// #include "../mask_hash_mult.h"
-#include "../mask_hash_wobin_mult.h"
 #include "sample_common.hpp"
 
 using namespace std;
