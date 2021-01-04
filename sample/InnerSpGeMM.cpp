@@ -19,7 +19,6 @@
 #include "../multiply.h"
 
 #include "../inner_mult.h"
-#include "../hash_mult_hw.h"
 #include "sample_common.hpp"
 
 using namespace std;

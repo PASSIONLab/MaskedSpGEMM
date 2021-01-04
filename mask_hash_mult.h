@@ -66,9 +66,11 @@ mxm_hash_mask
 		int i, tid, start_row, end_row, max_row = 0, ra;
 
 	    tid = omp_get_thread_num();
-        start_row = rowPerThread * tid;
-        end_row = min(rowPerThread * (tid+1), M.rows);
-        
+        start_row  = bin.rows_offset[tid];
+        end_row = bin.rows_offset[tid + 1];
+        // start_row = rowPerThread * tid;
+        // end_row = min(rowPerThread * (tid+1), M.rows);
+
         for (ra = start_row; ra < end_row; ++ra){
         	max_row = max(max_row, M.rowptr[ra+1] - M.rowptr[ra]);
         }
@@ -113,8 +115,10 @@ mxm_hash_mask
 		int i, tid, start_row, end_row, max_row = 0, ra;
 
 	    tid = omp_get_thread_num();
-        start_row = rowPerThread * tid;
-        end_row = min(rowPerThread * (tid+1), M.rows);
+        start_row  = bin.rows_offset[tid];
+        end_row = bin.rows_offset[tid + 1];
+        // start_row = rowPerThread * tid;
+        // end_row = min(rowPerThread * (tid+1), M.rows);
 
         for (ra = start_row; ra < end_row; ++ra){
         	max_row = max(max_row, M.rowptr[ra+1] - M.rowptr[ra]);
@@ -153,6 +157,8 @@ mxm_hash_mask
 
 	return;
 }
+
+// notes (IN): parallelism over rows, HT allocation for each row
 
 template <typename IT,
 		  typename NT,

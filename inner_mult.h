@@ -1,5 +1,6 @@
 #include "CSC.h"
 #include "utility.h"
+#include "hash_mult_hw.h"
 #include <omp.h>
 #include <algorithm>
 #include <iostream>
@@ -68,6 +69,12 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
         C.colids[i] = M.colids[i]; // unnecessary
         C.values[i] = 0;
     }
+    
+    BIN<IT, NT> bin(A.rows, IMB_PWMIN);
+
+    /* Set max bin */
+    // Double check, changed 3rd param to colptr
+    bin.set_max_bin(A.rowptr, A.colids, B.colptr, C.rows, C.cols);
 
     int numThreads; 
     #pragma omp parallel
@@ -82,22 +89,22 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
     #pragma omp parallel
     {
         int i, tid, start_row, end_row, col;
-        IT *shared_check;
-        NT *shared_value;
 
         tid = omp_get_thread_num();
-        start_row = rowPerThread * tid;
-        end_row = min(rowPerThread * (tid+1), M.rows);
-        // each th keeps track of active nnz in C (not all from Mask)
-           
-        //*blocks of rows the mask*
+        start_row  = bin.rows_offset[tid];
+        end_row = bin.rows_offset[tid + 1];
+        // start_row = rowPerThread * tid;
+        // end_row = min(rowPerThread * (tid+1), M.rows);
+
+        // each th keeps track of active nnz in C (not all from Mask)   
+        //* blocks of rows the mask *
         for (i = start_row; i < end_row; ++i) {
             int j, cur_col, nnz_r, nnz_c;
             int cur_row = i; 
             NT t_val = 0; 
             bool active = false;
        
-            //*nonzeros of the row over the mask*  
+            //* nonzeros of the row over the mask *  
             for (j = M.rowptr[i]; j < M.rowptr[i + 1]; ++j) {
            
                 cur_col = A.colids[j];      
