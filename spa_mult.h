@@ -18,14 +18,24 @@ void SPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, CS
     C.rowptr = my_malloc<IT>(C.rows + 1);
     IT * row_nz = my_malloc<IT>(C.rows);
     
+    BIN<IT, NT> bin(A.rows, IMB_PWMIN);
+
+    /* Set max bin */
+    bin.set_max_bin(A.rowptr, A.colids, B.rowptr, C.rows, C.cols);
+
+    /* Create hash table (thread local) */
+    // bin.create_local_hash_table(c.cols);
     
     // Aydin Buluc: likely load-imbalanced way of parallelizing, improve later
     #pragma omp parallel
     {
+        int tid = omp_get_thread_num();
         int threadnum = omp_get_thread_num();
         int numthreads = omp_get_num_threads();
-        size_t low = C.rows*threadnum/numthreads;
-        size_t high = C.rows*(threadnum+1)/numthreads;
+        size_t low  = bin.rows_offset[tid];
+        size_t high = bin.rows_offset[tid + 1];
+        // size_t low = C.rows*threadnum/numthreads;
+        // size_t high = C.rows*(threadnum+1)/numthreads;
         
         SPAStructure<IT> spastr(C.cols);
         for (size_t i=low; i<high; i++)
@@ -54,10 +64,13 @@ void SPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, CS
     // Aydin Buluc, To-Do: repeated binary searches on row_nz to find load balanced low/high positions
     #pragma omp parallel
     {
+        int tid = omp_get_thread_num();
         int threadnum = omp_get_thread_num();
         int numthreads = omp_get_num_threads();
-        size_t low = C.rows*threadnum/numthreads;
-        size_t high = C.rows*(threadnum+1)/numthreads;
+        size_t low  = bin.rows_offset[tid];
+        size_t high = bin.rows_offset[tid + 1];
+        // size_t low = C.rows*threadnum/numthreads;
+        // size_t high = C.rows*(threadnum+1)/numthreads;
         
         SPA<IT,NT> spa(C.cols);
         for (size_t i=low; i<high; i++)

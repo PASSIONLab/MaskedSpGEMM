@@ -19,6 +19,7 @@
 
 #include "../hash_mult_hw.h"
 #include "../spa_mult.h"
+#include "../mask_hash_mult.h"
 #include "sample_common.hpp"
 
 using namespace std;
@@ -72,7 +73,7 @@ int main(int argc, char* argv[])
     double start, end, msec, ave_msec, mflops;
 
     /* Execute Hash-SpGEMM */
-    cout << "Evaluation of HashSpGEMM (unsorted input/output)" << endl;
+    cout << "Evaluation of HashSpGEMM" << endl;
     for (int tnum : tnums) {
         omp_set_num_threads(tnum);
 
@@ -85,7 +86,7 @@ int main(int argc, char* argv[])
         cout << endl;
         C_csr.make_empty();
 
-        ave_msec = 0;
+       /* ave_msec = 0;
         for (int i = 0; i < ITERS; ++i) {
             start = omp_get_wtime();
             HashSpGEMM<false, sortOutput>(A_csr, B_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
@@ -112,10 +113,12 @@ int main(int argc, char* argv[])
         
         printf("A^2 *. A has %d nonzeros\n", Tr_csr.nnz);
         C_csr.make_empty();
+        */
     }
 
-    /* Execute SPA-SpGEMM */
-    cout << "Evaluation of MaskedSPASpGEMM (unsorted input/output)" << endl;
+
+	/* Execute masked hash SpGEMM without bin */
+    cout << "Evaluation of Masked Hash SpGEMM without bin" << endl;
     ave_msec = 0;
     for (int tnum : tnums) {
         omp_set_num_threads(tnum);
@@ -124,7 +127,16 @@ int main(int argc, char* argv[])
 
         /* First execution is excluded from evaluation */
         /* Use A itself as the mask (4th parameter) */
-        SPASpGEMM(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+        mxm_hash_mask_wobin(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+
+        // cout << "\nMask hash wo bin" << endl;
+        // for (int i = A_csr.rows - 3; i < A_csr.rows; ++i){
+        //     cout << i << " : " << C_csr.rowptr[i] << " ";
+        //     for (int j = C_csr.rowptr[i];  j < C_csr.rowptr[i+1]; ++j)
+        //         cout << C_csr.colids[j] << " " << C_csr.values[j] << ", ";
+        //     cout << endl;
+        // }
+        // cout << endl;
         C_csr.make_empty();
 
         ave_msec = 0;
@@ -132,7 +144,7 @@ int main(int argc, char* argv[])
             start = omp_get_wtime();
             
             /* Use A itself as the mask (4th parameter) */
-            SPASpGEMM(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            mxm_hash_mask_wobin(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
             end = omp_get_wtime();
             msec = (end - start) * 1000;
             ave_msec += msec;
@@ -143,11 +155,57 @@ int main(int argc, char* argv[])
         ave_msec /= ITERS;
         mflops = (double)nfop / ave_msec / 1000;
 
-        printf("MaskedSPASpGEMM returned with %d nonzeros. Compression ratio is %f\n", C_csr.nnz, (float)(nfop / 2) / (float)(C_csr.nnz));
-        printf("MaskedSPASpGEMM with %3d threads computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", tnum, ave_msec, mflops);
+        printf("mxm_hash_mask_wobin returned with %d nonzeros. Compression ratio is %f\n", C_csr.nnz, (float)(nfop / 2) / (float)(C_csr.nnz));
+        printf("mxm_hash_mask_wobin with %3d threads computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", tnum, ave_msec, mflops);
 
         C_csr.make_empty();
     }
+
+    /* Execute masked hash SpGEMM wiht bin */
+    cout << "Evaluation of Masked Hash SpGEMM with bin" << endl;
+    ave_msec = 0;
+    for (int tnum : tnums) {
+        omp_set_num_threads(tnum);
+
+        CSR<INDEXTYPE,VALUETYPE> C_csr;
+
+        /* First execution is excluded from evaluation */
+        /* Use A itself as the mask (4th parameter) */
+
+        mxm_hash_mask(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+       
+        // cout << "Mask hash with bin" << endl;
+        // for (int i = A_csr.rows - 3; i < A_csr.rows; ++i){
+        //     cout << i << " : " << C_csr.rowptr[i] << " ";
+        //     for (int j = C_csr.rowptr[i];  j < C_csr.rowptr[i+1]; ++j)
+        //         cout << C_csr.colids[j] << " " << C_csr.values[j] << ", ";
+        //     cout << endl;
+        // }
+        // cout << endl;
+        C_csr.make_empty();
+
+        ave_msec = 0;
+        for (int i = 0; i < ITERS; ++i) {
+            start = omp_get_wtime();
+            
+            /* Use A itself as the mask (4th parameter) */
+            mxm_hash_mask(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            end = omp_get_wtime();
+            msec = (end - start) * 1000;
+            ave_msec += msec;
+            if (i < ITERS - 1) {
+                C_csr.make_empty();
+            }
+        }
+        ave_msec /= ITERS;
+        mflops = (double)nfop / ave_msec / 1000;
+
+        printf("mxm_hash_mask returned with %d nonzeros. Compression ratio is %f\n", C_csr.nnz, (float)(nfop / 2) / (float)(C_csr.nnz));
+        printf("mxm_hash_mask with %3d threads computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", tnum, ave_msec, mflops);
+
+        C_csr.make_empty();
+    }
+
 	
     A_csr.make_empty();
     B_csr.make_empty(); 
