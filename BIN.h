@@ -1,3 +1,6 @@
+#ifndef _BIN_H
+#define _BIN_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
@@ -204,3 +207,4 @@ inline void BIN<IT, NT>::set_min_bin(const IT rows, const IT cols)
     set_bin_id(rows, cols, min_ht_size);
 }
 
+#endif

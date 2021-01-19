@@ -1,3 +1,7 @@
+#ifndef _HASH_MULT_HW_
+#define _HASH_MULT_HW_
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
@@ -681,3 +685,4 @@ void HashSpGEMM(const CSR<IT, NT> &a, const CSR<IT, NT> &b, CSR<IT, NT> &c, Mult
     HashSpGEMM<false, true, IT, NT, MultiplyOperation, AddOperation>(a, b, c, multop, addop);
 }
 
+#endif
