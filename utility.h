@@ -106,7 +106,7 @@ inline unsigned int getDivident(unsigned int n, unsigned int d) {
 }
 
 // Memory allocation by C++-new / Aligned malloc / scalable malloc
-template <typename T> inline T *my_malloc(int array_size) {
+template <typename T> inline T *my_malloc(size_t array_size) {
 // // #ifdef TBB
 //   cout << "Called TBB" <<endl;
 //   T *a = (T *)scalable_malloc(sizeof(T) * array_size);
@@ -127,7 +127,7 @@ template <typename T> inline T *my_malloc(int array_size) {
 //       cout << "Take a look " << omp_get_num_threads() << endl;
 //   }
   #pragma omp parallel for
-  for(int i=0; i<array_size; i++)
+  for(size_t i=0; i<array_size; i++)
   {
     a[i] = T();
   }
@@ -201,7 +201,7 @@ template <typename T> void scan(T *in, T *out, T N) {
 template <typename IT, typename NT>
 inline void mergesort(IT *nnz_num, NT *nnz_sorting, IT *temp_num,
                       NT *temp_sorting, IT left, IT right) {
-  int mid, i, j, k;
+  IT mid, i, j, k;
 
   if (left >= right) {
     return;

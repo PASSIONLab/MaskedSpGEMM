@@ -26,7 +26,7 @@
 using namespace std;
 
 #define VALUETYPE double
-#define INDEXTYPE int
+#define INDEXTYPE int64_t
 #define ITERS 4
 
 int main(int argc, char* argv[])
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 
         CSR<INDEXTYPE,VALUETYPE> C_csr;
 
-        /* First execution is excluded from evaluation */
+        // First execution is excluded from evaluation
         HashSpGEMM<false, sortOutput>(A_csr, A_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
         for (int i = 0; i < 10; ++i)
             cout << C_csr.values[i] << " ";
@@ -107,6 +107,7 @@ int main(int argc, char* argv[])
         printf("A^2 *. A has %d nonzeros\n", Tr_csr.nnz);
         C_csr.make_empty();
     }
+     
 
     A_csc.Sorted();
     A_csr.Sorted();

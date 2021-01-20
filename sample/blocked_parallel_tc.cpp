@@ -26,7 +26,7 @@
 using namespace std;
 
 #define VALUETYPE double
-#define INDEXTYPE int
+#define INDEXTYPE int64_t
 #define ITERS 4
 
 int main(int argc, char* argv[])
@@ -54,6 +54,11 @@ int main(int argc, char* argv[])
     vector< vector< vector<long long int> > >  flps(gridx);
     vector< vector< vector<long long int> > >  nnzs(gridx);
     vector< vector< vector<long long int> > >  masked_nnzs(gridx);
+    
+    vector< vector< vector<double> > >  timehash(gridx);
+    vector< vector< vector<double> > >  timeinner(gridx);
+    vector< vector< vector<double> > >  timemaskedspa(gridx);
+    vector< vector< vector<double> > >  timemaskedhash(gridx);
 
     
     for (int i = 0; i< gridx; ++i)
@@ -61,12 +66,20 @@ int main(int argc, char* argv[])
         flps[i].resize(gridy);
         nnzs[i].resize(gridy);
         masked_nnzs[i].resize(gridy);
+        timehash[i].resize(gridy);
+        timeinner[i].resize(gridy);
+        timemaskedspa[i].resize(gridy);
+        timemaskedhash[i].resize(gridy);
 
         for (int j = 0; j< gridy; ++j)
         {
             flps[i][j].resize(gridy);
             nnzs[i][j].resize(gridy);
             masked_nnzs[i][j].resize(gridy);
+            timehash[i][j].resize(gridy);
+            timeinner[i][j].resize(gridy);
+            timemaskedspa[i][j].resize(gridy);
+            timemaskedhash[i][j].resize(gridy);
 
 
             string inputfooter = to_string(i+1)+"_"+to_string(j+1)+".mtx";
@@ -111,6 +124,11 @@ int main(int argc, char* argv[])
                 CSR<INDEXTYPE,VALUETYPE> Tr_csr = Intersect(A_csr_sorted, C_csr, plus<VALUETYPE>());   // change plus to select2nd
                 
                 masked_nnzs[i][j][k] = Tr_csr.nnz;
+                timehash[i][j][k] = 0.0;
+                timeinner[i][j][k] = 0.0;
+                timemaskedspa[i][j][k] = 0.0;
+                timemaskedhash[i][j][k] = 0.0;
+
                 C_csr.make_empty();
             }
         }
@@ -154,13 +172,20 @@ int main(int argc, char* argv[])
                 for (int k = 0; k< gridy; ++k)
                 {
                     CSR<INDEXTYPE,VALUETYPE> C_csr;
+                    double localstart  = omp_get_wtime();
+                    
                     HashSpGEMM<false, sortOutput>(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+                    double localend = omp_get_wtime();
+
+                    timehash[i][j][k] += (localend - localstart) * 1000;
                 }
             }
         }
     }
     end = omp_get_wtime();
     msec = (end - start) * 1000;
+    msec /= ITERS;
+
     mflops = (double)totalflops / msec / 1000;
     printf("HashSpGEMM returned with %d nonzeros. Compression ratio is %f\n", totalnnzs, (float)(totalflops / 2) / (float)(totalnnzs));
     printf("HashSpGEMM computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", msec, mflops);

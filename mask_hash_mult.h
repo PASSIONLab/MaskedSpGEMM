@@ -63,7 +63,7 @@ mxm_hash_mask
     IT rowPerThread = (M.rows + numThreads -1) / numThreads;
 	#pragma omp parallel
 	{
-		int i, tid, start_row, end_row, max_row = 0, ra;
+		IT i, tid, start_row, end_row, max_row = 0, ra;
 
 	    tid = omp_get_thread_num();
         start_row  = bin.rows_offset[tid];
@@ -112,7 +112,7 @@ mxm_hash_mask
 	// {
 	#pragma omp parallel
 	{
-		int i, tid, start_row, end_row, max_row = 0, ra;
+		IT i, tid, start_row, end_row, max_row = 0, ra;
 
 	    tid = omp_get_thread_num();
         start_row  = bin.rows_offset[tid];
