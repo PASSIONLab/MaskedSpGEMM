@@ -137,6 +137,7 @@ int main(int argc, char* argv[])
                 
                 C_csr.make_empty();
                 
+                /*
                 // Mask, A,B[csc],C
                 innerSpGEMM_nohash<false, sortOutput>(submatricesCSR[i][j], submatricesCSR[i][k], submatricesCSC[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
 
@@ -145,6 +146,7 @@ int main(int argc, char* argv[])
                     printf("Thread %d: innerSpGEMM_nohash runs and returns %lld nonzeros\n",  omp_get_thread_num(), C_csr.nnz);
                 }
                 C_csr.make_empty();
+                 */
                 
                 // A,B,C, Mask
                 mxm_hash_mask(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, submatricesCSR[i][j], multiplies<VALUETYPE>(), plus<VALUETYPE>());
@@ -247,12 +249,12 @@ int main(int argc, char* argv[])
     msec /= ITERS;
 
     mflops = (double)totalflops / msec / 1000;
-    printf("MaskedSPASpGEMM returned with %d nonzeros. Compression ratio is %f\n", totalnnzs, (float)(totalflops / 2) / (float)(totalmaskednnz));
+    printf("MaskedSPASpGEMM returned with %d nonzeros. Compression ratio is %f\n", totalmaskednnz, (float)(totalflops / 2) / (float)(totalmaskednnz));
     printf("MaskedSPASpGEMM computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", msec, mflops);
     
     
     /* Execute Inner Product SpGEMM */
-    cout << "Evaluation of Inner Product SpGEMM" << endl;
+    cout << "Evaluation of Masked Hash SpGEMM" << endl;
     start = omp_get_wtime();
     for (int i = 0; i < ITERS; ++i)
     {
@@ -266,10 +268,10 @@ int main(int argc, char* argv[])
                     CSR<INDEXTYPE,VALUETYPE> C_csr;
                     double localstart  = omp_get_wtime();
                        
-                    SPASpGEMM(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, submatricesCSR[i][j], multiplies<VALUETYPE>(), plus<VALUETYPE>());
+                    mxm_hash_mask(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, submatricesCSR[i][j], multiplies<VALUETYPE>(), plus<VALUETYPE>());
                     double localend = omp_get_wtime();
 
-                    timemaskedspa[i][j][k] += (localend - localstart) * 1000;
+                    timemaskedhash[i][j][k] += (localend - localstart) * 1000;
                 }
             }
         }
@@ -279,9 +281,23 @@ int main(int argc, char* argv[])
     msec /= ITERS;
 
     mflops = (double)totalflops / msec / 1000;
-    printf("MaskedSPASpGEMM returned with %d nonzeros. Compression ratio is %f\n", totalnnzs, (float)(totalflops / 2) / (float)(totalmaskednnz));
-    printf("MaskedSPASpGEMM computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", msec, mflops);
+    printf("mxm_hash_mask returned with %d nonzeros. Compression ratio is %f\n", totalmaskednnz, (float)(totalflops / 2) / (float)(totalmaskednnz));
+    printf("mxm_hash_mask computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", msec, mflops);
 
+    ofstream timeout("timinglog.csv");
+    timeout << "Flops , Output (masked) nnz , Hash (msec) , Masked hash (msec) ,  SPA (msec)" << endl;
+
+    for (int i = 0; i< gridx; ++i)
+    {
+        for (int j = 0; j< gridy; ++j)
+        {
+            for (int k = 0; k< gridy; ++k)
+            {
+                timeout << flps[i][j][k] << "," << masked_nnzs[i][j][k] << "," << timehash[i][j][k]/ITERS << "," << timemaskedhash[i][j][k]/ITERS  << "," << timemaskedspa[i][j][k]/ITERS << endl;
+            }
+        }
+    }
+    timeout.close();
     return 0;
 }
 
