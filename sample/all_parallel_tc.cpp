@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
 
     double start, end, msec, ave_msec, mflops;
 
-    /* Execute Hash-SpGEMM */
+    /* Execute Hash-SpGEMM *
     cout << "Evaluation of HashSpGEMM (unsorted input/output)" << endl;
     for (int tnum : tnums) {
         omp_set_num_threads(tnum);
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
         printf("A^2 *. A has %d nonzeros\n", Tr_csr.nnz);
         C_csr.make_empty();
     }
-     
+     */
 
     A_csc.Sorted();
     A_csr.Sorted();
