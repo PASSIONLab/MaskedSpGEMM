@@ -301,7 +301,7 @@ template <class IT, class NT> void CSR<IT, NT>::Sorted() {
     sorted &= my_is_sorted(colids + rowptr[i], colids + rowptr[i + 1],
                            std::less<IT>());
   }
-    cout << "graph is sorted by column id: "<< sorted << endl;
+    cout << "CSR graph is sorted by column id: "<< sorted << endl;
 }
 
 template <class IT, class NT>

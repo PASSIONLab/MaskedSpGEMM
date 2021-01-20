@@ -460,6 +460,8 @@ template <class IT, class NT> void CSC<IT, NT>::Sorted() {
     sorted &= my_is_sorted(rowids + colptr[i], rowids + colptr[i + 1],
                            std::less<IT>());
   }
+    cout << "CSC graph is sorted by row id: "<< sorted << endl;
+
 }
 
 template <class IT, class NT> void CSC<IT, NT>::shuffleIds() {
