@@ -62,10 +62,10 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
     C.colids = my_malloc<IT>(M.nnz);
     C.values = my_malloc<NT>(M.nnz);
 
-    for (int i = 0; i < C.rows; ++i) 
+    for (IT i = 0; i < C.rows; ++i)
         C.rowptr[i] = M.rowptr[i];
     
-    for (int i = 0; i < C.nnz; ++i) {
+    for (IT i = 0; i < C.nnz; ++i) {
         C.colids[i] = M.colids[i]; // unnecessary
         C.values[i] = 0;
     }
@@ -76,20 +76,21 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
     // Double check, changed 3rd param to colptr
     bin.set_max_bin(A.rowptr, A.colids, B.colptr, C.rows, C.cols);
 
-    int numThreads; 
+    IT numThreads;
     #pragma omp parallel
     {
         numThreads = omp_get_num_threads();
     }
 
-    vector<int> th_nnz(numThreads, 0);
-    vector<int> rownnz(C.rows, 0);
+    vector<IT> th_nnz(numThreads, 0);
+    vector<IT> rownnz(C.rows, 0);
 
     IT rowPerThread = (M.rows + numThreads -1) / numThreads;
     #pragma omp parallel
     {
-        int i, tid, start_row, end_row, col;
-
+        IT i, start_row, end_row, col;
+        IT tid;
+        
         tid = omp_get_thread_num();
         start_row  = bin.rows_offset[tid];
         end_row = bin.rows_offset[tid + 1];
@@ -99,8 +100,8 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
         // each th keeps track of active nnz in C (not all from Mask)   
         //* blocks of rows the mask *
         for (i = start_row; i < end_row; ++i) {
-            int j, cur_col, nnz_r, nnz_c;
-            int cur_row = i; 
+            IT j, cur_col, nnz_r, nnz_c;
+            IT cur_row = i;
             NT t_val = 0; 
             bool active = false;
        
@@ -128,7 +129,7 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
                     }
                 }
                 if(active) {// active nnz, shrink output accordingly
-                    int loc = M.rowptr[start_row] + th_nnz[tid];
+                    IT loc = M.rowptr[start_row] + th_nnz[tid];
                     C.colids[loc] = M.colids[j];
                     C.values[loc] = t_val;
                     th_nnz[tid]++;
@@ -141,7 +142,7 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
     #pragma omp barrier
     
     //* sequentially create global rowptr for final shrinked C*
-    for (int i = 0; i < C.rows; ++i)
+    for (IT i = 0; i < C.rows; ++i)
          C_final.nnz += rownnz[i];
     
     C_final.rows = C.rows;
@@ -155,9 +156,9 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
     memcpy (C_final.colids, C.colids, th_nnz[0] * sizeof(IT)) ;
     memcpy (C_final.values, C.values, th_nnz[0] * sizeof(NT)) ;
          
-    int dest = 0;  
-    for (int i = 1; i < numThreads; ++i) {
-        int loc = min(i * rowPerThread, A.rows);
+    IT dest = 0;
+    for (IT i = 1; i < numThreads; ++i) {
+        IT loc = min(i * rowPerThread, A.rows);
         dest += th_nnz[i-1];
         memcpy (C_final.colids + dest, C.colids + A.rowptr[loc], th_nnz[i] * sizeof(C.colids[0]));
         memcpy (C_final.values + dest, C.values + A.rowptr[loc], th_nnz[i] * sizeof(C.values[0])); 
@@ -165,7 +166,7 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
 
     //TODO:: optimize prefix sum
     C_final.rowptr[0] = 0;
-    for (int i = 1; i <= C_final.rows; ++i) {
+    for (IT i = 1; i <= C_final.rows; ++i) {
         C_final.rowptr[i] =  C_final.rowptr[i-1] + rownnz[i];//A.rowptr[rowPerThread * i];
     }
 

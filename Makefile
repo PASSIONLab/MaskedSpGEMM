@@ -5,7 +5,7 @@ PRMATPATH1 = PaRMAT/Release/
 
 include GTgraph/Makefile.var
 INCLUDE += -I$(SPRNPATH)/include
-CC = CC
+CC = g++
 
 # FLAGS = -g -fopenmp -O3 -march=native
 FLAGS = -fopenmp -O3 -m64
