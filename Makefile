@@ -5,10 +5,10 @@ PRMATPATH1 = PaRMAT/Release/
 
 include GTgraph/Makefile.var
 INCLUDE += -I$(SPRNPATH)/include
-CC = g++
+CC = CC
 
 # FLAGS = -g -fopenmp -O3 -march=native
-FLAGS = -g -fopenmp -O3 -m64 -march=native #-lnuma
+FLAGS = -fopenmp -O3 -m64
 
 
 # FLAGS = -g -fopenmp -O2 -ffast-math -march=native -ftree-vectorize
