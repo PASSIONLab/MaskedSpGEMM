@@ -25,20 +25,19 @@ using namespace std;
 
 #define VALUETYPE double
 #define INDEXTYPE int
-#define ITERS 10
+#define ITERS 1
 
 int main(int argc, char* argv[])
 {
     const bool sortOutput = false;
     vector<int> tnums;
-	CSR<INDEXTYPE,VALUETYPE> A_csr, B_csr;
 
 	if (argc < 4) {
-        cout << "Normal usage: ./spgemm {gen|binary|text} {rmat|er|matrix1.txt} {scale|matrix2.txt} {edgefactor|product.txt} <numthreads>" << endl;
+        cout << "Normal usage: ./spgemm matrix1.mtx matrix2.mtx mask.mtx <numthreads>" << endl;
         return -1;
     }
-    else if (argc < 6) {
-        cout << "Normal usage: ./spgemm {gen|binary|text} {rmat|er|matrix1.txt} {scale|matrix2.txt} {edgefactor|product.txt} <numthreads>" << endl;
+    else if (argc < 5) {
+        cout << "Normal usage: ./spgemm matrix1.mtx matrix2.mtx mask.mtx <numthreads>" << endl;
 
 #ifdef KNL_EXE
         cout << "Running on 68, 136, 204, 272 threads" << endl << endl;
@@ -50,20 +49,28 @@ int main(int argc, char* argv[])
 #endif
     }
 	else {
-        cout << "Running on " << argv[5] << " processors" << endl << endl;
-        tnums = {atoi(argv[5])};
+        cout << "Running on " << argv[4] << " processors" << endl << endl;
+        tnums = {atoi(argv[4])};
     }
 
-    /* Generating input matrices based on argument */
-    SetInputMatricesAsCSR(A_csr, B_csr, argv);
+    string inputname1 = argv[1];
+    CSC<INDEXTYPE,VALUETYPE> A_csc;
+    ReadASCII(inputname1, A_csc);
+    CSR<INDEXTYPE, VALUETYPE> A_csr(A_csc); //converts, allocates and populates
+
+    string inputname2 = argv[2];
+    CSC<INDEXTYPE,VALUETYPE> B_csc;
+    ReadASCII(inputname2, B_csc);
+    CSR<INDEXTYPE, VALUETYPE> B_csr(B_csc); //converts, allocates and populates
+    
+    string inputname3 = argv[3];
+    CSC<INDEXTYPE,VALUETYPE> M_csc;
+    ReadASCII(inputname3, M_csc);
+    CSR<INDEXTYPE, VALUETYPE> M_csr(M_csc); //converts, allocates and populates
 
   	A_csr.Sorted();
   	B_csr.Sorted();
-
-    A_csr.shuffleIds();
-    B_csr.shuffleIds();
-    
-    B_csr = A_csr;  // try the C = A^2 *. A triangle counting case
+    M_csr.Sorted();
 
     /* Count total number of floating-point operations */
     long long int nfop = get_flop(A_csr, B_csr);
@@ -103,14 +110,10 @@ int main(int argc, char* argv[])
         printf("HashSpGEMM with %3d threads computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", tnum, ave_msec, mflops);
 
         C_csr.sortIds();
-        CSR<INDEXTYPE,VALUETYPE> A_csr_sorted(A_csr);
-        A_csr.sortIds();
-        printf("Both matrices are sorted now\n");
-
         
-        CSR<INDEXTYPE,VALUETYPE> Tr_csr = Intersect(A_csr, C_csr, plus<VALUETYPE>());   // change plus to select2nd
+        CSR<INDEXTYPE,VALUETYPE> Tr_csr = Intersect(M_csr, C_csr, plus<VALUETYPE>());   // change plus to select2nd
         
-        printf("A^2 *. A has %d nonzeros\n", Tr_csr.nnz);
+        printf("AB *. M has %d nonzeros\n", Tr_csr.nnz);
         C_csr.make_empty();
     }
 
@@ -124,7 +127,7 @@ int main(int argc, char* argv[])
 
         /* First execution is excluded from evaluation */
         /* Use A itself as the mask (4th parameter) */
-        SPASpGEMM(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+        SPASpGEMM(A_csr, B_csr, C_csr, M_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
         C_csr.make_empty();
 
         ave_msec = 0;
@@ -132,7 +135,7 @@ int main(int argc, char* argv[])
             start = omp_get_wtime();
             
             /* Use A itself as the mask (4th parameter) */
-            SPASpGEMM(A_csr, B_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            SPASpGEMM(A_csr, B_csr, C_csr, M_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
             end = omp_get_wtime();
             msec = (end - start) * 1000;
             ave_msec += msec;
@@ -150,7 +153,9 @@ int main(int argc, char* argv[])
     }
 	
     A_csr.make_empty();
-    B_csr.make_empty(); 
+    B_csr.make_empty();
+    M_csr.make_empty();
+
 
     return 0;
 }

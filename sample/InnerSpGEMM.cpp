@@ -33,49 +33,51 @@ int main(int argc, char* argv[])
     vector<int> tnums;
 
 	if (argc < 4) {
-        cout << "Normal usage: ./spgemm {gen|binary|text} {rmat|er|matrix1.txt} {scale|matrix2.txt} {edgefactor|product.txt} <numthreads>" << endl;
-        return -1;
-    }
-    else if (argc < 6) {
-        cout << "Normal usage: ./spgemm {gen|binary|text} {rmat|er|matrix1.txt} {scale|matrix2.txt} {edgefactor|product.txt} <numthreads>" << endl;
+            cout << "Normal usage: ./spgemm matrix1.mtx matrix2.mtx mask.mtx <numthreads>" << endl;
+            return -1;
+        }
+        else if (argc < 5) {
+            cout << "Normal usage: ./spgemm matrix1.mtx matrix2.mtx mask.mtx <numthreads>" << endl;
 
-#ifdef KNL_EXE
-        cout << "Running on 68, 136, 204, 272 threads" << endl << endl;
-        tnums = {68, 136, 204, 272};
-        // tnums = {1, 2, 4, 8, 16, 32, 64, 68, 128, 136, 192, 204, 256, 272}; // for scalability test
-#else
-        cout << "Running on 32, 64 threads" << endl;
-        tnums = {32, 64}; // for hashwell
-#endif
-    }
-	else {
-        cout << "Running on " << argv[5] << " processors" << endl << endl;
-        tnums = {atoi(argv[5])};
-    }
+    #ifdef KNL_EXE
+            cout << "Running on 68, 136, 204, 272 threads" << endl << endl;
+            tnums = {68, 136, 204, 272};
+            // tnums = {1, 2, 4, 8, 16, 32, 64, 68, 128, 136, 192, 204, 256, 272}; // for scalability test
+    #else
+            cout << "Running on 4, 8, 16, 32, 64 threads" << endl;
+            tnums = {4, 8, 16, 32, 64}; // for hashwell
+    #endif
+        }
+        else {
+            cout << "Running on " << argv[4] << " processors" << endl << endl;
+            tnums = {atoi(argv[4])};
+        }
 
-    CSR<INDEXTYPE, VALUETYPE> A_csr, B_csr;
-    CSC<INDEXTYPE, VALUETYPE> A_csc, B_csc;
+   
+    string inputname1 = argv[1];
+    CSC<INDEXTYPE,VALUETYPE> A_csc;
+    ReadASCII(inputname1, A_csc);
+    CSR<INDEXTYPE, VALUETYPE> A_csr(A_csc); //converts, allocates and populates
 
-    /* Generating input matrices based on argument */
-    SetInputMatricesAsCSC(A_csc, B_csc, argv); // Reading input mat and construct CSC
-    SetInputMatricesAsCSR(A_csr, B_csr, argv); // Reading input mat and construct CSC
- 
-    // CSR<INDEXTYPE, VALUETYPE> B_csr(B_csc); //converts, allocates and populates
-    // CSR<INDEXTYPE, VALUETYPE> A_csr(A_csc); //converts, allocates and populates
+    string inputname2 = argv[2];
+    CSC<INDEXTYPE,VALUETYPE> B_csc;
+    ReadASCII(inputname2, B_csc);
+    CSR<INDEXTYPE, VALUETYPE> B_csr(B_csc); //converts, allocates and populates
     
-    A_csr.Sorted();
-    B_csc.Sorted();
-    // A_csc.Sorted();
-    // B_csr.Sorted();
+    string inputname3 = argv[3];
+    CSC<INDEXTYPE,VALUETYPE> M_csc;
+    ReadASCII(inputname3, M_csc);
+    CSR<INDEXTYPE, VALUETYPE> M_csr(M_csc); //converts, allocates and populates
 
-    // A_csr.shuffleIds();
-    // B_csc.shuffleIds();
-    // A_csc.shuffleIds();
-    // B_csr.shuffleIds();
+    A_csr.Sorted();
+    B_csr.Sorted();
+    B_csc.Sorted();
+    M_csr.Sorted();
 
     /* Count total number of floating-point operations */
     long long int nfop = get_flop(A_csr, B_csr);
-    // cout << "Total number of floating-point operations including addition and multiplication in SpGEMM (A * B): " << nfop << endl << endl;
+    cout << "Total number of floating-point operations including addition and multiplication in SpGEMM (A * A): " << nfop << endl << endl;
+
 
     double start, end, msec, ave_msec, mflops;
 
@@ -87,13 +89,13 @@ int main(int argc, char* argv[])
         CSR<INDEXTYPE,VALUETYPE> C_csr;
         
         /* First execution is excluded from evaluation */
-        innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csr, B_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+        innerSpGEMM_nohash<false, sortOutput>(M_csr, A_csr, B_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
         C_csr.make_empty();
    
         ave_msec = 0;
         for (int i = 0; i < ITERS; ++i) {
             start = omp_get_wtime();
-            innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csr, B_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            innerSpGEMM_nohash<false, sortOutput>(M_csr, A_csr, B_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
             end = omp_get_wtime();
             msec = (end - start) * 1000;
             ave_msec += msec;
