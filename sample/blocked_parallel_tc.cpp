@@ -99,6 +99,8 @@ int main(int argc, char* argv[])
         }
     }
     
+    unsigned const THREADPERCALL = 1;
+    
     #pragma omp parallel for collapse(3)
     for (int i = 0; i< gridx; ++i)
     {
@@ -112,9 +114,13 @@ int main(int argc, char* argv[])
                     printf("Thread %d out of %d: flps[%d][%d][%d]: %lld\n", omp_get_thread_num(), omp_get_num_threads(), i, j, k, flps[i][j][k]);
                 }
 
-                
                 CSR<INDEXTYPE,VALUETYPE> C_csr;
-                HashSpGEMM<false, sortOutput>(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+                CSR<INDEXTYPE,VALUETYPE> A_Copy(submatricesCSR[i][k]);  // to make sure A and B do not alias
+                CSR<INDEXTYPE,VALUETYPE> B_Copy(submatricesCSR[k][j]);  // to make sure A and B do not alias
+                CSR<INDEXTYPE,VALUETYPE> M_Copy(submatricesCSR[i][j]);  // to make sure A and B do not alias
+                
+                
+                HashSpGEMM<THREADPERCALL, sortOutput>(A_Copy, B_Copy, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
                 nnzs[i][j][k] = C_csr.nnz;
                 
                 C_csr.sortIds();
@@ -123,22 +129,20 @@ int main(int argc, char* argv[])
                     printf("Thread %d: HashSpGEMM executed and returned %lld nonzeros. Both matrices are sorted now\n", omp_get_thread_num(), C_csr.nnz);
                 }
 
-                CSR<INDEXTYPE,VALUETYPE> Tr_csr = Intersect(submatricesCSR[i][i], C_csr, plus<VALUETYPE>());   // change plus to select2nd
+                CSR<INDEXTYPE,VALUETYPE> Tr_csr = Intersect(M_Copy, C_csr, plus<VALUETYPE>());   // change plus to select2nd
                 masked_nnzs[i][j][k] = Tr_csr.nnz;
-                
                 C_csr.make_empty();
-                
+         
                 // A,B,C, Mask
-                SPASpGEMM(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, submatricesCSR[i][j], multiplies<VALUETYPE>(), plus<VALUETYPE>());
+                MaskedSPASpGEMM<THREADPERCALL>(A_Copy, B_Copy, C_csr, M_Copy, multiplies<VALUETYPE>(), plus<VALUETYPE>());
                 #pragma omp critical
                 {
                     printf("Thread %d: SPASpGEMM runs and returns %lld nonzeros\n",  omp_get_thread_num(), C_csr.nnz);
                 }
                 C_csr.make_empty();
                 
-                
                 // Mask, A,B[csc],C
-                innerSpGEMM_nohash<false, sortOutput>(submatricesCSR[i][j], submatricesCSR[i][k], submatricesCSC[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+                innerSpGEMM_nohash<false, sortOutput>(M_Copy, A_Copy, submatricesCSC[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
 
                 #pragma omp critical
                 {
@@ -147,9 +151,8 @@ int main(int argc, char* argv[])
                 masked_inner_nnzs[i][j][k] = C_csr.nnz;
                 C_csr.make_empty();
                  
-                
                 // A,B,C, Mask
-                mxm_hash_mask(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, submatricesCSR[i][j], multiplies<VALUETYPE>(), plus<VALUETYPE>());
+                mxm_hash_mask(A_Copy, B_Copy, C_csr, M_Copy, multiplies<VALUETYPE>(), plus<VALUETYPE>());
                 #pragma omp critical
                 {
                     printf("Thread %d: mxm_hash_mask runs and returns %lld nonzeros\n",  omp_get_thread_num(), C_csr.nnz);
@@ -208,7 +211,7 @@ int main(int argc, char* argv[])
                     CSR<INDEXTYPE,VALUETYPE> C_csr;
                     double localstart  = omp_get_wtime();
                     
-                    HashSpGEMM<false, sortOutput>(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+                    HashSpGEMM<2, sortOutput>(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
                     double localend = omp_get_wtime();
 
                     timehash[i][j][k] += (localend - localstart) * 1000;
@@ -273,7 +276,7 @@ int main(int argc, char* argv[])
                     CSR<INDEXTYPE,VALUETYPE> C_csr;
                     double localstart  = omp_get_wtime();
                        
-                    SPASpGEMM(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, submatricesCSR[i][j], multiplies<VALUETYPE>(), plus<VALUETYPE>());
+                    MaskedSPASpGEMM<2>(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, submatricesCSR[i][j], multiplies<VALUETYPE>(), plus<VALUETYPE>());
                     double localend = omp_get_wtime();
 
                     timemaskedspa[i][j][k] += (localend - localstart) * 1000;

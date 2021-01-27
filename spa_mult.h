@@ -8,8 +8,8 @@
 #include "SPA.h"
 
 
-template <typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
-void SPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, CSR<IT, NT> & Mask,
+template <unsigned threadCount, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
+void MaskedSPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, CSR<IT, NT> & Mask,
                MultiplyOperation multop, AddOperation addop)
 {
     C.rows = A.rows;
@@ -18,7 +18,7 @@ void SPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, CS
     C.rowptr = my_malloc<IT>(C.rows + 1);
     IT * row_nz = my_malloc<IT>(C.rows);
     
-    BIN<IT, NT> bin(A.rows, IMB_PWMIN);
+    BIN<IT, NT> bin(A.rows, IMB_PWMIN, threadCount);
 
     /* Set max bin */
     bin.set_max_bin(A.rowptr, A.colids, B.rowptr, C.rows, C.cols);
@@ -27,7 +27,7 @@ void SPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, CS
     // bin.create_local_hash_table(c.cols);
     
     // Aydin Buluc: likely load-imbalanced way of parallelizing, improve later
-    #pragma omp parallel
+    #pragma omp parallel num_threads(threadCount)
     {
         int tid = omp_get_thread_num();
         int threadnum = omp_get_thread_num();
@@ -62,7 +62,7 @@ void SPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, CS
     C.values = my_malloc<NT>(C.nnz);
 
     // Aydin Buluc, To-Do: repeated binary searches on row_nz to find load balanced low/high positions
-    #pragma omp parallel
+    #pragma omp parallel num_threads(threadCount)
     {
         int tid = omp_get_thread_num();
         int threadnum = omp_get_thread_num();

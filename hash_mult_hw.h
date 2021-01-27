@@ -22,12 +22,11 @@
 #define VEC_LENGTH_LONG 4
 #define VEC_LENGTH_LONG_BIT 2
 
-//#define VECTORIZE
 
-template <class IT, class NT>
+template <unsigned threadCount, class IT, class NT>
 inline void hash_symbolic_kernel(const IT *arpt, const IT *acol, const IT *brpt, const IT *bcol, BIN<IT, NT> &bin)
 {
-#pragma omp parallel
+#pragma omp parallel num_threads(threadCount)
     {
         IT i, tid, start_row, end_row;
         tid = omp_get_thread_num();
@@ -78,11 +77,11 @@ inline void hash_symbolic_kernel(const IT *arpt, const IT *acol, const IT *brpt,
 }
 
 
-template <bool vectorProbing, class IT, class NT>
+template <unsigned threadCount, class IT, class NT>
 inline void hash_symbolic(const IT *arpt, const IT *acol, const IT *brpt, const IT *bcol, IT *crpt, BIN<IT, NT> &bin, const IT nrow, IT *nnz)
 {
     IT i;
-    hash_symbolic_kernel(arpt, acol, brpt, bcol, bin);
+    hash_symbolic_kernel<threadCount>(arpt, acol, brpt, bcol, bin);
 
     /* Set row pointer of matrix C */
     scan(bin.row_nz, crpt, nrow + 1);
@@ -95,10 +94,10 @@ bool sort_less(const pair<IT, NT> &left,const pair<IT, NT> &right)
     return left.first < right.first;
 }
 
-template <bool sortOutput, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
+template <bool sortOutput, unsigned threadCount, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
 inline void hash_numeric(const IT *arpt, const IT *acol, const NT *aval, const IT *brpt, const IT *bcol, const NT *bval, const IT *crpt, IT *ccol, NT *cval,const BIN<IT, NT> &bin, const MultiplyOperation multop, const AddOperation addop)
 {
-#pragma omp parallel
+#pragma omp parallel num_threads(threadCount)
     {
         IT i, tid, start_row, end_row;
         IT *shared_check;
@@ -181,10 +180,10 @@ inline void hash_numeric(const IT *arpt, const IT *acol, const NT *aval, const I
     }
 }
 
-template <bool vectorProbing, bool sortOutput, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
+template <unsigned threadCount, bool sortOutput, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
 void HashSpGEMM(const CSR<IT, NT> &a, const CSR<IT, NT> &b, CSR<IT, NT> &c, MultiplyOperation multop, AddOperation addop)
 {
-    BIN<IT, NT> bin(a.rows, IMB_PWMIN);
+    BIN<IT, NT> bin(a.rows, IMB_PWMIN, threadCount);
 
     c.rows = a.rows;
     c.cols = b.cols;
@@ -198,13 +197,13 @@ void HashSpGEMM(const CSR<IT, NT> &a, const CSR<IT, NT> &b, CSR<IT, NT> &c, Mult
 
     /* Symbolic Phase */
     c.rowptr = my_malloc<IT>(c.rows + 1);
-    hash_symbolic<vectorProbing>(a.rowptr, a.colids, b.rowptr, b.colids, c.rowptr, bin, c.rows, &(c.nnz));
+    hash_symbolic<threadCount>(a.rowptr, a.colids, b.rowptr, b.colids, c.rowptr, bin, c.rows, &(c.nnz));
 
     c.colids = my_malloc<IT>(c.nnz);
     c.values = my_malloc<NT>(c.nnz);
 
     // only non-vector case implemented
-    hash_numeric<sortOutput>(a.rowptr, a.colids, a.values, b.rowptr, b.colids, b.values, c.rowptr, c.colids, c.values, bin, multop, addop);
+    hash_numeric<sortOutput, threadCount>(a.rowptr, a.colids, a.values, b.rowptr, b.colids, b.values, c.rowptr, c.colids, c.values, bin, multop, addop);
 }
 
 template <bool sortOutput, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>

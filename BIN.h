@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
-// #include <immintrin.h>
+//#include <immintrin.h>
 //#include <zmmintrin.h>
 #include <algorithm>
 
@@ -37,11 +37,20 @@ public:
         local_hash_table_id = my_malloc<IT*>(thread_num);
         local_hash_table_val = my_malloc<NT*>(thread_num);
     }
+    BIN(IT rows, IT ht_size, int threadCount): total_intprod(0), max_intprod(0), max_nz(0), thread_num(threadCount), min_ht_size(ht_size)
+    {
+        assert(rows != 0);
+        row_nz = my_malloc<IT>(rows);
+        rows_offset = my_malloc<IT>(thread_num + 1);
+        bin_id = my_malloc<char>(rows);
+        local_hash_table_id = my_malloc<IT*>(thread_num);
+        local_hash_table_val = my_malloc<NT*>(thread_num);
+    }
     ~BIN() {
         my_free<IT>(row_nz);
         my_free<IT>(rows_offset);
         my_free<char>(bin_id);
-#pragma omp parallel
+#pragma omp parallel num_threads(thread_num)
         {
             int tid = omp_get_thread_num();
             my_free<IT>(local_hash_table_id[tid]);
@@ -78,7 +87,7 @@ public:
 template <class IT, class NT>
 inline void BIN<IT, NT>::set_intprod_num(const IT *arpt, const IT *acol, const IT *brpt, const IT rows)
 {
-#pragma omp parallel
+#pragma omp parallel num_threads(thread_num)
     {
         int i;
         IT each_int_prod = 0;
@@ -110,7 +119,7 @@ inline void BIN<IT, NT>::set_rows_offset(const IT rows)
 
     /* Search end point of each range */
     rows_offset[0] = 0;
-#pragma omp parallel
+#pragma omp parallel num_threads(thread_num)
     {
         int tid = omp_get_thread_num();
         long long int end_itr = (lower_bound(ps_row_nz, ps_row_nz + rows + 1, average_intprod * (tid + 1))) - ps_row_nz;
@@ -124,7 +133,7 @@ inline void BIN<IT, NT>::set_rows_offset(const IT rows)
 template <class IT, class NT>
 inline void BIN<IT, NT>::create_local_hash_table(const IT cols)
 {
-#pragma omp parallel
+#pragma omp parallel num_threads(thread_num)
     {
         int tid = omp_get_thread_num();
         IT ht_size = 0;
@@ -148,7 +157,7 @@ template <class IT, class NT>
 inline void BIN<IT, NT>::create_global_hash_table(const IT cols)
 {
     IT *hash_table_size = my_malloc<IT>(thread_num);
-#pragma omp parallel
+#pragma omp parallel num_threads(thread_num)
     {
         int tid = omp_get_thread_num();
         IT ht_size = 0;
@@ -175,7 +184,7 @@ template <class IT, class NT>
 inline void BIN<IT, NT>::set_bin_id(const IT rows, const IT cols, const IT min)
 {
     IT i;
-#pragma omp parallel for
+#pragma omp parallel for num_threads(thread_num)
     for (i = 0; i < rows; ++i) {
         IT j;
         IT nz_per_row = row_nz[i];
