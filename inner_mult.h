@@ -92,10 +92,10 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
         IT tid;
         
         tid = omp_get_thread_num();
-        start_row  = bin.rows_offset[tid];
-        end_row = bin.rows_offset[tid + 1];
-        // start_row = rowPerThread * tid;
-        // end_row = min(rowPerThread * (tid+1), M.rows);
+        // start_row  = bin.rows_offset[tid];
+        // end_row = bin.rows_offset[tid + 1];
+        start_row = rowPerThread * tid;
+        end_row = min(rowPerThread * (tid+1), M.rows);
 
         // each th keeps track of active nnz in C (not all from Mask)   
         //* blocks of rows the mask *
@@ -137,10 +137,10 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
                 }  
             }          
         }
+        #pragma omp barrier
     }
+
     //shrink C
-    #pragma omp barrier
-    
     //* sequentially create global rowptr for final shrinked C*
     for (IT i = 0; i < C.rows; ++i)
          C_final.nnz += rownnz[i];

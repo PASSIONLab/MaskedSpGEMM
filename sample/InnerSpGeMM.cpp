@@ -25,14 +25,12 @@ using namespace std;
 
 #define VALUETYPE double
 #define INDEXTYPE int
-#define ITERS 10
+#define ITERS 1
 
 int main(int argc, char* argv[])
 {
     const bool sortOutput = true;
     vector<int> tnums;
-    CSC<INDEXTYPE, VALUETYPE> A_csc, B_csc;
-
 
 	if (argc < 4) {
         cout << "Normal usage: ./spgemm {gen|binary|text} {rmat|er|matrix1.txt} {scale|matrix2.txt} {edgefactor|product.txt} <numthreads>" << endl;
@@ -55,19 +53,25 @@ int main(int argc, char* argv[])
         tnums = {atoi(argv[5])};
     }
 
+    CSR<INDEXTYPE, VALUETYPE> A_csr, B_csr;
+    CSC<INDEXTYPE, VALUETYPE> A_csc, B_csc;
+
     /* Generating input matrices based on argument */
     SetInputMatricesAsCSC(A_csc, B_csc, argv); // Reading input mat and construct CSC
+    SetInputMatricesAsCSR(A_csr, B_csr, argv); // Reading input mat and construct CSC
  
-    CSR<INDEXTYPE, VALUETYPE> B_csr(B_csc); //converts, allocates and populates
-    CSR<INDEXTYPE, VALUETYPE> A_csr(A_csc); //converts, allocates and populates
+    // CSR<INDEXTYPE, VALUETYPE> B_csr(B_csc); //converts, allocates and populates
+    // CSR<INDEXTYPE, VALUETYPE> A_csr(A_csc); //converts, allocates and populates
     
-    A_csc.Sorted();
     A_csr.Sorted();
     B_csc.Sorted();
-    B_csr.Sorted();
+    // A_csc.Sorted();
+    // B_csr.Sorted();
 
-    A_csc.shuffleIds();
-    B_csr.shuffleIds();
+    // A_csr.shuffleIds();
+    // B_csc.shuffleIds();
+    // A_csc.shuffleIds();
+    // B_csr.shuffleIds();
 
     /* Count total number of floating-point operations */
     long long int nfop = get_flop(A_csr, B_csr);
