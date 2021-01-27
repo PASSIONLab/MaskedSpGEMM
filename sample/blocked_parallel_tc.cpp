@@ -54,6 +54,8 @@ int main(int argc, char* argv[])
     vector< vector< vector<long long int> > >  flps(gridx);
     vector< vector< vector<long long int> > >  nnzs(gridx);
     vector< vector< vector<long long int> > >  masked_nnzs(gridx);
+    vector< vector< vector<long long int> > >  masked_inner_nnzs(gridx);
+
     
     vector< vector< vector<double> > >  timehash(gridx);
     vector< vector< vector<double> > >  timeinner(gridx);
@@ -66,6 +68,7 @@ int main(int argc, char* argv[])
         flps[i].resize(gridy);
         nnzs[i].resize(gridy);
         masked_nnzs[i].resize(gridy);
+        masked_inner_nnzs[i].resize(gridy);
         timehash[i].resize(gridy);
         timeinner[i].resize(gridy);
         timemaskedspa[i].resize(gridy);
@@ -76,6 +79,7 @@ int main(int argc, char* argv[])
             flps[i][j].resize(gridy);
             nnzs[i][j].resize(gridy);
             masked_nnzs[i][j].resize(gridy);
+            masked_inner_nnzs[i][j].resize(gridy);
             timehash[i][j].resize(gridy);
             timeinner[i][j].resize(gridy);
             timemaskedspa[i][j].resize(gridy);
@@ -113,17 +117,13 @@ int main(int argc, char* argv[])
                 HashSpGEMM<false, sortOutput>(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
                 nnzs[i][j][k] = C_csr.nnz;
                 
-                
                 C_csr.sortIds();
-                CSR<INDEXTYPE,VALUETYPE> A_csr_sorted(submatricesCSR[i][j]);
-                A_csr_sorted.sortIds();
                 #pragma omp critical
                 {
                     printf("Thread %d: HashSpGEMM executed and returned %lld nonzeros. Both matrices are sorted now\n", omp_get_thread_num(), C_csr.nnz);
                 }
 
-                CSR<INDEXTYPE,VALUETYPE> Tr_csr = Intersect(A_csr_sorted, C_csr, plus<VALUETYPE>());   // change plus to select2nd
-                
+                CSR<INDEXTYPE,VALUETYPE> Tr_csr = Intersect(submatricesCSR[i][i], C_csr, plus<VALUETYPE>());   // change plus to select2nd
                 masked_nnzs[i][j][k] = Tr_csr.nnz;
                 
                 C_csr.make_empty();
@@ -134,10 +134,9 @@ int main(int argc, char* argv[])
                 {
                     printf("Thread %d: SPASpGEMM runs and returns %lld nonzeros\n",  omp_get_thread_num(), C_csr.nnz);
                 }
-                
                 C_csr.make_empty();
                 
-                /*
+                
                 // Mask, A,B[csc],C
                 innerSpGEMM_nohash<false, sortOutput>(submatricesCSR[i][j], submatricesCSR[i][k], submatricesCSC[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
 
@@ -145,8 +144,9 @@ int main(int argc, char* argv[])
                 {
                     printf("Thread %d: innerSpGEMM_nohash runs and returns %lld nonzeros\n",  omp_get_thread_num(), C_csr.nnz);
                 }
+                masked_inner_nnzs[i][j][k] = C_csr.nnz;
                 C_csr.make_empty();
-                 */
+                 
                 
                 // A,B,C, Mask
                 mxm_hash_mask(submatricesCSR[i][k], submatricesCSR[k][j], C_csr, submatricesCSR[i][j], multiplies<VALUETYPE>(), plus<VALUETYPE>());
@@ -168,6 +168,7 @@ int main(int argc, char* argv[])
     long long int totalflops = 0;
     long long int totalnnzs = 0;
     long long int totalmaskednnz = 0;
+    long long int totalmaskedinnernnz = 0;
 
 
     for (int i = 0; i< gridx; ++i)
@@ -179,12 +180,14 @@ int main(int argc, char* argv[])
                 totalflops += flps[i][j][k];
                 totalnnzs += nnzs[i][j][k];
                 totalmaskednnz += masked_nnzs[i][j][k];
+                totalmaskedinnernnz += masked_inner_nnzs[i][j][k];
             }
         }
     }
 
     cout << "Total number of floating-point operations in SpGEMM (A * A): " << totalflops << endl << endl;
     cout << "Total number of masked nnz outputs in SpGEMM (A * A): " << totalmaskednnz << endl << endl;
+    cout << "Total number of masked nnz outputs in InnerProductSpGEMM (A * A): " << totalmaskedinnernnz << endl << endl;
 
     
     
@@ -221,6 +224,40 @@ int main(int argc, char* argv[])
     printf("HashSpGEMM returned with %d nonzeros. Compression ratio is %f\n", totalnnzs, (float)(totalflops / 2) / (float)(totalnnzs));
     printf("HashSpGEMM computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", msec, mflops);
 
+    /* Execute Inner-SpGEMM */
+    cout << "Evaluation of Inner (sorted input/output)" << endl;
+    start = omp_get_wtime();
+    for (int i = 0; i < ITERS; ++i)
+    {
+        #pragma omp parallel for collapse(3)
+        for (int i = 0; i< gridx; ++i)
+        {
+            for (int j = 0; j< gridy; ++j)
+            {
+                for (int k = 0; k< gridy; ++k)
+                {
+                    CSR<INDEXTYPE,VALUETYPE> C_csr;
+                    double localstart  = omp_get_wtime();
+                    
+                     // Mask, A,B[csc],C
+                    innerSpGEMM_nohash<false, sortOutput>(submatricesCSR[i][j], submatricesCSR[i][k], submatricesCSC[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+
+                    double localend = omp_get_wtime();
+
+                    timeinner[i][j][k] += (localend - localstart) * 1000;
+                }
+            }
+        }
+    }
+    end = omp_get_wtime();
+    msec = (end - start) * 1000;
+    msec /= ITERS;
+
+    mflops = (double)totalflops / msec / 1000;
+    printf("InnerSpGEMM returned with %d nonzeros. Compression ratio is %f\n", totalmaskedinnernnz, (float)(totalflops / 2) / (float)(totalnnzs));
+    printf("InnerpGEMM computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", msec, mflops);
+    
+    
     /* Execute Masked-SPA-SpGEMM */
     cout << "Evaluation of Masked SPA SpGEMM" << endl;
     start = omp_get_wtime();
@@ -253,7 +290,7 @@ int main(int argc, char* argv[])
     printf("MaskedSPASpGEMM computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", msec, mflops);
     
     
-    /* Execute Inner Product SpGEMM */
+    /* Execute mxm_hash_mask SpGEMM */
     cout << "Evaluation of Masked Hash SpGEMM" << endl;
     start = omp_get_wtime();
     for (int i = 0; i < ITERS; ++i)
@@ -285,7 +322,7 @@ int main(int argc, char* argv[])
     printf("mxm_hash_mask computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", msec, mflops);
 
     ofstream timeout("timinglog.csv");
-    timeout << "Flops , Output (masked) nnz , Hash (msec) , Masked hash (msec) ,  SPA (msec)" << endl;
+    timeout << "Flops , Output (masked) nnz , Hash (msec) , Masked hash (msec) ,  Masked SPA (msec), Masked InnerProduct (msec)" << endl;
 
     for (int i = 0; i< gridx; ++i)
     {
@@ -293,7 +330,7 @@ int main(int argc, char* argv[])
         {
             for (int k = 0; k< gridy; ++k)
             {
-                timeout << flps[i][j][k] << "," << masked_nnzs[i][j][k] << "," << timehash[i][j][k]/ITERS << "," << timemaskedhash[i][j][k]/ITERS  << "," << timemaskedspa[i][j][k]/ITERS << endl;
+                timeout << flps[i][j][k] << "," << masked_nnzs[i][j][k] << "," << timehash[i][j][k]/ITERS << "," << timemaskedhash[i][j][k]/ITERS  << "," << timemaskedspa[i][j][k]/ITERS << "," << timeinner[i][j][k]/ITERS << endl;
             }
         }
     }
