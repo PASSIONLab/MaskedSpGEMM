@@ -108,7 +108,7 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
             //* nonzeros of the row over the mask *  
             for (j = M.rowptr[i]; j < M.rowptr[i + 1]; ++j) {
            
-                cur_col = A.colids[j];      
+                cur_col = M.colids[j];      
                 nnz_r = A.rowptr[cur_row]; 
                 nnz_c = B.colptr[cur_col]; 
                 t_val = 0;
@@ -141,6 +141,7 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
     }
 
     //shrink C
+
     //* sequentially create global rowptr for final shrinked C*
     for (IT i = 0; i < C.rows; ++i)
          C_final.nnz += rownnz[i];
