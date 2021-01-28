@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
 
         /* First execution is excluded from evaluation */
         /* Use A itself as the mask (4th parameter) */
-        SPASpGEMM(A_csr, A_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+        MaskedSPASpGEMM(A_csr, A_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
         C_csr.make_empty();
 
         ave_msec = 0;
@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
             start = omp_get_wtime();
             
             /* Use A itself as the mask (4th parameter) */
-            SPASpGEMM(A_csr, A_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            MaskedSPASpGEMM(A_csr, A_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
             end = omp_get_wtime();
             msec = (end - start) * 1000;
             ave_msec += msec;
@@ -156,13 +156,13 @@ int main(int argc, char* argv[])
          CSR<INDEXTYPE,VALUETYPE> C_csr;
          
          /* First execution is excluded from evaluation */
-         innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csr, A_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+         innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csr, A_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
          C_csr.make_empty();
     
          ave_msec = 0;
          for (int i = 0; i < ITERS; ++i) {
              start = omp_get_wtime();
-             innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csr, A_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+             innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csr, A_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
              end = omp_get_wtime();
              msec = (end - start) * 1000;
              ave_msec += msec;
@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
         /* First execution is excluded from evaluation */
         /* Use A itself as the mask (4th parameter) */
 
-        mxm_hash_mask(A_csr, A_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+        mxm_hash_mask(A_csr, A_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
        
         // cout << "Mask hash with bin" << endl;
         // for (int i = A_csr.rows - 3; i < A_csr.rows; ++i){
@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
             start = omp_get_wtime();
             
             /* Use A itself as the mask (4th parameter) */
-            mxm_hash_mask(A_csr, A_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            mxm_hash_mask(A_csr, A_csr, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
             end = omp_get_wtime();
             msec = (end - start) * 1000;
             ave_msec += msec;

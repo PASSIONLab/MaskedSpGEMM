@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
         CSR<INDEXTYPE,VALUETYPE> C_csr;
 
         /* First execution is excluded from evaluation */
-        HashSpGEMM<false, sortOutput>(A_csr, B_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+        HashSpGEMM<sortOutput>(A_csr, B_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
         for (int i = 0; i < 10; ++i)
             cout << C_csr.values[i] << " ";
         cout << endl;
@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
         ave_msec = 0;
         for (int i = 0; i < ITERS; ++i) {
             start = omp_get_wtime();
-            HashSpGEMM<false, sortOutput>(A_csr, B_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            HashSpGEMM<sortOutput>(A_csr, B_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
             end = omp_get_wtime();
             msec = (end - start) * 1000;
             ave_msec += msec;
@@ -108,37 +108,6 @@ int main(int argc, char* argv[])
         C_csr.make_empty();
     }
 
-    /* Execute HashVector-SpGEMM */
-    cout << "Evaluation of HashVectorSpGEMM" << endl;
-    ave_msec = 0;
-    for (int tnum : tnums) {
-        omp_set_num_threads(tnum);
-
-        CSR<INDEXTYPE,VALUETYPE> C_csr;
-
-        /* First execution is excluded from evaluation */
-        HashSpGEMM<true, sortOutput>(A_csr, B_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
-        C_csr.make_empty();
-
-        ave_msec = 0;
-        for (int i = 0; i < ITERS; ++i) {
-            start = omp_get_wtime();
-            HashSpGEMM<true, sortOutput>(A_csr, B_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
-            end = omp_get_wtime();
-            msec = (end - start) * 1000;
-            ave_msec += msec;
-            if (i < ITERS - 1) {
-                C_csr.make_empty();
-            }
-        }
-        ave_msec /= ITERS;
-        mflops = (double)nfop / ave_msec / 1000;
-
-        printf("HashVectorSpGEMM returned with %d nonzeros. Compression ratio is %f\n", C_csr.nnz, (float)(nfop / 2) / (float)(C_csr.nnz));
-        printf("HashVectorSpGEMM with %3d threads computes C = A * B in %f [milli seconds] (%f [MFLOPS])\n\n", tnum, ave_msec, mflops);
-
-        C_csr.make_empty();
-    }
     A_csr.make_empty();
     B_csr.make_empty();
 
