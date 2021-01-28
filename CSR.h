@@ -76,6 +76,17 @@ public:
     return false;
   }
   bool isEmpty() { return (nnz == 0); }
+
+  NT sumall()
+  {
+      IT sum = 0;
+      #pragma omp parallel for reduction (+:sum)
+      for(IT i=0; i<nnz; ++i )
+      {
+          sum += values[i];
+      }
+      return sum;
+  }
   void Sorted();
 
   IT rows;
