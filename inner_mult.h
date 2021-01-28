@@ -48,7 +48,7 @@ long long int get_flop(const CSC<IT,NT> & A, const CSC<IT,NT> & B)
 //*TODO:: Dealing with 5 mats. Mask, A, B, C, C_final*
 template <bool vectorProbing, bool sortOutput, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
 void 
-innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> & B, CSR<IT,NT> & C_final, MultiplyOperation multop, AddOperation addop)
+innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> & B, CSR<IT,NT> & C_final, MultiplyOperation multop, AddOperation addop, unsigned threadCount)
 {
     CSR<IT,NT> C;
     
@@ -77,7 +77,7 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
     bin.set_max_bin(A.rowptr, A.colids, B.colptr, C.rows, C.cols);
 
     IT numThreads;
-    #pragma omp parallel
+    #pragma omp parallel num_threads(threadCount)
     {
         numThreads = omp_get_num_threads();
     }
@@ -86,7 +86,7 @@ innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> 
     vector<IT> rownnz(C.rows, 0);
 
     IT rowPerThread = (M.rows + numThreads -1) / numThreads;
-    #pragma omp parallel
+    #pragma omp parallel  num_threads(threadCount)
     {
         IT i, start_row, end_row, col;
         IT tid;

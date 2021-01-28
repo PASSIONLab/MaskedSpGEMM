@@ -23,8 +23,8 @@
 #define VEC_LENGTH_LONG_BIT 2
 
 
-template <unsigned threadCount, class IT, class NT>
-inline void hash_symbolic_kernel(const IT *arpt, const IT *acol, const IT *brpt, const IT *bcol, BIN<IT, NT> &bin)
+template <class IT, class NT>
+inline void hash_symbolic_kernel(const IT *arpt, const IT *acol, const IT *brpt, const IT *bcol, BIN<IT, NT> &bin, unsigned threadCount)
 {
 #pragma omp parallel num_threads(threadCount)
     {
@@ -77,11 +77,11 @@ inline void hash_symbolic_kernel(const IT *arpt, const IT *acol, const IT *brpt,
 }
 
 
-template <unsigned threadCount, class IT, class NT>
-inline void hash_symbolic(const IT *arpt, const IT *acol, const IT *brpt, const IT *bcol, IT *crpt, BIN<IT, NT> &bin, const IT nrow, IT *nnz)
+template <class IT, class NT>
+inline void hash_symbolic(const IT *arpt, const IT *acol, const IT *brpt, const IT *bcol, IT *crpt, BIN<IT, NT> &bin, const IT nrow, IT *nnz,  unsigned threadCount)
 {
     IT i;
-    hash_symbolic_kernel<threadCount>(arpt, acol, brpt, bcol, bin);
+    hash_symbolic_kernel(arpt, acol, brpt, bcol, bin, threadCount);
 
     /* Set row pointer of matrix C */
     scan(bin.row_nz, crpt, nrow + 1);
@@ -94,8 +94,8 @@ bool sort_less(const pair<IT, NT> &left,const pair<IT, NT> &right)
     return left.first < right.first;
 }
 
-template <bool sortOutput, unsigned threadCount, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
-inline void hash_numeric(const IT *arpt, const IT *acol, const NT *aval, const IT *brpt, const IT *bcol, const NT *bval, const IT *crpt, IT *ccol, NT *cval,const BIN<IT, NT> &bin, const MultiplyOperation multop, const AddOperation addop)
+template <bool sortOutput, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
+inline void hash_numeric(const IT *arpt, const IT *acol, const NT *aval, const IT *brpt, const IT *bcol, const NT *bval, const IT *crpt, IT *ccol, NT *cval,const BIN<IT, NT> &bin, const MultiplyOperation multop, const AddOperation addop,  unsigned threadCount)
 {
 #pragma omp parallel num_threads(threadCount)
     {
@@ -180,8 +180,8 @@ inline void hash_numeric(const IT *arpt, const IT *acol, const NT *aval, const I
     }
 }
 
-template <unsigned threadCount, bool sortOutput, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
-void HashSpGEMM(const CSR<IT, NT> &a, const CSR<IT, NT> &b, CSR<IT, NT> &c, MultiplyOperation multop, AddOperation addop)
+template <bool sortOutput, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
+void HashSpGEMM(const CSR<IT, NT> &a, const CSR<IT, NT> &b, CSR<IT, NT> &c, MultiplyOperation multop, AddOperation addop,  unsigned threadCount)
 {
     BIN<IT, NT> bin(a.rows, IMB_PWMIN, threadCount);
 
@@ -197,25 +197,13 @@ void HashSpGEMM(const CSR<IT, NT> &a, const CSR<IT, NT> &b, CSR<IT, NT> &c, Mult
 
     /* Symbolic Phase */
     c.rowptr = my_malloc<IT>(c.rows + 1);
-    hash_symbolic<threadCount>(a.rowptr, a.colids, b.rowptr, b.colids, c.rowptr, bin, c.rows, &(c.nnz));
+    hash_symbolic(a.rowptr, a.colids, b.rowptr, b.colids, c.rowptr, bin, c.rows, &(c.nnz), threadCount);
 
     c.colids = my_malloc<IT>(c.nnz);
     c.values = my_malloc<NT>(c.nnz);
 
     // only non-vector case implemented
-    hash_numeric<sortOutput, threadCount>(a.rowptr, a.colids, a.values, b.rowptr, b.colids, b.values, c.rowptr, c.colids, c.values, bin, multop, addop);
-}
-
-template <bool sortOutput, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
-void HashSpGEMM(const CSR<IT, NT> &a, const CSR<IT, NT> &b, CSR<IT, NT> &c, MultiplyOperation multop, AddOperation addop)
-{
-    HashSpGEMM<false, sortOutput, IT, NT, MultiplyOperation, AddOperation>(a, b, c, multop, addop);
-}
-
-template <typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
-void HashSpGEMM(const CSR<IT, NT> &a, const CSR<IT, NT> &b, CSR<IT, NT> &c, MultiplyOperation multop, AddOperation addop)
-{
-    HashSpGEMM<false, true, IT, NT, MultiplyOperation, AddOperation>(a, b, c, multop, addop);
+    hash_numeric<sortOutput>(a.rowptr, a.colids, a.values, b.rowptr, b.colids, b.values, c.rowptr, c.colids, c.values, bin, multop, addop, threadCount);
 }
 
 #endif

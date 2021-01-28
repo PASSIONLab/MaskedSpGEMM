@@ -8,9 +8,9 @@
 #include "SPA.h"
 
 
-template <unsigned threadCount, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
+template <typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
 void MaskedSPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, CSR<IT, NT> & Mask,
-               MultiplyOperation multop, AddOperation addop)
+               MultiplyOperation multop, AddOperation addop, unsigned threadCount)
 {
     C.rows = A.rows;
     C.cols = B.cols;

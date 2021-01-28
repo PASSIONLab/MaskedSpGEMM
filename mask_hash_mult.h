@@ -37,7 +37,8 @@ mxm_hash_mask
 	CSR<IT, NT>			&C,
 	CSR<IT, NT>			&M,
 	MultiplyOperation	 multop,
-	AddOperation		 addop
+	AddOperation		 addop,
+    unsigned threadCount
 )
 {
 	C.rows		   = A.rows;
@@ -47,12 +48,12 @@ mxm_hash_mask
     IT *row_nz     = my_malloc<IT>(C.rows);
     
     int numThreads; 
-    #pragma omp parallel
+    #pragma omp parallel num_threads(threadCount)
     {
         numThreads = omp_get_num_threads();
     }
 
-    BIN<IT, NT> bin(A.rows, IMB_PWMIN);
+    BIN<IT, NT> bin(A.rows, IMB_PWMIN, numThreads);
 	
     /* Set max bin */
     bin.set_max_bin(A.rowptr, A.colids, B.rowptr, C.rows, C.cols);
@@ -61,7 +62,7 @@ mxm_hash_mask
     bin.create_local_hash_table(C.cols);
     
     IT rowPerThread = (M.rows + numThreads -1) / numThreads;
-	#pragma omp parallel
+	#pragma omp parallel num_threads(threadCount)
 	{
 		IT i, tid, start_row, end_row, max_row = 0, ra;
 
@@ -107,10 +108,7 @@ mxm_hash_mask
     C.colids = my_malloc<IT>(C.nnz);
     C.values = my_malloc<NT>(C.nnz);
 
-	// #pragma omp parallel for
-	// for (IT ra = 0; ra < A.rows; ++ra)
-	// {
-	#pragma omp parallel
+	#pragma omp parallel num_threads(threadCount)
 	{
 		IT i, tid, start_row, end_row, max_row = 0, ra;
 
@@ -172,7 +170,8 @@ mxm_hash_mask_wobin
 	CSR<IT, NT>			&C,
 	CSR<IT, NT>			&M,
 	MultiplyOperation	 multop,
-	AddOperation		 addop
+	AddOperation		 addop,
+    unsigned threadCount
 )
 {
 	C.rows		   = A.rows;
@@ -181,7 +180,7 @@ mxm_hash_mask_wobin
     C.rowptr	   = my_malloc<IT>(C.rows + 1);
     IT *row_nz     = my_malloc<IT>(C.rows);
 
-	#pragma omp parallel for
+	#pragma omp parallel for num_threads(threadCount)
 	for (IT ra = 0; ra < A.rows; ++ra)
 	{
 		map_lp<IT, bool> ht(M.rowptr[ra+1] - M.rowptr[ra] + 1);
@@ -210,7 +209,7 @@ mxm_hash_mask_wobin
     C.colids = my_malloc<IT>(C.nnz);
     C.values = my_malloc<NT>(C.nnz);
 
-	#pragma omp parallel for
+	#pragma omp parallel for num_threads(threadCount)
 	for (IT ra = 0; ra < A.rows; ++ra)
 	{
 		map_lp<IT, NT, bool> ht(M.rowptr[ra+1] - M.rowptr[ra] + 1);

@@ -86,7 +86,8 @@ int main(int argc, char* argv[])
         CSR<INDEXTYPE,VALUETYPE> C_csr;
 
         /* First execution is excluded from evaluation */
-        HashSpGEMM<false, sortOutput>(A_csr, B_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+
+        HashSpGEMM<sortOutput>(A_csr, B_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(), tnum);
         for (int i = 0; i < 10; ++i)
             cout << C_csr.values[i] << " ";
         cout << endl;
@@ -95,7 +96,7 @@ int main(int argc, char* argv[])
         ave_msec = 0;
         for (int i = 0; i < ITERS; ++i) {
             start = omp_get_wtime();
-            HashSpGEMM<false, sortOutput>(A_csr, B_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            HashSpGEMM<sortOutput>(A_csr, B_csr, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(), tnum);
             end = omp_get_wtime();
             msec = (end - start) * 1000;
             ave_msec += msec;
@@ -127,7 +128,9 @@ int main(int argc, char* argv[])
 
         /* First execution is excluded from evaluation */
         /* Use A itself as the mask (4th parameter) */
-        SPASpGEMM(A_csr, B_csr, C_csr, M_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+        
+        const int threadCount = tnum;
+        MaskedSPASpGEMM(A_csr, B_csr, C_csr, M_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(), tnum);
         C_csr.make_empty();
 
         ave_msec = 0;
@@ -135,7 +138,7 @@ int main(int argc, char* argv[])
             start = omp_get_wtime();
             
             /* Use A itself as the mask (4th parameter) */
-            SPASpGEMM(A_csr, B_csr, C_csr, M_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>());
+            MaskedSPASpGEMM(A_csr, B_csr, C_csr, M_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(), tnum);
             end = omp_get_wtime();
             msec = (end - start) * 1000;
             ave_msec += msec;
