@@ -1,6 +1,8 @@
-## SpGEMM (Sparse Matrix Matrix Multiplication)
+## Masked and Blocked SpGEMM (Sparse Matrix Matrix Multiplication)
 
-Supports heap-, hash-, outer-product-, and inner-product based SpGEMM. 
+- Implements Masked SpGEMM algorithms
+- Implements a blocked SpGEMM as a gateway for dynamic algorithm selection and execution
+- Also includes heap-, hash-, outer-product-, and inner-product based non-masked SpGEMM codes for comparison. 
 
 
 ## Download repository
@@ -8,7 +10,7 @@ Supports heap-, hash-, outer-product-, and inner-product based SpGEMM.
 This project contains submodule, so use recursive option to download them all.
 
 ```bash
-git clone --recursive https://github.com/isratnisa/SpGEMM_blocked.git
+git clone --recursive https://github.com/PASSIONLab/SpGEMM_blocked.git
 ```
 
 ## Compile code
@@ -37,52 +39,32 @@ All the test cases we will have a left matrix and a right matrix in the folder `
 
 ## Download real world matrices
 
+Anything with .mtx extension (matrix market format) should work, so should a simple triples representation
+
 
 ## Run sample programs
 
-Here is the general Instruction.
+Here is the general instruction to run the top 2 performing masked SpGEMM codes.
 
 ```bash
-./bin/OuterSpGEMM text {left_matrix} {right_matrix} {output_file} {nthreads} {nblockers} {block_width}
+./bin/MaskedSPASpGEMM_hw inputMatrix1.mtx inputMatrix2.mtx maskMatrix.mtx <num_threads>
+./bin/InnerSpGEMM_hw inputMatrix1.mtx inputMatrix2.mtx maskMatrix.mtx <num_threads>
 ```
 
-Some example that might help.
+You can also run triangle counting with the blocked code as follows, which will compute L.* (L*L) for a given lower triangular part of the adjacency matrix
 
 ```bash
+ ./bin/blocked_parallel_tc_hw <directory_path> <gridx> <gridy>
 
-# run OuterGpGEMM on pre-generated ER(23, 4) matrix, 48 threads, 256 blockers and width of each blocker is 128
-./bin/OuterSpGEMM_hw text assets/left_er23_4.mtx assets/right_er23_4.mtx ~/product.txt 48 256 128
-
-# run OuterGpGEMM on run time ER(18, 18) matrix, 48 threads, 256 blockers and width of each blocker is 128
-./bin/OuterSpGEMM_hw gen er 18 18 48 256 128
-
-# profile data of OuterGpGEMM on run downloaded web-Google matrix, 48 threads, 256 blockers and width of each blocker is 128
-./bin/ProfileOuterSpGEMM_hw text assets/web-Google.mtx assets/web-Google.mtx ~/product.txt 48 128 128
-
+# run blocked_parallel_tc_hw webgoogle lower triangular matrix that was previously sorted by degree and split into 8 pieces
+# this will run all algorithms on the data
+ ./bin/blocked_parallel_tc_hw webgoogle_tril_degsorted-proc8-by-8 8 8
 ```
 
-Using only one socket
-```bash
+The codes for degree sorting to lower triangular matrices as well as splitting an input into p_x by p_y grid is available under the Matlab directory
 
-export OMP_PLACES=cores
-export OMP_PROC_BIND=close
-export OMP_NESTED=False
 
-// run the program
-numactl --membind=0 ./bin/OuterSpGEMM_hw gen er 20 4 24 1024 32
-```
 
-Using two sockets(Performance is not good yet)
-```bash
-export OMP_PLACES=sockets
-export OMP_PROC_BIND=spread,close
-export OMP_NESTED=True
-export OMP_MAX_ACTIVE_LEVELS=2
-
-// run the program
-numactl --localalloc ././bin/NUMA-aware_hw gen er 20 4 24 1024 32
-
-```
 ## Clean up
 
 Delete them all.
