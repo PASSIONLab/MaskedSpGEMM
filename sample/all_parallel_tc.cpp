@@ -156,13 +156,13 @@ int main(int argc, char* argv[])
          CSR<INDEXTYPE,VALUETYPE> C_csr;
          
          /* First execution is excluded from evaluation */
-         innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csr, A_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
+         innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csc, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
          C_csr.make_empty();
     
          ave_msec = 0;
          for (int i = 0; i < ITERS; ++i) {
              start = omp_get_wtime();
-             innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csr, A_csc, C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
+             innerSpGEMM_nohash<false, sortOutput>(A_csr, A_csc, C_csr, A_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(),tnum);
              end = omp_get_wtime();
              msec = (end - start) * 1000;
              ave_msec += msec;

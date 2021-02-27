@@ -48,7 +48,7 @@ long long int get_flop(const CSC<IT,NT> & A, const CSC<IT,NT> & B)
 //*TODO:: Dealing with 5 mats. Mask, A, B, C, C_final*
 template <bool vectorProbing, bool sortOutput, typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
 void 
-innerSpGEMM_nohash(const CSR<IT,NT> & M, const CSR<IT,NT> & A, const CSC<IT,NT> & B, CSR<IT,NT> & C_final, MultiplyOperation multop, AddOperation addop, unsigned threadCount)
+innerSpGEMM_nohash(const CSR<IT,NT> & A, const CSC<IT,NT> & B, CSR<IT,NT> & C_final, const CSR<IT,NT> & M, MultiplyOperation multop, AddOperation addop, unsigned threadCount)
 {
     CSR<IT,NT> C;
     

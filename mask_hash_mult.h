@@ -35,7 +35,7 @@ mxm_hash_mask
 	const CSR<IT, NT>	&A,
 	const CSR<IT, NT>	&B,
 	CSR<IT, NT>			&C,
-	CSR<IT, NT>			&M,
+	const CSR<IT, NT>	&M,
 	MultiplyOperation	 multop,
 	AddOperation		 addop,
     unsigned threadCount
@@ -168,7 +168,7 @@ mxm_hash_mask_wobin
 	const CSR<IT, NT>	&A,
 	const CSR<IT, NT>	&B,
 	CSR<IT, NT>			&C,
-	CSR<IT, NT>			&M,
+	const CSR<IT, NT>	&M,
 	MultiplyOperation	 multop,
 	AddOperation		 addop,
     unsigned threadCount

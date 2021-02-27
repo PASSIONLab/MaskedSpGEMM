@@ -9,7 +9,7 @@
 
 
 template <typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
-void MaskedSPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, CSR<IT, NT> & Mask,
+void MaskedSPASpGEMM(const CSR<IT, NT> & A, const CSR<IT, NT> & B, CSR<IT, NT> & C, const CSR<IT, NT> & Mask,
                MultiplyOperation multop, AddOperation addop, unsigned threadCount)
 {
     C.rows = A.rows;

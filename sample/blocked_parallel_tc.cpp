@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
                 C_csr.make_empty();
                 
                 // Mask, A,B[csc],C
-                innerSpGEMM_nohash<false, sortOutput>(M_Copy, A_Copy, submatricesCSC[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(), THREADPERCALL);
+                innerSpGEMM_nohash<false, sortOutput>(A_Copy, submatricesCSC[k][j], C_csr, M_Copy, multiplies<VALUETYPE>(), plus<VALUETYPE>(), THREADPERCALL);
 
                 #pragma omp critical
                 {
@@ -252,7 +252,7 @@ int main(int argc, char* argv[])
                     double localstart  = omp_get_wtime();
                     
                      // Mask, A,B[csc],C
-                    innerSpGEMM_nohash<false, sortOutput>(submatricesCSR[i][j], submatricesCSR[i][k], submatricesCSC[k][j], C_csr, multiplies<VALUETYPE>(), plus<VALUETYPE>(), THREADPERCALL);
+                    innerSpGEMM_nohash<false, sortOutput>(submatricesCSR[i][k], submatricesCSC[k][j], C_csr, submatricesCSR[i][j], multiplies<VALUETYPE>(), plus<VALUETYPE>(), THREADPERCALL);
 
                     double localend = omp_get_wtime();
 
