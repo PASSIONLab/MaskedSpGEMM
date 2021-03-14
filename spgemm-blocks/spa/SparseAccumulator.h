@@ -102,7 +102,7 @@ public:
 
     void clear(K key) {
         if (super::_entries[key].state != super::EMPTY) {
-            super::_entries[key].state = 0xFF;
+            super::_entries[key].state = super::EMPTY;
             memset(&super::_entries[key].value, 0xFF, sizeof(V));
         }
     }
@@ -135,7 +135,7 @@ public:
     }
 
     void clear(K key) {
-        super::_entries[key].state = 0xFF;
+        super::_entries[key].state = super::EMPTY;
     }
 };
 
