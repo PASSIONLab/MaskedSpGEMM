@@ -112,7 +112,7 @@ collection element by element, vergesort jumps n / log n elements at a time, and
 to the left and to the right to check whether it is in a *big enough* run. In some cases, it allows
 to detect that we are not in a *big enough* run without having to check every element and to fall
 back to the pattern-defeating quicksort with barely more than log n comparisons. This optimization
-requires jumps through the _table and thus does not exist for the bidirectional version.
+requires jumps through the table and thus does not exist for the bidirectional version.
 
 The k-way merge at the end of the algorithm is fairly poor and unoptimized, but the optimization
 described above is sufficient to make vergesort a valuable tool to augment sorting algorithms that
