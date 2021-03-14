@@ -73,7 +73,7 @@ public:
 template<class...>
 struct SPAEntry;
 
-// region SPA for numeric phae
+// region SPA for numeric phase
 
 template<class V1, class V2>
 struct SPAEntry<V1, V2> {
@@ -101,8 +101,10 @@ public:
     }
 
     void clear(K key) {
-        super::_entries[key].state = 0xFF;
-        memset(&super::_entries[key].value, 0xFF, sizeof(V));
+        if (super::_entries[key].state != super::EMPTY) {
+            super::_entries[key].state = 0xFF;
+            memset(&super::_entries[key].value, 0xFF, sizeof(V));
+        }
     }
 };
 
