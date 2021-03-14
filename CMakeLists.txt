@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(SpGEMM_blocked
+project(MaskedSpGEMM
         VERSION 0.1
         LANGUAGES C CXX)
 
