@@ -12,14 +12,13 @@ private:
     NumericAccumulatorT _numericAccumulator;
 
 public:
-    inline const static bool CALC_MAX_ROW_UPPER_BOUND_SIZE_C = false;
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = true;
 
     explicit MaskIndexed(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
             : _symbolicAccumulator(maxRowSizeM), _numericAccumulator(maxRowSizeM) {};
 
-    std::tuple<size_t, size_t> getMemoryRequirement(IT maxRowUpperBoundSizeC, IT maxRowSizeA, IT maxRowSizeM) {
+    std::tuple<size_t, size_t> getMemoryRequirement() {
         auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement();
         auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement();
 

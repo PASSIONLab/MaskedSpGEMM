@@ -38,13 +38,12 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         auto[rowBeginIdx, rowEndIdx] = distributeWork(flops, cumulativeWork, A.rows, numThreads, thisThread);
 
         // Scan the input matrices
-        auto[upperBoundSizeC, maxRowSizeUpperBoundC, maxRowSizeA, maxRowSizeM]
-        = scanInputs<true, RowAlg::CALC_MAX_ROW_UPPER_BOUND_SIZE_C, RowAlg::CALC_MAX_ROW_SIZE_A,
-                RowAlg::CALC_MAX_ROW_SIZE_M>(rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
+        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM] = scanInputs<true, RowAlg::CALC_MAX_ROW_SIZE_A, RowAlg::CALC_MAX_ROW_SIZE_M>(
+                rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
 
         // Initialize row algorithm
         RowAlg alg{B.cols, maxRowSizeA, maxRowSizeM};
-        auto[bufferSize, bufferAlignment] = alg.getMemoryRequirement(maxRowSizeUpperBoundC, maxRowSizeA, maxRowSizeM);
+        auto[bufferSize, bufferAlignment] = alg.getMemoryRequirement();
         auto buffer = mallocAligned(bufferSize, bufferAlignment);
         size_t dirty = bufferSize;
 
@@ -110,13 +109,12 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         auto[rowBeginIdx, rowEndIdx] = distributeWork(flops, cumulativeWork, A.rows, numThreads, thisThread);
 
         // Scan the input matrices
-        auto[upperBoundSizeC, maxRowSizeUpperBoundC, maxRowSizeA, maxRowSizeM]
-        = scanInputs<false, RowAlg::CALC_MAX_ROW_UPPER_BOUND_SIZE_C, RowAlg::CALC_MAX_ROW_SIZE_A,
-                RowAlg::CALC_MAX_ROW_SIZE_M>(rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
+        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM] = scanInputs<false, RowAlg::CALC_MAX_ROW_SIZE_A, RowAlg::CALC_MAX_ROW_SIZE_M>(
+                rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
 
         // Initialize row algorithm
         RowAlg alg{B.cols, maxRowSizeA, maxRowSizeM};
-        auto[bufferSize, bufferAlignment] = alg.getMemoryRequirement(maxRowSizeUpperBoundC, maxRowSizeA, maxRowSizeM);
+        auto[bufferSize, bufferAlignment] = alg.getMemoryRequirement();
         auto buffer = mallocAligned(bufferSize, bufferAlignment);
         size_t dirty = bufferSize;
 

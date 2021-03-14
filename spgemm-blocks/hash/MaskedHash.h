@@ -10,15 +10,15 @@ private:
     HashAccumulator<IT, NT, bool> _numericAccumulator;
 
 public:
-    inline const static bool CALC_MAX_ROW_UPPER_BOUND_SIZE_C = false;
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = true;
+    IT _maxRowSizeM;
 
-    explicit MaskedHash(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) {};
+    explicit MaskedHash(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : _maxRowSizeM(maxRowSizeM) {};
 
-    std::tuple<size_t, size_t> getMemoryRequirement(IT maxRowUpperBoundSizeC, IT maxRowSizeA, IT maxRowSizeM) {
-        auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement(maxRowSizeM);
-        auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement(maxRowSizeM);
+    std::tuple<size_t, size_t> getMemoryRequirement() {
+        auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement(_maxRowSizeM);
+        auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement(_maxRowSizeM);
 
         return {std::max(symbolicSize, numericSize), std::lcm(symbolicAlignment, numericAlignment)};
     }
