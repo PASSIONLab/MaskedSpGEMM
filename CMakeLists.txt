@@ -34,4 +34,5 @@ endmacro()
 add_example(masked-all sample/MaskedAllSpGEMM.cpp)
 add_example(tricnt-all sample/TriCntAll.cpp)
 
+add_subdirectory(test)
 
