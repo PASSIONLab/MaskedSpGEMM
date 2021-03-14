@@ -19,7 +19,7 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
     verifyInputs(A, B, C, M);
 
     // Estimate work
-    IT *flopsPerRow = mallocAligned<IT>(A.rows);
+    IT *flopsPerRow = my_malloc<IT>(A.rows);
     IT flops = calculateFlops(A, B, flopsPerRow);
 
     // Calculate cumulative work
@@ -70,7 +70,16 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
 #pragma omp barrier
         setRowOffsets(C, threadsNvals, rowBeginIdx, rowEndIdx, rowNvals, numThreads, thisThread);
         copyValuesToC(C, rowBeginIdx, colIdsLocal, valuesLocal, threadsNvals[thisThread]);
+
+        my_free(colIdsLocal);
+        my_free(valuesLocal);
+        freeAligned(buffer);
     }
+
+    my_free(flopsPerRow);
+    my_free(cumulativeWork);
+    my_free(rowNvals);
+    my_free(threadsNvals);
 }
 
 template<template<class, class> class RowAlgorithm, class IT, class NT, class MultiplyOperation, class AddOperation>
@@ -82,7 +91,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
     verifyInputs(A, B, C, M);
 
     // Estimate work
-    IT *flopsPerRow = mallocAligned<IT>(A.rows);
+    IT *flopsPerRow = my_malloc<IT>(A.rows);
     IT flops = calculateFlops(A, B, flopsPerRow);
 
     // Calculate cumulative work
@@ -139,7 +148,14 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
             alg.numericRow(A, B, M, multop, addop, row, currColId, currValue);
         }
         alg.stopNumeric(dirty);
+
+        freeAligned(buffer);
     }
+
+    my_free(flopsPerRow);
+    my_free(cumulativeWork);
+    my_free(rowNvals);
+    my_free(threadsNvals);
 }
 
 // region masked hash spgemm
