@@ -45,7 +45,7 @@ public:
         assert(isAligned(buffer, sizeof(EntryT)));
         assert(_maxIndex * sizeof(EntryT) <= bufferSize);
         // TODO: maybe use memorySplit
-        _entries = reinterpret_cast<EntryT*>(buffer);
+        _entries = reinterpret_cast<EntryT *>(buffer);
         memset(_entries, 0xFF, dirty);
     }
 
@@ -63,9 +63,9 @@ public:
     }
 
     bool erase(Key key) const {
-        bool erased = !isEmpty(key);
+        if (isEmpty(key)) { return false; }
         _entries[key].state = EMPTY;
-        return erased;
+        return true;
     }
 };
 
