@@ -10,11 +10,11 @@
 
 #include "../util.h"
 
-template<class Key, class EntryT>
+template<class KeyT, class EntryT>
 class SparseAccumulatorBase {
 public:
     using StateT = decltype(std::declval<EntryT>().state);
-    using T = std::make_unsigned_t<Key>;
+    using T = std::make_unsigned_t<KeyT>;
 
     static_assert(std::is_unsigned_v<StateT> && !std::is_same_v<StateT, bool>);
 
@@ -53,7 +53,7 @@ public:
         _entries = nullptr;
     }
 
-    [[nodiscard]] bool isEmpty(Key key) const {
+    [[nodiscard]] bool isEmpty(KeyT key) const {
         return _entries[key].state == EMPTY;
     }
 
@@ -62,7 +62,7 @@ public:
         return _entries[key];
     }
 
-    bool erase(Key key) const {
+    bool erase(KeyT key) const {
         if (isEmpty(key)) { return false; }
         _entries[key].state = EMPTY;
         return true;
