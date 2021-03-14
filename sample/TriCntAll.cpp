@@ -27,8 +27,6 @@
 
 using namespace std;
 
-#define ITERS 1
-
 static uint16_t calculateChecksum(uint8_t *data, size_t length) {
     uint32_t checksum = 0;
     auto *data16 = (uint16_t *) data;
@@ -202,7 +200,7 @@ int main(int argc, char *argv[]) {
     process(A_csc);
     CSR<Index_t, Value_t> A_csr(A_csc); //converts, allocates and populates
 
-    size_t innerIters = std::getenv("INNER_ITERS") ? std::stoul(std::getenv("INNER_ITERS")) : ITERS;
+    size_t innerIters = std::getenv("INNER_ITERS") ? std::stoul(std::getenv("INNER_ITERS")) : 1;
     size_t outerIters = std::getenv("OUTER_ITERS") ? std::stoul(std::getenv("OUTER_ITERS")) : 1;
 
     std::cout << "Iters: " << outerIters << " x " << innerIters << std::endl;
