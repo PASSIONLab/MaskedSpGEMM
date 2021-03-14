@@ -6,9 +6,9 @@
 template<class IT, class NT>
 class MaskSPA {
 private:
-    using SparseAccumulatorT = SparseAccumulator<IT, void>;
+    using SymbolicAccumulator = SparseAccumulator<IT, void>;
     using NumericAccumulatorT = SparseAccumulator<IT, NT>;
-    SparseAccumulatorT _symbolicAccumulator;
+    SymbolicAccumulator _symbolicAccumulator;
     NumericAccumulatorT _numericAccumulator;
 
 public:
@@ -16,7 +16,8 @@ public:
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = false;
 
-    explicit MaskSPA(IT maxIndex) : _symbolicAccumulator(maxIndex), _numericAccumulator(maxIndex) {}
+    explicit MaskSPA(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
+            : _symbolicAccumulator(maxIndex), _numericAccumulator(maxIndex) {}
 
     std::tuple<size_t, size_t> getMemoryRequirement([[maybe_unused]] IT maxRowUpperBoundSizeC,
                                                     [[maybe_unused]] IT maxRowSizeA, [[maybe_unused]] IT maxRowSizeM) {
@@ -44,6 +45,8 @@ public:
 
     [[gnu::always_inline]]
     void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
+        assert(_symbolicAccumulator.isInitialized());
+
         const auto maskBegin = &M.colids[M.rowptr[row]];
         const auto maskEnd = &M.colids[M.rowptr[row + 1]];
 
@@ -56,8 +59,10 @@ public:
         for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
             IT inner = A.colids[j];
             for (IT k = B.rowptr[inner]; k < B.rowptr[inner + 1]; k++) {
-                bool erased = _symbolicAccumulator.erase(B.colids[k]);
-                if (erased) { ++currRowNvals; }
+                if (_symbolicAccumulator[B.colids[k]].state == SymbolicAccumulator::ALLOWED) {
+                    _symbolicAccumulator[B.colids[k]].state = SymbolicAccumulator::INITIALIZED;
+                    currRowNvals++;
+                }
             }
         }
 
@@ -67,6 +72,8 @@ public:
         }
 
         rowNvals[row] = currRowNvals;
+
+        assert(_symbolicAccumulator.isInitialized());
     }
 
     template<typename MultiplyOperation, typename AddOperation>

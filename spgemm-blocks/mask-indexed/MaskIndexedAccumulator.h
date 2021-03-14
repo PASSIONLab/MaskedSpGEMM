@@ -1,33 +1,27 @@
-#ifndef MASKED_SPGEMM_SPARSE_ACCUMULATOR_H
-#define MASKED_SPGEMM_SPARSE_ACCUMULATOR_H
+#ifndef MASKED_SPGEMM_MASK_INDEXED_ACCUMULATOR_H
+#define MASKED_SPGEMM_MASK_INDEXED_ACCUMULATOR_H
 
-#include <utility>
-#include <limits>
-#include <cstddef>
-#include <algorithm>
 #include <cassert>
-#include <numeric>
 
-#include "../util.h"
 
 template<class S, class V>
-struct SPAEntry {
+struct MaskIndexedEntry {
     S state;
     V value;
 };
 
 template<class S>
-struct SPAEntry<S, void> {
+struct MaskIndexedEntry<S, void> {
     S state;
 };
 
 template<class KeyT, class ValueT>
-class SparseAccumulator {
-protected:
+class MaskIndexedAccumulator {
+private:
     using T = std::make_unsigned_t<KeyT>;
     using StateT = uint8_t;
 
-    using EntryT = SPAEntry<StateT, ValueT>;
+    using EntryT = MaskIndexedEntry<StateT, ValueT>;
 
 public:
     inline static const StateT EMPTY = std::numeric_limits<StateT>::max();
@@ -39,15 +33,15 @@ protected:
     EntryT *_entries;
 
 public:
-    SparseAccumulator(T maxIndex) : _maxIndex(maxIndex) {}
+    MaskIndexedAccumulator(T maxIndex) : _maxIndex(maxIndex) {}
 
-    SparseAccumulator(const SparseAccumulator &other) = delete;
+    MaskIndexedAccumulator(const MaskIndexedAccumulator &other) = delete;
 
-    SparseAccumulator(SparseAccumulator &&other) = delete;
+    MaskIndexedAccumulator(MaskIndexedAccumulator &&other) = delete;
 
-    SparseAccumulator &operator=(const SparseAccumulator &) = delete;
+    MaskIndexedAccumulator &operator=(const MaskIndexedAccumulator &) = delete;
 
-    SparseAccumulator &operator=(SparseAccumulator &&) = delete;
+    MaskIndexedAccumulator &operator=(MaskIndexedAccumulator &&) = delete;
 
     [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() {
         return {_maxIndex * sizeof(EntryT), sizeof(EntryT)};
@@ -67,26 +61,16 @@ public:
 
     [[nodiscard]] bool isEmpty(T idx) const {
         assert(0 <= idx && idx < _maxIndex);
-
         return _entries[idx].state == EMPTY;
     }
 
     [[nodiscard]] EntryT &operator[](T idx) {
         assert(0 <= idx && idx < _maxIndex);
-
         return _entries[idx];
-    }
-
-    void setAllowed(KeyT key) {
-        assert(0 <= key && key < this->_maxIndex);
-        assert(this->_entries[key].state == EMPTY);
-
-        this->_entries[key].state = ALLOWED;
     }
 
     bool erase(T idx) const {
         assert(0 <= idx && idx < _maxIndex);
-
         if (isEmpty(idx)) { return false; }
         _entries[idx].state = EMPTY;
         return true;
@@ -94,10 +78,9 @@ public:
 
     void clear(T idx) {
         assert(0 <= idx && idx < _maxIndex);
-
         if (_entries[idx].state != EMPTY) {
             _entries[idx].state = EMPTY;
-            if constexpr (!std::is_same_v<ValueT, void>) {
+            if constexpr (std::is_same_v<ValueT, void>) {
                 memset(&_entries[idx].value, 0xFF, sizeof(ValueT));
             }
         }
@@ -106,17 +89,6 @@ public:
     void clearAll() {
         memset(_entries, 0xFF, _maxIndex * sizeof(EntryT));
     }
-
-    bool isInitialized() const {
-        EntryT initialized;
-        memset(&initialized, 0xFF, sizeof(EntryT));
-
-        for (size_t i = 0; i < _maxIndex; i++) {
-            if (memcmp(&initialized, _entries + i, sizeof(EntryT)) != 0) { return false; }
-        }
-
-        return true;
-    }
 };
 
-#endif //MASKED_SPGEMM_SPARSE_ACCUMULATOR_H
+#endif //MASKED_SPGEMM_MASK_INDEXED_ACCUMULATOR_H

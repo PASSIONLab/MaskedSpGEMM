@@ -14,7 +14,7 @@ public:
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = true;
 
-    explicit MaskedHash(IT maxIndex) {};
+    explicit MaskedHash(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) {};
 
     std::tuple<size_t, size_t> getMemoryRequirement(IT maxRowUpperBoundSizeC, IT maxRowSizeA, IT maxRowSizeM) {
         auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement(maxRowSizeM);
