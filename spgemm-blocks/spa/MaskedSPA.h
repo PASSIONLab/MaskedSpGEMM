@@ -49,7 +49,7 @@ public:
 
         // Insert all mask elements to the SPA
         for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            _symbolicAccumulator.insert(*maskIt);
+            _symbolicAccumulator.setAllowed(*maskIt);
         }
 
         IT currRowNvals = 0;
@@ -78,7 +78,7 @@ public:
 
         // Insert all mask elements to the SPA
         for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            _numericAccumulator.insert(*maskIt);
+            _numericAccumulator.setAllowed(*maskIt);
         }
 
         for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {

@@ -20,6 +20,8 @@ public:
 
 public:
     inline static const StateT EMPTY = std::numeric_limits<StateT>::max();
+    inline static const StateT ALLOWED = 0;
+    inline static const StateT INITIALIZED = 1;
 
 protected:
     const T _maxIndex;
@@ -62,6 +64,13 @@ public:
         return _entries[key];
     }
 
+    void setAllowed(KeyT key) {
+        assert(0 <= key && key < this->_maxIndex);
+        assert(this->_entries[key].state == EMPTY);
+
+        this->_entries[key].state = ALLOWED;
+    }
+
     bool erase(KeyT key) const {
         if (isEmpty(key)) { return false; }
         _entries[key].state = EMPTY;
@@ -86,19 +95,7 @@ class SparseAccumulator : public SparseAccumulatorBase<K, SPAEntry<uint8_t, V>> 
     using super = SparseAccumulatorBase<K, SPAEntry<uint8_t, V>>;
 
 public:
-
-    inline static const typename super::StateT ALLOWED = 0;
-    inline static const typename super::StateT INITIALIZED = 1;
-
     SparseAccumulator(typename super::T maxIndex) : super(maxIndex) {}
-
-    bool insert(K key) {
-        assert(0 <= key && key < this->_maxIndex);
-        if (this->_entries[key].state != super::EMPTY) { return false; }
-
-        this->_entries[key].state = ALLOWED;
-        return true;
-    }
 
     void clear(K key) {
         if (super::_entries[key].state != super::EMPTY) {
@@ -125,14 +122,6 @@ class SparseAccumulator<K, void> : public SparseAccumulatorBase<K, SPAEntry<uint
 
 public:
     SparseAccumulator(typename super::T maxIndex) : super(maxIndex) {}
-
-    bool insert(K key) {
-        assert(0 <= key && key < this->_maxIndex);
-        if (this->_entries[key].state != super::EMPTY) { return false; }
-
-        this->_entries[key].state = 0;
-        return true;
-    }
 
     void clear(K key) {
         super::_entries[key].state = super::EMPTY;
