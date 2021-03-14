@@ -44,7 +44,7 @@ protected:
     }
 
 public:
-    static std::tuple<size_t, size_t> getMemoryRequirement(T capacity) {
+    [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement(T capacity) {
         return {adjustSize(capacity) * sizeof(EntryT), sizeof(EntryT)};
     }
 
@@ -69,7 +69,7 @@ public:
 
     HashAccumulatorBase &operator=(HashAccumulatorBase &&) = delete;
 
-    void setBuffer(std::byte *buffer, size_t bufferSize) {
+    void setBuffer(std::byte *buffer, size_t bufferSize, size_t dirty) {
         assert(isAligned(buffer, sizeof(EntryT)));
         _table = reinterpret_cast<EntryT*>(buffer);
         _capacity = bufferSize / sizeof(EntryT);
@@ -78,7 +78,7 @@ public:
         init();
     }
 
-    void release(size_t &dirty) {
+    void releaseBuffer(size_t &dirty) {
         _table = nullptr;
     }
 

@@ -4,8 +4,7 @@
 #include "../common.h"
 
 template<class IT, class NT>
-class MashHash {
-
+class MaskedHash {
 private:
     HashAccumulator<IT, void, void> _symbolicAccumulator;
     HashAccumulator<IT, NT, bool> _numericAccumulator;
@@ -15,6 +14,8 @@ public:
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = true;
 
+    explicit MaskedHash(IT maxIndex) {};
+
     std::tuple<size_t, size_t> getMemoryRequirement(IT maxRowUpperBoundSizeC, IT maxRowSizeA, IT maxRowSizeM) {
         auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement(maxRowSizeM);
         auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement(maxRowSizeM);
@@ -23,19 +24,19 @@ public:
     }
 
     void startSymbolic(std::byte *buffer, size_t bufferSize, size_t dirty) {
-        _symbolicAccumulator.setBuffer(buffer, bufferSize);
+        _symbolicAccumulator.setBuffer(buffer, bufferSize, dirty);
     }
 
     void stopSymbolic(size_t &dirty) {
-        _symbolicAccumulator.release(dirty);
+        _symbolicAccumulator.releaseBuffer(dirty);
     }
 
     void startNumeric(std::byte *buffer, size_t bufferSize, size_t dirty) {
-        _numericAccumulator.setBuffer(buffer, bufferSize);
+        _numericAccumulator.setBuffer(buffer, bufferSize, dirty);
     }
 
     void stopNumeric(size_t &dirty) {
-        _numericAccumulator.release(dirty);
+        _numericAccumulator.releaseBuffer(dirty);
     }
 
     [[gnu::always_inline]]
@@ -46,7 +47,7 @@ public:
         // Insert all mask elements to the hashmap
         _symbolicAccumulator.resize(maskEnd - maskBegin);
         for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            _symbolicAccumulator.template insert(*maskIt);
+            _symbolicAccumulator.insert(*maskIt);
         }
 
         IT currRowNvals = 0;
@@ -72,7 +73,7 @@ public:
         // Insert all mask elements to the hashmap
         _numericAccumulator.resize(maskEnd - maskBegin);
         for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            _numericAccumulator.template insert(*maskIt);
+            _numericAccumulator.insert(*maskIt);
         }
 
         for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {

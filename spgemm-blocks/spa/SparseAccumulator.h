@@ -19,22 +19,19 @@ public:
     static_assert(std::is_unsigned_v<StateT> && !std::is_same_v<StateT, bool>);
 
 public:
-    inline static const Key EMPTY = std::numeric_limits<StateT>::max();
+    inline static const StateT EMPTY = std::numeric_limits<StateT>::max();
 
 protected:
-    const T _maxIndex;    // Used only for debugging
-    const T _maxEntries;    // Used only for debugging
+    const T _maxIndex;
     EntryT *_entries;
-    T _numEntriesIndices;
-    T *_entryIndices;
-    size_t &_dirtyMemSize;
 
 public:
-    SparseAccumulatorBase(T maxIndex, size_t maxEntries, std::byte *buffer, size_t bufferSize, size_t &dirtyMemSize)
-            : _maxIndex(maxIndex), _maxEntries(maxEntries), _numEntriesIndices(0), _dirtyMemSize(dirtyMemSize) {
-        size_t cleaned = splitMemory(buffer, bufferSize, dirtyMemSize, _entryIndices, maxEntries, _entries, maxIndex);
-        dirtyMemSize -= cleaned;
+    [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() {
+        return {_maxIndex * sizeof(EntryT), sizeof(EntryT)};
     }
+
+public:
+    SparseAccumulatorBase(T maxIndex) : _maxIndex(maxIndex) {}
 
     SparseAccumulatorBase(const SparseAccumulatorBase &other) = delete;
 
@@ -44,17 +41,20 @@ public:
 
     SparseAccumulatorBase &operator=(SparseAccumulatorBase &&) = delete;
 
-    ~SparseAccumulatorBase() {
-        _dirtyMemSize = std::max(roundUp<sizeof(T)>(_numEntriesIndices), _dirtyMemSize);
+    void setBuffer(std::byte *buffer, size_t bufferSize, size_t dirty) {
+        assert(isAligned(buffer, sizeof(EntryT)));
+        assert(_maxIndex * sizeof(EntryT) <= bufferSize);
+        // TODO: maybe use memorySplit
+        _entries = reinterpret_cast<EntryT*>(buffer);
+        memset(_entries, 0xFF, dirty);
     }
 
-    [[nodiscard]] static size_t requiredMemory(size_t maxIndex, size_t maxEntries) {
-        // Memory required for the entryIndices + memoryRequired for the entries
-        return roundUp<sizeof(EntryT)>(maxIndex) * sizeof(T) + maxEntries * sizeof(EntryT);
+    void releaseBuffer(size_t &dirty) {
+        _entries = nullptr;
     }
 
-    [[nodiscard]] constexpr static size_t requiredAlignment() {
-        return std::lcm(sizeof(T), sizeof(EntryT));
+    [[nodiscard]] bool isEmpty(Key key) const {
+        return _entries[key].state == EMPTY;
     }
 
     [[nodiscard]] EntryT &operator[](size_t key) {
@@ -63,20 +63,9 @@ public:
     }
 
     bool erase(Key key) const {
-        bool erased = _entries[key].state != EMPTY;
+        bool erased = !isEmpty(key);
         _entries[key].state = EMPTY;
         return erased;
-    }
-
-    bool reset() {
-        for (size_t i = 0; i < _numEntriesIndices; i++) {
-            memset(&(_entries[_entryIndices[i]]), 0xFF, sizeof(EntryT));
-        }
-    }
-
-protected:
-    void addEntry(Key key) {
-        _entryIndices[_numEntriesIndices++] = key;
     }
 };
 
@@ -84,35 +73,72 @@ protected:
 template<class...>
 struct SPAEntry;
 
-// region SPA for symbolic phase
+// region SPA for numeric phae
 
-template<class T>
-struct SPAEntry<T> {
-    T state;
+template<class V1, class V2>
+struct SPAEntry<V1, V2> {
+    V1 state; /// 0 - allowed, data not initialized; 1 - data initialized; 255 - ignore (empty)
+    V2 value;
 };
 
-template<class Key>
-class SparseAccumulator : public SparseAccumulatorBase<Key, SPAEntry<uint8_t>> {
-    using super = SparseAccumulatorBase<Key, SPAEntry<uint8_t>>;
+template<class K, class V>
+class SparseAccumulator : public SparseAccumulatorBase<K, SPAEntry<uint8_t, V>> {
+    using super = SparseAccumulatorBase<K, SPAEntry<uint8_t, V>>;
 
 public:
-    SparseAccumulator(typename super::T maxIndex, size_t maxEntries,
-                      std::byte *buffer, size_t bufferSize, size_t &dirtyMemSize)
-            : super(maxIndex, maxEntries, buffer, bufferSize, dirtyMemSize) {}
 
-    bool insert(Key key) {
+    inline static const typename super::StateT ALLOWED = 0;
+    inline static const typename super::StateT INITIALIZED = 1;
+
+    SparseAccumulator(typename super::T maxIndex) : super(maxIndex) {}
+
+    bool insert(K key) {
+        assert(0 <= key && key < this->_maxIndex);
+        if (this->_entries[key].state != super::EMPTY) { return false; }
+
+        this->_entries[key].state = ALLOWED;
+        return true;
+    }
+
+    void clear(K key) {
+        super::_entries[key].state = 0xFF;
+        memset(&super::_entries[key].value, 0xFF, sizeof(V));
+    }
+};
+
+// endregion
+
+// region SPA for symbolic phase
+
+template<class V>
+struct SPAEntry<V> {
+    V state; /// 0 - occupied; 255 - empty
+};
+
+template<class K>
+class SparseAccumulator<K, void> : public SparseAccumulatorBase<K, SPAEntry<uint8_t>> {
+    static_assert(sizeof(uint8_t) == 1);
+
+    using super = SparseAccumulatorBase<K, SPAEntry<uint8_t>>;
+
+public:
+    SparseAccumulator(typename super::T maxIndex) : super(maxIndex) {}
+
+    bool insert(K key) {
         assert(0 <= key && key < this->_maxIndex);
         if (this->_entries[key].state != super::EMPTY) { return false; }
 
         this->_entries[key].state = 0;
         return true;
     }
+
+    void clear(K key) {
+        super::_entries[key].state = 0xFF;
+    }
 };
 
 //endregion
 
-// region SPA for numeric phae
 
-// endregion
 
 #endif //MASKED_SPGEMM_SPARSE_ACCUMULATOR_H

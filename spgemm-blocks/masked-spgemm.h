@@ -6,7 +6,8 @@
 #include "scan.h"
 #include "util.h"
 #include "hash/HashAccumulator.h"
-#include "hash/masked-hash.h"
+#include "hash/MaskedHash.h"
+#include "spa/MaskedSPA.h"
 
 template<template<class, class> class RowAlgorithm, class IT, class NT, class MultiplyOperation, class AddOperation>
 void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
@@ -41,7 +42,7 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
                 RowAlg::CALC_MAX_ROW_SIZE_M>(rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
 
         // Initialize row algorithm
-        RowAlg alg;
+        RowAlg alg{B.cols};
         auto[bufferSize, bufferAlignment] = alg.getMemoryRequirement(maxRowSizeUpperBoundC, maxRowSizeA, maxRowSizeM);
         auto buffer = mallocAligned(bufferSize, bufferAlignment);
         size_t dirty = bufferSize;
@@ -104,7 +105,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
                 RowAlg::CALC_MAX_ROW_SIZE_M>(rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
 
         // Initialize row algorithm
-        RowAlg alg;
+        RowAlg alg{B.cols};
         auto[bufferSize, bufferAlignment] = alg.getMemoryRequirement(maxRowSizeUpperBoundC, maxRowSizeA, maxRowSizeM);
         auto buffer = mallocAligned(bufferSize, bufferAlignment);
         size_t dirty = bufferSize;
