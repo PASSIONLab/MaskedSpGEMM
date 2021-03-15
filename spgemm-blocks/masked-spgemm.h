@@ -58,7 +58,11 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         // Numeric phase
         alg.getNumericAccumulator().setBuffer(buffer, bufferSize, dirty);
         for (IT row = rowBeginIdx; row < rowEndIdx; ++row) {
-            alg.numericRow(A, B, M, multop, addop, row, currColId, currValue);
+            if (M.rowptr[row] != M.rowptr[row + 1]) {
+                alg.numericRow(A, B, M, multop, addop, row, currColId, currValue);
+            } else {
+                rowNvals[row] = 0;
+            }
         }
         threadsNvals[thisThread] = currColId - colIdsLocal;
         alg.getNumericAccumulator().releaseBuffer(dirty);
