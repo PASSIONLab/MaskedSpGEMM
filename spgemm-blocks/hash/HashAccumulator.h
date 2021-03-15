@@ -51,16 +51,6 @@ public:
 public:
     HashAccumulatorBase() : _table{nullptr} {};
 
-    HashAccumulatorBase(T capacity, bool init = true) {
-        _capacity = adjustSize(capacity);
-        _size = _capacity;
-        _mask = _size - 1;
-
-        _table = my_malloc<EntryT>(_capacity);
-
-        if (init) { reset(); }
-    }
-
     HashAccumulatorBase(const HashAccumulatorBase &other) = delete;
 
     HashAccumulatorBase(HashAccumulatorBase &&other) = delete;
@@ -161,9 +151,6 @@ struct HashAccumulator<K, V1, bool> : public HashAccumulatorBase<HashAccumEntryT
 
     HashAccumulator() = default;
 
-    [[deprecated]]
-    HashAccumulator(typename super::T capacity, bool init = true) : super(capacity, init) {}
-
     bool insert(K key, V1 value1, bool value2) {
         auto idx = super::findIdx(key);
         if (this->_table[idx].key != this->EMPTY) { return false; }
@@ -216,9 +203,6 @@ struct HashAccumulator<K, V1, void> : public HashAccumulatorBase<HashAccumEntryT
 
     HashAccumulator() = default;
 
-    [[deprecated]]
-    HashAccumulator(typename super::T capacity, bool init = true) : super(capacity, init) {}
-
     bool insert(K key, V1 value1) {
         auto idx = super::findIdx(key);
         if (this->_table[idx].key != this->EMPTY) { return false; }
@@ -258,9 +242,6 @@ struct HashAccumulator<K, void, void> : public HashAccumulatorBase<HashAccumEntr
     using super = HashAccumulatorBase<HashAccumEntryT<K>>;
 
     HashAccumulator() = default;
-
-    [[deprecated]]
-    HashAccumulator(typename super::T capacity, bool init = true) : super(capacity, init) {}
 
     bool insert(K key) {
         auto idx = super::findIdx(key);
