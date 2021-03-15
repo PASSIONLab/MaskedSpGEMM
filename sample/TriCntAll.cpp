@@ -211,8 +211,17 @@ int main(int argc, char *argv[]) {
     std::size_t flop = get_flop(A_csc, A_csc);
     for (size_t i = 0; i < outerIters; i++) {
         // @formatter:off
-        run("MaskedSPASpGEMM CSR", MaskedSpGEMM2p<MashHash>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSPASpGEMM CSR", MaskedSpGEMM1p<MashHash>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM2p<MaskedHash>",    MaskedSpGEMM2p<MaskedHash>,    innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedHash>",    MaskedSpGEMM1p<MaskedHash>,    innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM2p<MaskSPA>",       MaskedSpGEMM2p<MaskSPA>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskSPA>",       MaskedSpGEMM1p<MaskSPA>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM2p<MaskIndexed>",   MaskedSpGEMM2p<MaskIndexed>,   innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskIndexed>",   MaskedSpGEMM1p<MaskIndexed>,   innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM2p<MaskedHeap_v1>", MaskedSpGEMM2p<MaskedHeap_v1>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedHeap_v1>", MaskedSpGEMM1p<MaskedHeap_v1>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM2p<MaskedHeap_v2>", MaskedSpGEMM2p<MaskedHeap_v2>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedHeap_v2>", MaskedSpGEMM1p<MaskedHeap_v2>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+
 
 //        run("MaskedSPASpGEMM CSR", MaskedSPASpGEMM, innerIters, tnums, flop, A_csr, A_csr, A_csr);
 //        run("innerSpGEMM_nohash<false-false> CSR/CSC", innerSpGEMM_nohash<false, false>, innerIters, tnums, flop, A_csr, A_csc, A_csr);
