@@ -25,7 +25,9 @@ void test(size_t memSize) {
 
                 DirtyT *dirtyMem;
                 CleanT *cleanMem;
-                size_t cleaned = splitMemory(mem, memSize, dirtyNbytes, dirtyMem, i, cleanMem, j);
+                size_t dirty = dirtyNbytes;
+                splitMemory(mem, memSize, dirty, dirtyMem, i, cleanMem, j);
+                size_t cleaned = (dirty < dirtyNbytes) ? dirtyNbytes - dirty : 0;
 
                 // Check if returned clean memory is clean
                 for (size_t l = 0; l < j; l++) {

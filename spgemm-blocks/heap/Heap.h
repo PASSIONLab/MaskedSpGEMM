@@ -23,12 +23,15 @@ class Heap {
         bool operator==(const EntryT &rhs) const { return (key == rhs.key); }
     };
 
-    EntryT *_entries;
-    IT _maxSize;
+    const IT _capacity;
     IT _size;
+    EntryT *_entries;
+
+    size_t _dirty;
+    size_t _maxSize;
 
 public:
-    Heap(IT maxSize) : _maxSize(maxSize), _size(0) {}
+    Heap(IT capacity) : _capacity(capacity), _size(0), _entries(nullptr), _dirty(0), _maxSize(0) {}
 
     Heap(const Heap &other) = delete;
 
@@ -39,18 +42,24 @@ public:
     Heap &operator=(Heap &&) = delete;
 
     [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() {
-        return {_maxSize * sizeof(EntryT), sizeof(EntryT)};
+        return {_capacity * sizeof(EntryT), sizeof(EntryT)};
     }
 
     void setBuffer(std::byte *buffer, size_t bufferSize, size_t dirty) {
         assert(isAligned(buffer, sizeof(EntryT)));
-        assert(_maxSize * sizeof(EntryT) <= bufferSize);
-        _entries = reinterpret_cast<EntryT *>(buffer);
+        assert(_capacity * sizeof(EntryT) <= bufferSize);
+
         _size = 0;
+        _dirty = dirty;
+        _entries = reinterpret_cast<EntryT *>(buffer);
     }
 
-    void releaseBuffer(size_t &dirty) {
+    [[nodiscard]] size_t releaseBuffer() {
+#if defined(DEBUG)
+        assert(_size == 0);
         _entries = nullptr;
+#endif
+        return std::max(_dirty, _maxSize * sizeof(EntryT));
     }
 
     void append(IT key, IT runr, IT loc) {
@@ -69,6 +78,7 @@ public:
     }
 
     void make() {
+        if (_size > _maxSize) { _maxSize = _size; }
         std::make_heap(_entries, _entries + _size);
     }
 

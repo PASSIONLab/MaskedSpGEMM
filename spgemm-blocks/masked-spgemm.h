@@ -65,7 +65,7 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
             }
         }
         threadsNvals[thisThread] = currColId - colIdsLocal;
-        alg.getNumericAccumulator().releaseBuffer(dirty);
+        dirty = alg.getNumericAccumulator().releaseBuffer();
 
 #pragma omp barrier
 #pragma omp master
@@ -136,7 +136,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
             nvals += rowNvals[row];
         }
         threadsNvals[thisThread] = nvals;
-        alg.getSymbolicAccumulator().releaseBuffer(dirty);
+        dirty = alg.getSymbolicAccumulator().releaseBuffer();
 
         // init C
 #pragma omp barrier
@@ -155,7 +155,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
             if (rowNvals[row] == 0) { continue; }
             alg.numericRow(A, B, M, multop, addop, row, currColId, currValue);
         }
-        alg.getNumericAccumulator().releaseBuffer(dirty);
+        dirty = alg.getNumericAccumulator().releaseBuffer();
 
         freeAligned(buffer);
     }

@@ -20,7 +20,7 @@ public:
 
 public:
     inline static const T NOT_FOUND = std::numeric_limits<T>::max();
-    inline static const K EMPTY = std::numeric_limits<K>::max();
+    inline static const K EMPTY = std::numeric_limits<T>::max();
 
     static const T SCALE = 107;
     static const T DEFAULT_CAPACITY = 16;
@@ -32,6 +32,9 @@ protected:
     T _size;
     T _mask;
     EntryT *_table;
+
+    size_t _dirty;
+    size_t _maxSize;
 
     static T adjustSize(T requestedSize) {
         ++requestedSize;
@@ -49,7 +52,8 @@ public:
     }
 
 public:
-    HashAccumulatorBase() : _table{nullptr} {};
+    /* TODO: determin the capacity in ctor */
+    HashAccumulatorBase() : _capacity(0), _size(0), _mask(0), _table{nullptr}, _dirty(0), _maxSize(0) {};
 
     HashAccumulatorBase(const HashAccumulatorBase &other) = delete;
 
@@ -59,23 +63,30 @@ public:
 
     HashAccumulatorBase &operator=(HashAccumulatorBase &&) = delete;
 
-    void setBuffer(std::byte *buffer, size_t bufferSize, size_t dirty) {
+    void setBuffer(std::byte *buffer, size_t bufferSize, const size_t dirty) {
         assert(isAligned(buffer, sizeof(EntryT)));
-        _table = reinterpret_cast<EntryT*>(buffer);
-        _capacity = bufferSize / sizeof(EntryT);
 
-        /* check this */
-        init();
+        _dirty = dirty;
+        _capacity = bufferSize / sizeof(EntryT);
+        getCleanMemory(buffer, bufferSize, _dirty, _table, _capacity);
     }
 
-    void releaseBuffer(size_t &dirty) {
+    [[nodiscard]] size_t releaseBuffer() {
+#if defined(DEBUG)
         _table = nullptr;
+        _capacity = 0;
+        _size = 0;
+        _mask = 0;
+#endif
+        return _dirty + _maxSize * sizeof(EntryT);
     }
 
     void resize(T size) {
         _size = adjustSize(size);
         _mask = _size - 1;
         assert(_size <= _capacity);
+
+        if (_size > _maxSize) { _maxSize = _size; }
     }
 
     void init() {
@@ -84,6 +95,10 @@ public:
 
     void reset() {
         for (size_t i = 0; i < _size; ++i) { _table[i].key = EMPTY; }
+    }
+
+    void clean() {
+        memset(_table, 0xFF, _maxSize * sizeof(EntryT));
     }
 
     T find(K key) const {

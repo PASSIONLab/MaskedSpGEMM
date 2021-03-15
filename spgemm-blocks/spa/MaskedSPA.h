@@ -31,7 +31,7 @@ public:
 
     [[gnu::always_inline]]
     void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
-        assert(_symbolicAccumulator.isInitialized());
+//        assert(_symbolicAccumulator.isInitialized());
 
         const auto maskBegin = &M.colids[M.rowptr[row]];
         const auto maskEnd = &M.colids[M.rowptr[row + 1]];
@@ -59,7 +59,7 @@ public:
 
         rowNvals[row] = currRowNvals;
 
-        assert(_symbolicAccumulator.isInitialized());
+//        assert(_symbolicAccumulator.isInitialized());
     }
 
     template<typename MultiplyOperation, typename AddOperation>

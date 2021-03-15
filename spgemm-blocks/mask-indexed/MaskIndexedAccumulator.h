@@ -32,6 +32,8 @@ protected:
     const T _maxIndex;
     EntryT *_entries;
 
+    size_t _dirty;
+
 public:
     MaskIndexedAccumulator(T maxIndex) : _maxIndex(maxIndex) {}
 
@@ -50,13 +52,16 @@ public:
     void setBuffer(std::byte *buffer, size_t bufferSize, size_t dirty) {
         assert(isAligned(buffer, sizeof(EntryT)));
         assert(_maxIndex * sizeof(EntryT) <= bufferSize);
-        // TODO: maybe use memorySplit
-        _entries = reinterpret_cast<EntryT *>(buffer);
-        clearAll();
+
+        _dirty = dirty;
+        getCleanMemory(buffer, bufferSize, _dirty, _entries, _maxIndex);
     }
 
-    void releaseBuffer(size_t &dirty) {
+    [[nodiscard]] size_t releaseBuffer() {
+#if defined(DEBUG)
         _entries = nullptr;
+#endif
+        return _dirty;
     }
 
     [[nodiscard]] bool isEmpty(T idx) const {

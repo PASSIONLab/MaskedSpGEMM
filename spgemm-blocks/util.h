@@ -52,18 +52,17 @@ T roundDown(T num) {
 }
 
 template<class DirtyT, class CleanT>
-size_t splitMemory(std::byte *mem, size_t memSize, size_t dirtyMemSize,
+void splitMemory(std::byte *mem, size_t memSize, size_t &dirtyMemSize,
                    DirtyT *&dirtyObjsMem, size_t dirtyObjsNum, CleanT *&cleanObjsMem, size_t cleanObjsNum) {
     const size_t dirtyObjsMemSize = sizeof(DirtyT) * dirtyObjsNum;
     const size_t cleanObjsMemSize = sizeof(CleanT) * cleanObjsNum;
     memSize = roundDown<sizeof(CleanT)>(memSize);
     size_t usedMem = roundUp<sizeof(CleanT)>(std::max(dirtyMemSize, dirtyObjsMemSize));
 
-    size_t toClean = 0;
     // Check if we need more memory than we have
     if (cleanObjsMemSize > memSize - usedMem) {
         assert(dirtyMemSize > dirtyObjsMemSize);
-        toClean = cleanObjsMemSize - (memSize - dirtyMemSize);
+        size_t toClean = cleanObjsMemSize - (memSize - dirtyMemSize);
 
         // Align the clean memory
         toClean += (dirtyMemSize - toClean) % sizeof(CleanT);
@@ -71,6 +70,8 @@ size_t splitMemory(std::byte *mem, size_t memSize, size_t dirtyMemSize,
         assert(dirtyMemSize >= toClean);
         memset(mem + dirtyMemSize - toClean, 0xFF, toClean);
         usedMem = dirtyMemSize - toClean;
+
+        dirtyMemSize -= toClean;
     }
 
     dirtyObjsMem = reinterpret_cast<DirtyT *>(mem);
@@ -78,8 +79,12 @@ size_t splitMemory(std::byte *mem, size_t memSize, size_t dirtyMemSize,
 
     assert(static_cast<void *>(dirtyObjsMem + dirtyObjsNum) <= static_cast<void *>(cleanObjsMem));
     assert(static_cast<void *>(cleanObjsMem + cleanObjsNum) <= static_cast<void *>(mem + memSize));
+}
 
-    return toClean;
+template<class CleanT>
+void getCleanMemory(std::byte *mem, size_t memSize, size_t &dirtySize, CleanT *&cleanObjsMem, size_t cleanObjsNum) {
+    std::byte *dummy;
+    splitMemory(mem,memSize, dirtySize, dummy, 0, cleanObjsMem, cleanObjsNum);
 }
 
 
