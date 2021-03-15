@@ -56,12 +56,12 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         NT *currValue = valuesLocal;
 
         // Numeric phase
-        alg.startNumeric(buffer, bufferSize, dirty);
+        alg.getNumericAccumulator().setBuffer(buffer, bufferSize, dirty);
         for (IT row = rowBeginIdx; row < rowEndIdx; ++row) {
             alg.numericRow(A, B, M, multop, addop, row, currColId, currValue);
         }
         threadsNvals[thisThread] = currColId - colIdsLocal;
-        alg.stopNumeric(dirty);
+        alg.getNumericAccumulator().releaseBuffer(dirty);
 
 #pragma omp barrier
 #pragma omp master
@@ -121,7 +121,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         size_t dirty = bufferSize;
 
         // Symbolic phase
-        alg.startSymbolic(buffer, bufferSize, dirty);
+        alg.getSymbolicAccumulator().setBuffer(buffer, bufferSize, dirty);
         IT nvals = 0;
         for (IT row = rowBeginIdx; row < rowEndIdx; row++) {
             if (M.rowptr[row] != M.rowptr[row + 1]) {
@@ -132,27 +132,26 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
             nvals += rowNvals[row];
         }
         threadsNvals[thisThread] = nvals;
-        alg.stopSymbolic(dirty);
+        alg.getSymbolicAccumulator().releaseBuffer(dirty);
 
         // init C
 #pragma omp barrier
 #pragma omp master
         {
             initC(A, B, C, threadsNvals, numThreads);
-            std::cout << C.nnz << std::endl;
         }
 #pragma omp barrier
         setRowOffsets(C, threadsNvals, rowBeginIdx, rowEndIdx, rowNvals, numThreads, thisThread);
 
         // Numeric phase
-        alg.startNumeric(buffer, bufferSize, dirty);
+        alg.getNumericAccumulator().setBuffer(buffer, bufferSize, dirty);
         IT *currColId = &C.colids[C.rowptr[rowBeginIdx]];
         NT *currValue = &C.values[C.rowptr[rowBeginIdx]];
         for (IT row = rowBeginIdx; row < rowEndIdx; ++row) {
             if (rowNvals[row] == 0) { continue; }
             alg.numericRow(A, B, M, multop, addop, row, currColId, currValue);
         }
-        alg.stopNumeric(dirty);
+        alg.getNumericAccumulator().releaseBuffer(dirty);
 
         freeAligned(buffer);
     }

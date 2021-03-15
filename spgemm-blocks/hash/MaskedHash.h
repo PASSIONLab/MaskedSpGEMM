@@ -16,28 +16,16 @@ public:
 
     explicit MaskedHash(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : _maxRowSizeM(maxRowSizeM) {};
 
-    std::tuple<size_t, size_t> getMemoryRequirement() {
+    [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() {
         auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement(_maxRowSizeM);
         auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement(_maxRowSizeM);
 
         return {std::max(symbolicSize, numericSize), std::lcm(symbolicAlignment, numericAlignment)};
     }
 
-    void startSymbolic(std::byte *buffer, size_t bufferSize, size_t dirty) {
-        _symbolicAccumulator.setBuffer(buffer, bufferSize, dirty);
-    }
+    [[nodiscard]] HashAccumulator<IT, void, void> &getSymbolicAccumulator() { return _symbolicAccumulator; }
 
-    void stopSymbolic(size_t &dirty) {
-        _symbolicAccumulator.releaseBuffer(dirty);
-    }
-
-    void startNumeric(std::byte *buffer, size_t bufferSize, size_t dirty) {
-        _numericAccumulator.setBuffer(buffer, bufferSize, dirty);
-    }
-
-    void stopNumeric(size_t &dirty) {
-        _numericAccumulator.releaseBuffer(dirty);
-    }
+    [[nodiscard]] HashAccumulator<IT, NT, bool> &getNumericAccumulator() { return _numericAccumulator; }
 
     [[gnu::always_inline]]
     void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {

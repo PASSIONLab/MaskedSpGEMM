@@ -25,21 +25,9 @@ public:
         return {std::max(symbolicSize, numericSize), std::lcm(symbolicAlignment, numericAlignment)};
     }
 
-    void startSymbolic(std::byte *buffer, size_t bufferSize, size_t dirty) {
-        _symbolicAccumulator.setBuffer(buffer, bufferSize, dirty);
-    }
+    [[nodiscard]] SymbolicAccumulatorT &getSymbolicAccumulator() { return _symbolicAccumulator; }
 
-    void stopSymbolic(size_t &dirty) {
-        _symbolicAccumulator.releaseBuffer(dirty);
-    }
-
-    void startNumeric(std::byte *buffer, size_t bufferSize, size_t dirty) {
-        _numericAccumulator.setBuffer(buffer, bufferSize, dirty);
-    }
-
-    void stopNumeric(size_t &dirty) {
-        _numericAccumulator.releaseBuffer(dirty);
-    }
+    [[nodiscard]] NumericAccumulatorT &getNumericAccumulator() { return _numericAccumulator; }
 
     [[gnu::always_inline]]
     void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {

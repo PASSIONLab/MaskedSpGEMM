@@ -18,28 +18,16 @@ public:
     explicit MaskSPA(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
             : _symbolicAccumulator(maxIndex), _numericAccumulator(maxIndex) {}
 
-    std::tuple<size_t, size_t> getMemoryRequirement() {
+    [[nodiscard]]  std::tuple<size_t, size_t> getMemoryRequirement() {
         auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement();
         auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement();
 
         return {std::max(symbolicSize, numericSize), std::lcm(symbolicAlignment, numericAlignment)};
     }
 
-    void startSymbolic(std::byte *buffer, size_t bufferSize, size_t dirty) {
-        _symbolicAccumulator.setBuffer(buffer, bufferSize, dirty);
-    }
+    [[nodiscard]] SymbolicAccumulator &getSymbolicAccumulator() { return _symbolicAccumulator; }
 
-    void stopSymbolic(size_t &dirty) {
-        _symbolicAccumulator.releaseBuffer(dirty);
-    }
-
-    void startNumeric(std::byte *buffer, size_t bufferSize, size_t dirty) {
-        _numericAccumulator.setBuffer(buffer, bufferSize, dirty);
-    }
-
-    void stopNumeric(size_t &dirty) {
-        _numericAccumulator.releaseBuffer(dirty);
-    }
+    [[nodiscard]] NumericAccumulatorT &getNumericAccumulator() { return _numericAccumulator; }
 
     [[gnu::always_inline]]
     void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {

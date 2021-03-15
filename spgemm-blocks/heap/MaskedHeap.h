@@ -17,25 +17,11 @@ public:
     explicit MaskedHeap(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
             : _heap(maxRowSizeA), _symbolicAccumulator(_heap), _numericAccumulator(_heap) {};
 
-    std::tuple<size_t, size_t> getMemoryRequirement() {
-        return _symbolicAccumulator.getMemoryRequirement();
-    }
+    [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() { return _heap.getMemoryRequirement(); }
 
-    void startSymbolic(std::byte *buffer, size_t bufferSize, size_t dirty) {
-        _symbolicAccumulator.setBuffer(buffer, bufferSize, dirty);
-    }
+    [[nodiscard]] Heap<IT> &getSymbolicAccumulator() { return _symbolicAccumulator; }
 
-    void stopSymbolic(size_t &dirty) {
-        _symbolicAccumulator.releaseBuffer(dirty);
-    }
-
-    void startNumeric(std::byte *buffer, size_t bufferSize, size_t dirty) {
-        _numericAccumulator.setBuffer(buffer, bufferSize, dirty);
-    }
-
-    void stopNumeric(size_t &dirty) {
-        _numericAccumulator.releaseBuffer(dirty);
-    }
+    [[nodiscard]] Heap<IT> &getNumericAccumulator() { return _numericAccumulator; }
 
     [[gnu::always_inline]]
     void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
