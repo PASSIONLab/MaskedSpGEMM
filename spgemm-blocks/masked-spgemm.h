@@ -9,6 +9,8 @@
 #include "hash/MaskedHash.h"
 #include "spa/MaskedSPA.h"
 #include "mask-indexed/MaskIndexed.h"
+#include "heap/MaskedHeap.h"
+
 
 template<template<class, class> class RowAlgorithm, class IT, class NT, class MultiplyOperation, class AddOperation>
 void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
@@ -122,7 +124,11 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         alg.startSymbolic(buffer, bufferSize, dirty);
         IT nvals = 0;
         for (IT row = rowBeginIdx; row < rowEndIdx; row++) {
-            alg.symbolicRow(A, B, M, row, rowNvals);
+            if (M.rowptr[row] != M.rowptr[row + 1]) {
+                alg.symbolicRow(A, B, M, row, rowNvals);
+            } else {
+                rowNvals[row] = 0;
+            }
             nvals += rowNvals[row];
         }
         threadsNvals[thisThread] = nvals;
@@ -133,6 +139,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
 #pragma omp master
         {
             initC(A, B, C, threadsNvals, numThreads);
+            std::cout << C.nnz << std::endl;
         }
 #pragma omp barrier
         setRowOffsets(C, threadsNvals, rowBeginIdx, rowEndIdx, rowNvals, numThreads, thisThread);
