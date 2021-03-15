@@ -7,21 +7,18 @@ template<class IT, class NT>
 class MaskedHeap {
 private:
     Heap<IT> _heap;
-    Heap<IT> &_symbolicAccumulator;
-    Heap<IT> &_numericAccumulator;
 
 public:
     inline const static bool CALC_MAX_ROW_SIZE_A = true;
     inline const static bool CALC_MAX_ROW_SIZE_M = false;
 
-    explicit MaskedHeap(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
-            : _heap(maxRowSizeA), _symbolicAccumulator(_heap), _numericAccumulator(_heap) {};
+    explicit MaskedHeap(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : _heap(maxRowSizeA) {};
 
     [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() { return _heap.getMemoryRequirement(); }
 
-    [[nodiscard]] Heap<IT> &getSymbolicAccumulator() { return _symbolicAccumulator; }
+    [[nodiscard]] Heap<IT> &getSymbolicAccumulator() { return _heap; }
 
-    [[nodiscard]] Heap<IT> &getNumericAccumulator() { return _numericAccumulator; }
+    [[nodiscard]] Heap<IT> &getNumericAccumulator() { return _heap; }
 
     [[gnu::always_inline]]
     void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
