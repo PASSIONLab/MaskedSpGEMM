@@ -223,7 +223,7 @@ struct MaskedHeapBase {
 
 };
 
-struct MaskedBasicHeap_v1 : MaskedHeapBase {
+struct MaskedHeap_v0 : MaskedHeapBase {
 
     template<typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
     [[gnu::always_inline]]
@@ -285,7 +285,7 @@ struct MaskedBasicHeap_v1 : MaskedHeapBase {
     }
 };
 
-struct MaskedBasicHeap_v2 : MaskedHeapBase {
+struct MaskedHeap_v1 : MaskedHeapBase {
 
     template<typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
     [[gnu::always_inline]]
@@ -361,7 +361,7 @@ struct MaskedBasicHeap_v2 : MaskedHeapBase {
     }
 };
 
-struct MaskedBasicHeap_v3 : MaskedHeapBase {
+struct MaskedHeap_v2 : MaskedHeapBase {
 
     template<typename IT, typename NT, typename MultiplyOperation, typename AddOperation>
     [[gnu::always_inline]]

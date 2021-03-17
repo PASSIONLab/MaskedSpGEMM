@@ -196,9 +196,9 @@ int main(int argc, char *argv[]) {
         run("innerSpGEMM_nohash<false-false> CSR/CSC", innerSpGEMM_nohash<false, false>, innerIters, tnums, flop, A_csr, B_csc, M_csr);
         run("mxm_hash_mask CSR", mxm_hash_mask, innerIters, tnums, flop, A_csr, B_csr, M_csr);
         run("mxm_hash_mask_wobin CSR", mxm_hash_mask_wobin, innerIters, tnums, flop, A_csr, B_csr, M_csr);
-        run("HeapSpGEMM<rowAlg::MaskedBasicHeap_v1> CSR", HeapSpGEMM<rowAlg::MaskedBasicHeap_v1>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
-        run("HeapSpGEMM<rowAlg::MaskedBasicHeap_v2> CSR", HeapSpGEMM<rowAlg::MaskedBasicHeap_v2>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
-        run("HeapSpGEMM<rowAlg::MaskedBasicHeap_v3> CSR", HeapSpGEMM<rowAlg::MaskedBasicHeap_v3>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
+        run("HeapSpGEMM<rowAlg::MaskedBasicHeap_v1> CSR", HeapSpGEMM<rowAlg::MaskedHeap_v0>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
+        run("HeapSpGEMM<rowAlg::MaskedBasicHeap_v2> CSR", HeapSpGEMM<rowAlg::MaskedHeap_v1>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
+        run("HeapSpGEMM<rowAlg::MaskedBasicHeap_v3> CSR", HeapSpGEMM<rowAlg::MaskedHeap_v2>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
         run("HeapSpGEMM<rowAlg::MaskIndexed_v1> CSR", HeapSpGEMM<rowAlg::MaskIndexed_v1>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
         run("HeapSpGEMM<rowAlg::MaskIndexed_v2> CSR", HeapSpGEMM<rowAlg::MaskIndexed_v2>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
         run("HeapSpGEMM<rowAlg::MaskIndexed_v3> CSR", HeapSpGEMM<rowAlg::MaskIndexed_v3>, innerIters, tnums, flop, A_csr, B_csr, M_csr);

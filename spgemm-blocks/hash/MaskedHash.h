@@ -12,13 +12,13 @@ private:
 public:
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = true;
-    IT _maxRowSizeM;
 
-    explicit MaskedHash(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : _maxRowSizeM(maxRowSizeM) {};
+    MaskedHash(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
+            : _symbolicAccumulator(maxRowSizeM), _numericAccumulator(maxRowSizeM) {};
 
     [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() {
-        auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement(_maxRowSizeM);
-        auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement(_maxRowSizeM);
+        auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement();
+        auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement();
 
         return {std::max(symbolicSize, numericSize), std::lcm(symbolicAlignment, numericAlignment)};
     }

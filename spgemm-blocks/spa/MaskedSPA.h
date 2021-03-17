@@ -4,7 +4,7 @@
 #include "SparseAccumulator.h"
 
 template<class IT, class NT>
-class MaskSPA {
+class MaskedSPA {
 private:
     using SymbolicAccumulator = SparseAccumulator<IT, void>;
     using NumericAccumulatorT = SparseAccumulator<IT, NT>;
@@ -15,7 +15,7 @@ public:
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = false;
 
-    explicit MaskSPA(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
+    explicit MaskedSPA(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
             : _symbolicAccumulator(maxIndex), _numericAccumulator(maxIndex) {}
 
     [[nodiscard]]  std::tuple<size_t, size_t> getMemoryRequirement() {

@@ -47,13 +47,13 @@ protected:
     }
 
 public:
-    [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement(T capacity) {
-        return {adjustSize(capacity) * sizeof(EntryT), sizeof(EntryT)};
+    [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() {
+        return {_capacity * sizeof(EntryT), sizeof(EntryT)};
     }
 
 public:
-    /* TODO: determin the capacity in ctor */
-    HashAccumulatorBase() : _capacity(0), _size(0), _mask(0), _table{nullptr}, _dirty(0), _maxSize(0) {};
+    explicit HashAccumulatorBase(size_t maxRowSizeM)
+            : _capacity(adjustSize(maxRowSizeM)), _size(0), _mask(0), _table{nullptr}, _dirty(0), _maxSize(0) {};
 
     HashAccumulatorBase(const HashAccumulatorBase &other) = delete;
 
@@ -65,9 +65,9 @@ public:
 
     void setBuffer(std::byte *buffer, size_t bufferSize, const size_t dirty) {
         assert(isAligned(buffer, sizeof(EntryT)));
+        assert(_capacity * sizeof(EntryT) <= bufferSize);
 
         _dirty = dirty;
-        _capacity = bufferSize / sizeof(EntryT);
         getCleanMemory(buffer, bufferSize, _dirty, _table, _capacity);
     }
 
@@ -164,7 +164,7 @@ struct HashAccumulator<K, V1, bool> : public HashAccumulatorBase<HashAccumEntryT
 
     using super = HashAccumulatorBase<HashAccumEntryT<K, V1, bool>>;
 
-    HashAccumulator() = default;
+    HashAccumulator(size_t maxRowSizeM) : super(maxRowSizeM) {};
 
     bool insert(K key, V1 value1, bool value2) {
         auto idx = super::findIdx(key);
@@ -216,7 +216,7 @@ struct HashAccumulator<K, V1, void> : public HashAccumulatorBase<HashAccumEntryT
 
     using super = HashAccumulatorBase<HashAccumEntryT<K, V1>>;
 
-    HashAccumulator() = default;
+    HashAccumulator(size_t maxRowSizeM) : super(maxRowSizeM) {};
 
     bool insert(K key, V1 value1) {
         auto idx = super::findIdx(key);
@@ -256,7 +256,7 @@ struct HashAccumulator<K, void, void> : public HashAccumulatorBase<HashAccumEntr
 
     using super = HashAccumulatorBase<HashAccumEntryT<K>>;
 
-    HashAccumulator() = default;
+    HashAccumulator(size_t maxRowSizeM) : super(maxRowSizeM) {};
 
     bool insert(K key) {
         auto idx = super::findIdx(key);
