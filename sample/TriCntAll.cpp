@@ -214,6 +214,8 @@ int main(int argc, char *argv[]) {
         run("MaskedSPASpGEMM",                    MaskedSPASpGEMM,                    innerIters, tnums, flop, A_csr, A_csr, A_csr);
         run("MaskedSpGEMM2p<MaskedSPA>",          MaskedSpGEMM2p<MaskedSPA>,          innerIters, tnums, flop, A_csr, A_csr, A_csr);
         run("MaskedSpGEMM1p<MaskedSPA>",          MaskedSpGEMM1p<MaskedSPA>,          innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM2p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
         std::cout << "LOG,separator" << std::endl;
 
         run("HeapSpGEMM<rowAlg::MaskIndexed_v1>", HeapSpGEMM<rowAlg::MaskIndexed_v1>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
