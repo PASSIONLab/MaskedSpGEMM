@@ -13,6 +13,7 @@
 #include <random>
 #include <iomanip>
 
+
 //#include "overridenew.h"
 #include "../utility.h"
 #include "../CSC.h"
@@ -25,6 +26,7 @@
 #include "sample_common.hpp"
 #include "../spa_mult.h"
 #include "../spgemm-blocks/masked-spgemm.h"
+#include "../spgemm-blocks/masked-spgemm-prof.h"
 
 using namespace std;
 
@@ -201,6 +203,9 @@ int main(int argc, char *argv[]) {
 
     std::size_t flop = get_flop(A_csc, A_csc);
     for (size_t i = 0; i < outerIters; i++) {
+        run("MaskedSpGEMM1p",         MaskedSpGEMM1p_prof<MaskedSPA2A>,         innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        continue;
         // @formatter:off
         run("innerSpGEMM_nohash<false-false>", innerSpGEMM_nohash<false, false>,   innerIters, tnums, flop, A_csr, A_csc, A_csr);
         std::cout << "LOG,separator" << std::endl;
@@ -214,7 +219,7 @@ int main(int argc, char *argv[]) {
         run("MaskedSPASpGEMM",                    MaskedSPASpGEMM,                    innerIters, tnums, flop, A_csr, A_csr, A_csr);
         run("MaskedSpGEMM2p<MaskedSPA>",          MaskedSpGEMM2p<MaskedSPA>,          innerIters, tnums, flop, A_csr, A_csr, A_csr);
         run("MaskedSpGEMM1p<MaskedSPA>",          MaskedSpGEMM1p<MaskedSPA>,          innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM2p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM2p<MaskedSPA2A>",        MaskedSpGEMM2p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
         run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
         std::cout << "LOG,separator" << std::endl;
 
@@ -233,6 +238,16 @@ int main(int argc, char *argv[]) {
         run("MaskedSpGEMM2p<MaskedHeap_v2>",     MaskedSpGEMM2p<MaskedHeap_v2>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
         run("MaskedSpGEMM1p<MaskedHeap_v2>",     MaskedSpGEMM1p<MaskedHeap_v2>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
         // @formatter:on
+    }
+
+    size_t nrows = std::min<size_t>(A_csr.rows, 1000);
+    for (int i = 0; i < nrows; i++) {
+        auto nnz = A_csr.rowptr[i + 1] - A_csr.rowptr[i];
+        std::cout << i << "," << nnz;
+        for (auto j = 1; j < times.size(); j++) {
+            std::cout << "," << times[j][i];
+        }
+        std::cout << std::endl;
     }
 
     A_csc.make_empty();

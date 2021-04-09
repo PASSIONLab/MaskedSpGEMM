@@ -83,8 +83,8 @@ public:
         if constexpr (HAS_VALUE) { _storage._values = nullptr; }
 #endif
         if constexpr (HAS_VALUE) {
-            return std::max(_dirty, _maxIndex * sizeof(ValueT));
-//        return _dirty;
+//            return std::max(_dirty, _maxIndex * sizeof(ValueT));
+            return _dirty;
         } else {
             return _dirty;
         }
@@ -129,7 +129,7 @@ public:
 
         if (_storage._states[idx] != EMPTY) {
             _storage._states[idx] = EMPTY;
-//            if constexpr (HAS_VALUE) { memset(&_storage._values[idx], 0xFF, sizeof(ValueT)); }
+            if constexpr (HAS_VALUE) { memset(&_storage._values[idx], 0xFF, sizeof(ValueT)); }
         }
     }
 

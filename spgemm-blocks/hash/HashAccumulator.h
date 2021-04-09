@@ -74,7 +74,7 @@ public:
     [[nodiscard]] size_t releaseBuffer() {
 #if defined(DEBUG)
         _table = nullptr;
-        _capacity = 0;
+//        _capacity = 0;
         _size = 0;
         _mask = 0;
 #endif

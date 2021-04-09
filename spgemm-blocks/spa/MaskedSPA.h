@@ -179,30 +179,30 @@ public:
         for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
             IT inner = A.colids[j];
             for (IT k = B.rowptr[inner]; k < B.rowptr[inner + 1]; k++) {
-//                auto &state = _numericAccumulator.getState(B.colids[k]);
-//                if (state == NumericAccumulatorT::EMPTY) { continue; }
-//
-//                auto &value = _numericAccumulator.getValue(B.colids[k]);
-//
-//                if (state == NumericAccumulatorT::ALLOWED) {
-//                    value = multop(A.values[j], B.values[k]);
-//                    state = NumericAccumulatorT::INITIALIZED;
-//                } else {
-//                    assert(state == NumericAccumulatorT::INITIALIZED);
-//                    value = addop(value, multop(A.values[j], B.values[k]));
-//                }
+                auto &state = _numericAccumulator.getState(B.colids[k]);
+                if (state == NumericAccumulatorT::EMPTY) { continue; }
 
-                auto key = B.colids[k];
-                if (_numericAccumulator._storage._states[key] == NumericAccumulatorT::EMPTY) { continue; }
+                auto &value = _numericAccumulator.getValue(B.colids[k]);
 
-
-                if (_numericAccumulator._storage._states[key] == NumericAccumulatorT::ALLOWED) {
-                    _numericAccumulator._storage._values[key] = multop(A.values[j], B.values[k]);
-                    _numericAccumulator._storage._states[key] = NumericAccumulatorT::INITIALIZED;
+                if (state == NumericAccumulatorT::ALLOWED) {
+                    value = multop(A.values[j], B.values[k]);
+                    state = NumericAccumulatorT::INITIALIZED;
                 } else {
-//                    assert(state == NumericAccumulatorT::INITIALIZED);
-                    _numericAccumulator._storage._values[key] = addop(_numericAccumulator._storage._values[key], multop(A.values[j], B.values[k]));
+                    assert(state == NumericAccumulatorT::INITIALIZED);
+                    value = addop(value, multop(A.values[j], B.values[k]));
                 }
+
+//                auto key = B.colids[k];
+//                if (_numericAccumulator._storage._states[key] == NumericAccumulatorT::EMPTY) { continue; }
+//
+//
+//                if (_numericAccumulator._storage._states[key] == NumericAccumulatorT::ALLOWED) {
+//                    _numericAccumulator._storage._values[key] = multop(A.values[j], B.values[k]);
+//                    _numericAccumulator._storage._states[key] = NumericAccumulatorT::INITIALIZED;
+//                } else {
+//                    assert(_numericAccumulator._storage._states[key] == NumericAccumulatorT::INITIALIZED);
+//                    _numericAccumulator._storage._values[key] = addop(_numericAccumulator._storage._values[key], multop(A.values[j], B.values[k]));
+//                }
             }
         }
 

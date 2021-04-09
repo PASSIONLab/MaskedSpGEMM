@@ -60,7 +60,7 @@ void splitMemory(std::byte *mem, size_t memSize, size_t &dirtyMemSize,
     size_t usedMem = roundUp<sizeof(CleanT)>(std::max(dirtyMemSize, dirtyObjsMemSize));
 
     // Check if we need more memory than we have
-    if (cleanObjsMemSize > memSize - usedMem) {
+    if (usedMem > memSize || cleanObjsMemSize > memSize - usedMem) {
         assert(dirtyMemSize > dirtyObjsMemSize);
         size_t toClean = cleanObjsMemSize - (memSize - dirtyMemSize);
 
