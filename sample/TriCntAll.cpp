@@ -95,7 +95,7 @@ void run(const std::string &name,
 
         CT<IT, NT> C;
 
-        // The first iteraion is excluded from evaluation if there is only one iteration
+        // The first iteration is excluded from evaluation if there is only one iteration
         if (niters != 1) { f(A, B, C, M, multiplies<NT>(), plus<NT>(), tnum); }
 
         double ave_msec = 0;
@@ -125,6 +125,169 @@ void run(const std::string &name,
                   << C.nnz << "," << C.sumall() << "," << checksum(C) << std::endl;
 
         std::cout << std::endl;
+        C.make_empty();
+    }
+}
+
+template<class IT, class NT>
+void setRowData(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
+                std::vector<long *> &data) {
+    using AccumulatorT = SparseAccumulator2A<IT, void>;
+
+    auto ncols = new long[A.rows];
+    auto rowSizesA = new long[A.rows];
+    auto rowSizesM = new long[A.rows];
+    auto rowFlops = new long[A.rows];
+    auto rowFlopsMasked = new long[A.rows];
+    auto rowNvals = new long[A.rows];
+
+    data.push_back(ncols);
+    data.push_back(rowSizesA);
+    data.push_back(rowSizesM);
+    data.push_back(rowFlops);
+    data.push_back(rowFlopsMasked);
+    data.push_back(rowNvals);
+
+#pragma omp parallel default(none) shared(A, B, M, ncols, rowSizesA, rowSizesM, rowFlops, rowFlopsMasked, rowNvals)
+    {
+        // Initialize SPA
+        AccumulatorT spa(A.cols);
+        auto[spaSize, spaAlignment] = spa.getMemoryRequirement();
+        auto mem = mallocAligned(spaSize);
+        spa.setBuffer(mem, spaSize, spaSize);
+
+#pragma omp parallel for default(none) shared(A, B, M, ncols, rowSizesA, rowSizesM, rowFlops, rowFlopsMasked, rowNvals, spa)
+        for (size_t row = 0; row < A.rows; ++row) {
+            ncols[row] = B.cols;
+            rowSizesA[row] = A.rowptr[row + 1] - A.rowptr[row];
+            rowSizesM[row] = M.rowptr[row + 1] - M.rowptr[row];
+
+            // Calculate flops
+            IT currRowFlops = 0;
+            for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; ++j) {
+                IT inner = A.colids[j];
+                IT npins = B.rowptr[inner + 1] - B.rowptr[inner];
+                currRowFlops += npins;
+            }
+            rowFlops[row] = currRowFlops;
+
+            // Calculate nvals and nflopsMasked
+            {
+                const auto maskBegin = &M.colids[M.rowptr[row]];
+                const auto maskEnd = &M.colids[M.rowptr[row + 1]];
+
+                // Insert all mask elements to the SPA
+                for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
+                    spa.setAllowed(*maskIt);
+                }
+
+                IT currRowNvals = 0;
+                IT currRowNflops = 0;
+                for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
+                    IT inner = A.colids[j];
+                    for (IT k = B.rowptr[inner]; k < B.rowptr[inner + 1]; k++) {
+                        auto &state = spa.getState(B.colids[k]);
+                        if (state == AccumulatorT::EMPTY) { continue; }
+
+                        if (state == AccumulatorT::ALLOWED) {
+                            currRowNvals++;
+                            currRowNflops++;
+                            state = AccumulatorT::INITIALIZED;
+                        } else {
+                            assert(state == AccumulatorT::INITIALIZED);
+                            currRowNflops++;
+                        }
+                    }
+                }
+                // Reset - Remove all mask elements from the SPA
+
+                for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
+                    spa.clear(*maskIt);
+                }
+                rowFlopsMasked[row] = currRowNflops;
+                rowNvals[row] = currRowNflops;
+            }
+        }
+
+        freeAligned(mem);
+    }
+
+
+}
+
+void printRowData(std::vector<long *> &data, size_t nrows, size_t niter, size_t nsamples,
+                  const std::vector<std::string> &algorithmNames) {
+    size_t nh = data.size() - niter * algorithmNames.size();
+
+    std::cout << "NCOLS, ROW_SIZE_A, ROW_SIZE_M, ROW_FLOPS, ROW_FLOPS_MASKED, ROW_NVALS";
+    for (const auto &alg : algorithmNames) { std::cout << ", " << alg; }
+    std::cout << std::endl;
+
+    std::vector<long> times(niter);
+
+    for (size_t i = 0; i < nrows; i++) {
+        for (size_t j = 0; j < nh; j++) {
+            if (j) { std::cout << ", "; }
+            std::cout << data[j][i];
+        }
+
+        for (size_t algNum = 0; algNum < algorithmNames.size(); algNum++) {
+            for (size_t iter = 0; iter < niter; iter++) {
+                times[iter] = data[nh + algNum * niter + iter][i];
+            }
+            std::sort(times.begin(), times.end());
+            long avg = std::accumulate(times.begin(), times.begin() + nsamples, 0) / nsamples;
+            std::cout << ", " << avg;
+        }
+
+        std::cout << std::endl;
+    }
+}
+
+template<class IT, class NT,
+        template<class, class> class AT,
+        template<class, class> class BT,
+        template<class, class> class CT = AT,
+        template<class, class> class MT>
+void profile(const std::string &name,
+             void(*f)(long *, const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &, const MT<IT, NT> &,
+                      multiplies<NT>, plus<NT>, unsigned),
+             size_t niters, vector<int> &tnums, size_t nfop,
+             const AT<IT, NT> &A, const BT<IT, NT> &B, const MT<IT, NT> &M,
+             std::vector<long *> &data) {
+    for (int tnum : tnums) {
+        omp_set_num_threads(tnum); // TODO: update get_flop to use numThreads methods and remove this
+
+        CT<IT, NT> C;
+
+        // The first iteration is excluded from evaluation if there is only one iteration
+        if (niters != 1) {
+            auto times = new long[A.rows];
+            f(times, A, B, C, M, multiplies<NT>(), plus<NT>(), tnum);
+            delete[] times;
+        }
+
+        double ave_msec = 0;
+        for (int i = 0; i < niters; ++i) {
+            C.make_empty();
+
+            auto times = new long[A.rows];
+            double start = omp_get_wtime();
+            f(times, A, B, C, M, multiplies<NT>(), plus<NT>(), tnum);
+            double end = omp_get_wtime();
+            data.push_back(times);
+
+            double msec = (end - start) * 1000;
+            ave_msec += msec;
+        }
+
+        ave_msec /= double(niters);
+        double mflops = (double) nfop / ave_msec / 1000;
+
+        std::cout << "LOG,prof," << fileName << "," << name << "," << typeid(IT).name() << "|" << typeid(NT).name()
+                  << "," << tnum << "," << ave_msec << "," << mflops << ","
+                  << C.nnz << "," << C.sumall() << "," << checksum(C) << std::endl;
+
         C.make_empty();
     }
 }
@@ -196,58 +359,62 @@ int main(int argc, char *argv[]) {
 
     size_t innerIters = std::getenv("INNER_ITERS") ? std::stoul(std::getenv("INNER_ITERS")) : 1;
     size_t outerIters = std::getenv("OUTER_ITERS") ? std::stoul(std::getenv("OUTER_ITERS")) : 1;
+    bool prof = std::getenv("PROF") != nullptr;
 
     std::cout << "Iters: " << outerIters << " x " << innerIters << std::endl;
 
     std::cout << std::endl;
 
     std::size_t flop = get_flop(A_csc, A_csc);
-    for (size_t i = 0; i < outerIters; i++) {
-        run("MaskedSpGEMM1p",         MaskedSpGEMM1p_prof<MaskedSPA2A>,         innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        continue;
+
+    if (prof) {
+        std::vector<long *> data;
+        setRowData(A_csr, A_csr, A_csr, data);
+//        printRowData(data, A_csr.rows, innerIters, innerIters, {});
         // @formatter:off
-        run("innerSpGEMM_nohash<false-false>", innerSpGEMM_nohash<false, false>,   innerIters, tnums, flop, A_csr, A_csc, A_csr);
-        std::cout << "LOG,separator" << std::endl;
-
-        run("mxm_hash_mask",                      mxm_hash_mask,                      innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("mxm_hash_mask_wobin",                mxm_hash_mask_wobin,                innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM2p<MaskedHash>",         MaskedSpGEMM2p<MaskedHash>,         innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM1p<MaskedHash>",         MaskedSpGEMM1p<MaskedHash>,         innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        std::cout << "LOG,separator" << std::endl;
-
-        run("MaskedSPASpGEMM",                    MaskedSPASpGEMM,                    innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM2p<MaskedSPA>",          MaskedSpGEMM2p<MaskedSPA>,          innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM1p<MaskedSPA>",          MaskedSpGEMM1p<MaskedSPA>,          innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM2p<MaskedSPA2A>",        MaskedSpGEMM2p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        std::cout << "LOG,separator" << std::endl;
-
-        run("HeapSpGEMM<rowAlg::MaskIndexed_v1>", HeapSpGEMM<rowAlg::MaskIndexed_v1>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("HeapSpGEMM<rowAlg::MaskIndexed_v2>", HeapSpGEMM<rowAlg::MaskIndexed_v2>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("HeapSpGEMM<rowAlg::MaskIndexed_v3>", HeapSpGEMM<rowAlg::MaskIndexed_v3>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM2p<MaskIndexed>",        MaskedSpGEMM2p<MaskIndexed>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM1p<MaskIndexed>",        MaskedSpGEMM1p<MaskIndexed>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        std::cout << "LOG,separator" << std::endl;
-
-        run("HeapSpGEMM<rowAlg::MaskedHeap_v0>", HeapSpGEMM<rowAlg::MaskedHeap_v0>,   innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("HeapSpGEMM<rowAlg::MaskedHeap_v1>", HeapSpGEMM<rowAlg::MaskedHeap_v1>,   innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("HeapSpGEMM<rowAlg::MaskedHeap_v2>", HeapSpGEMM<rowAlg::MaskedHeap_v2>,   innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM2p<MaskedHeap_v1>",     MaskedSpGEMM2p<MaskedHeap_v1>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM1p<MaskedHeap_v1>",     MaskedSpGEMM1p<MaskedHeap_v1>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM2p<MaskedHeap_v2>",     MaskedSpGEMM2p<MaskedHeap_v2>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
-        run("MaskedSpGEMM1p<MaskedHeap_v2>",     MaskedSpGEMM1p<MaskedHeap_v2>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        profile("MaskedSpGEMM1p<MaskedSPA2A>",   MaskedSpGEMM1p_prof<MaskedSPA2A>,   innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
+        profile("MaskedSpGEMM1p<MaskedHash>",    MaskedSpGEMM1p_prof<MaskedHash>,    innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
+        profile("MaskedSpGEMM1p<MaskIndexed>",   MaskedSpGEMM1p_prof<MaskIndexed>,   innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
+        profile("MaskedSpGEMM1p<MaskedHeap_v1>", MaskedSpGEMM1p_prof<MaskedHeap_v1>, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
+        profile("MaskedSpGEMM1p<MaskedHeap_v2>", MaskedSpGEMM1p_prof<MaskedHeap_v2>, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
         // @formatter:on
-    }
+        printRowData(data, A_csr.rows, innerIters, (innerIters + 1) / 2,
+                     {"MaskedSPA2A", "MaskedHash", "MaskIndexed", "MaskedHeap_v1", "MaskedHeap_v2"});
+    } else {
+        for (size_t i = 0; i < outerIters; i++) {
+            // @formatter:off
+            run("innerSpGEMM_nohash<false-false>", innerSpGEMM_nohash<false, false>,   innerIters, tnums, flop, A_csr, A_csc, A_csr);
+            std::cout << "LOG,separator" << std::endl;
 
-    size_t nrows = std::min<size_t>(A_csr.rows, 1000);
-    for (int i = 0; i < nrows; i++) {
-        auto nnz = A_csr.rowptr[i + 1] - A_csr.rowptr[i];
-        std::cout << i << "," << nnz;
-        for (auto j = 1; j < times.size(); j++) {
-            std::cout << "," << times[j][i];
+            run("mxm_hash_mask",                      mxm_hash_mask,                      innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("mxm_hash_mask_wobin",                mxm_hash_mask_wobin,                innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MaskedHash>",         MaskedSpGEMM2p<MaskedHash>,         innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedHash>",         MaskedSpGEMM1p<MaskedHash>,         innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            std::cout << "LOG,separator" << std::endl;
+
+            run("MaskedSPASpGEMM",                    MaskedSPASpGEMM,                    innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MaskedSPA>",          MaskedSpGEMM2p<MaskedSPA>,          innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedSPA>",          MaskedSpGEMM1p<MaskedSPA>,          innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MaskedSPA2A>",        MaskedSpGEMM2p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            std::cout << "LOG,separator" << std::endl;
+
+            run("HeapSpGEMM<rowAlg::MaskIndexed_v1>", HeapSpGEMM<rowAlg::MaskIndexed_v1>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("HeapSpGEMM<rowAlg::MaskIndexed_v2>", HeapSpGEMM<rowAlg::MaskIndexed_v2>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("HeapSpGEMM<rowAlg::MaskIndexed_v3>", HeapSpGEMM<rowAlg::MaskIndexed_v3>, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MaskIndexed>",        MaskedSpGEMM2p<MaskIndexed>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskIndexed>",        MaskedSpGEMM1p<MaskIndexed>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            std::cout << "LOG,separator" << std::endl;
+
+            run("HeapSpGEMM<rowAlg::MaskedHeap_v0>", HeapSpGEMM<rowAlg::MaskedHeap_v0>,   innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("HeapSpGEMM<rowAlg::MaskedHeap_v1>", HeapSpGEMM<rowAlg::MaskedHeap_v1>,   innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("HeapSpGEMM<rowAlg::MaskedHeap_v2>", HeapSpGEMM<rowAlg::MaskedHeap_v2>,   innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MaskedHeap_v1>",     MaskedSpGEMM2p<MaskedHeap_v1>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedHeap_v1>",     MaskedSpGEMM1p<MaskedHeap_v1>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MaskedHeap_v2>",     MaskedSpGEMM2p<MaskedHeap_v2>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedHeap_v2>",     MaskedSpGEMM1p<MaskedHeap_v2>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            // @formatter:on
         }
-        std::cout << std::endl;
     }
 
     A_csc.make_empty();
