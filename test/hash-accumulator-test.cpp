@@ -3,7 +3,6 @@
 #include <map>
 
 #include "../spgemm-blocks/hash/HashAccumulator.h"
-#include "input-helpers.h"
 
 
 template<template<class, class> class HashTableT, class K, class V>
@@ -33,9 +32,9 @@ void testAllOps(size_t nops, size_t niter, K maxKey) {
 
                     bool inserted;
                     if constexpr (std::is_void_v<V>) {
-                        inserted = hashTable.template insert(key);
+                        inserted = hashTable.insert(key);
                     } else {
-                        inserted = hashTable.template insert(key, value);
+                        inserted = hashTable.insert(key, value);
                     }
                     if (inserted != (cnt == 0)) {
                         std::cerr << "Insertion error. Key: \"" << key << "\"" << std::endl;
@@ -46,7 +45,7 @@ void testAllOps(size_t nops, size_t niter, K maxKey) {
                 case 1: {
                     // erase op
                     size_t cnt = map.erase(key);
-                    bool deleted = hashTable.template erase(key);
+                    bool deleted = hashTable.erase(key);
                     if (deleted != (cnt != 0)) {
                         std::cerr << "Deleting error. Key: \"" << key << "\"" << std::endl;
                     }
@@ -62,7 +61,7 @@ void testAllOps(size_t nops, size_t niter, K maxKey) {
                     if (found != (cnt != 0)) { std::cerr << "Search error. Key: \"" << key << "\"" << std::endl; }
 
                     if constexpr (!std::is_void_v<V>) {
-                        if (found && map[key] != hashTable.template operator[](idx).value1) {
+                        if (found && map[key] != hashTable.operator[](idx).value1) {
                             std::cerr << "Search error. Key: \"" << key << "\"" << std::endl;
                         }
                     }
