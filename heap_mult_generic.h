@@ -35,20 +35,20 @@ namespace heap {
 
 template<class RandomAccessIterator, class SizeT>
 [[gnu::always_inline]]
-void make(RandomAccessIterator heap, SizeT size) {
+inline void make(RandomAccessIterator heap, SizeT size) {
     std::make_heap(heap, heap + size);
 }
 
 template<class RandomAccessIterator, class SizeT>
 [[gnu::always_inline]]
-void pop(RandomAccessIterator heap, SizeT &size) {
+inline void pop(RandomAccessIterator heap, SizeT &size) {
     std::pop_heap(heap, heap + size);
     size--;
 }
 
 template<class RandomAccessIterator, class SizeT>
 [[gnu::always_inline]]
-void sinkRoot(RandomAccessIterator heap, SizeT size) {
+inline void sinkRoot(RandomAccessIterator heap, SizeT size) {
     std::pop_heap(heap, heap + size);
     std::push_heap(heap, heap + size);
 }
