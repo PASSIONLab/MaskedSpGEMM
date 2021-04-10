@@ -92,7 +92,11 @@ public:
     }
 
     void clearAll() {
-        memset(_entries, 0xFF, _maxIndex * sizeof(EntryT));
+        clearAll(_maxIndex);
+    }
+
+    void clearAll(size_t nelems) {
+        memset(_entries, 0xFF, nelems * sizeof(EntryT));
     }
 };
 

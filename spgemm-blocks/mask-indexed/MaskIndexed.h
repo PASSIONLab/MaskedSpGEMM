@@ -69,7 +69,7 @@ public:
         }
 
         /* Remove empty values the destination arrays and set row IDs */
-        _symbolicAccumulator.clearAll();
+        _symbolicAccumulator.clearAll(maskSize);
 
         rowNvals[row] = currRowNvals;
     }
@@ -127,7 +127,7 @@ public:
                 *(currValue++) = entry.value;
             }
         }
-        _numericAccumulator.clearAll();
+        _numericAccumulator.clearAll(maskSize);
     }
 
 };
