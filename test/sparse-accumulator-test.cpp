@@ -5,24 +5,27 @@
 
 int main() {
     using KeyT = uint64_t;
-    using AccumT = SparseAccumulator<KeyT>;
+    using AccumT = SparseAccumulator<KeyT, void>;
     const size_t maxIndex = 100;
     const size_t maxEntries = 80;
 
+    auto spa = AccumT(maxIndex);
 
-    size_t bufferSize = AccumT::requiredMemory(maxIndex, maxEntries);
-    size_t bufferAlignment = AccumT::requiredAlignment();
+    auto [bufferSize, bufferAlignment] = spa.getMemoryRequirement();
     std::byte *buffer = mallocAligned(bufferSize, bufferAlignment);
-
     size_t dirtyMemory = bufferSize;
-    auto spa = SparseAccumulator<KeyT>(maxIndex, maxEntries, buffer, bufferSize, dirtyMemory);
+    spa.setBuffer(buffer, bufferSize, dirtyMemory);
+
+//    for (int i = 0; i < maxEntries; i++) {
+//        assert(spa.insert(i * maxIndex / maxEntries));
+//    }
+//
+//    for (int i = 0; i < maxEntries; i++) {
+//        assert(!spa.insert(i * maxIndex / maxEntries));
+//    }
 
     for (int i = 0; i < maxEntries; i++) {
-        assert(spa.insert(i * maxIndex / maxEntries));
-    }
-
-    for (int i = 0; i < maxEntries; i++) {
-        assert(!spa.insert(i * maxIndex / maxEntries));
+        spa.setAllowed(i * maxIndex / maxEntries);
     }
 
     for (int i = 0; i < maxEntries; i++) {
@@ -34,5 +37,4 @@ int main() {
     }
 
     freeAligned(buffer);
-
 }

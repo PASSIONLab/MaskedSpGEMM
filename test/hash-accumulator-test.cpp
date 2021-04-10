@@ -4,7 +4,6 @@
 
 #include "../spgemm-blocks/hash/HashAccumulator.h"
 #include "input-helpers.h"
-#include "../sparse-accumulator-test.h"
 
 
 template<template<class, class> class HashTableT, class K, class V>
