@@ -219,6 +219,8 @@ void printRowData(std::vector<long *> &data, size_t nrows, size_t niter, size_t 
                   const std::vector<std::string> &algorithmNames) {
     size_t nh = data.size() - niter * algorithmNames.size();
 
+    std::cout << "CSV" << std::endl;
+
     std::cout << "NCOLS, ROW_SIZE_A, ROW_SIZE_M, ROW_FLOPS, ROW_FLOPS_MASKED, ROW_NVALS";
     for (const auto &alg : algorithmNames) { std::cout << ", " << alg; }
     std::cout << std::endl;
@@ -284,7 +286,7 @@ void profile(const std::string &name,
         ave_msec /= double(niters);
         double mflops = (double) nfop / ave_msec / 1000;
 
-        std::cout << "LOG,prof," << fileName << "," << name << "," << typeid(IT).name() << "|" << typeid(NT).name()
+        std::cout << "LOG-prof," << fileName << "," << name << "," << typeid(IT).name() << "|" << typeid(NT).name()
                   << "," << tnum << "," << ave_msec << "," << mflops << ","
                   << C.nnz << "," << C.sumall() << "," << checksum(C) << std::endl;
 
@@ -372,6 +374,15 @@ int main(int argc, char *argv[]) {
         setRowData(A_csr, A_csr, A_csr, data);
 //        printRowData(data, A_csr.rows, innerIters, innerIters, {});
         // @formatter:off
+        // Warmup
+        run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
+
+        run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedHash>",         MaskedSpGEMM1p<MaskedHash>,         innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskIndexed>",        MaskedSpGEMM1p<MaskIndexed>,        innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedHeap_v1>",     MaskedSpGEMM1p<MaskedHeap_v1>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedHeap_v2>",     MaskedSpGEMM1p<MaskedHeap_v2>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
+
         profile("MaskedSpGEMM1p<MaskedSPA2A>",   MaskedSpGEMM1p_prof<MaskedSPA2A>,   innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
         profile("MaskedSpGEMM1p<MaskedHash>",    MaskedSpGEMM1p_prof<MaskedHash>,    innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
         profile("MaskedSpGEMM1p<MaskIndexed>",   MaskedSpGEMM1p_prof<MaskIndexed>,   innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
