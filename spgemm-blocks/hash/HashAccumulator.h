@@ -11,6 +11,7 @@
 #include <cassert>
 
 #include "../../utility.h" // my_malloc
+#include "../util.h"
 
 template<typename EntryT>
 class HashAccumulatorBase {
@@ -141,6 +142,13 @@ protected:
         return hv;
     }
 
+    // return idx of the key that's guaranteed to be in the hashmap
+    T findIdxForce(K key) const {
+        T hv = (key * SCALE) & _mask;
+        while (_table[hv].key != key) { hv = (hv + 1) & _mask; }
+        return hv;
+    }
+
     [[gnu::always_inline]]
     T hash(K key) const {
         return (key * SCALE) & _mask;
@@ -195,6 +203,24 @@ struct HashAccumulator<K, V1, bool> : public HashAccumulatorBase<HashAccumEntryT
                 *valPtr = elem.value1;
                 ++idxPtr;
                 ++valPtr;
+                memset(&elem.value1, 0xFF, sizeof(V1));
+            }
+            elem.key = this->EMPTY;
+        }
+    }
+
+    template<typename IT, typename NT>
+    void gather(IT *&idxPtr, NT *&valPtr, const IT *keysBegin, const IT *keysEnd) {
+        for (auto keysIt = keysBegin; keysIt != keysEnd; ++keysIt) {
+            auto idx = this->findIdxForce(*keysIt);
+            auto &elem = this->_table[idx];
+
+            if (elem.value2) {
+                *idxPtr = elem.key;
+                *valPtr = elem.value1;
+                ++idxPtr;
+                ++valPtr;
+                memset(&elem.value1, 0xFF, sizeof(V1));
             }
             elem.key = this->EMPTY;
         }

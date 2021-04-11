@@ -82,7 +82,8 @@ public:
         }
 
         // Copy the values from the hash table to the output
-        _numericAccumulator.gather(currColId, currValue);
+//        _numericAccumulator.gather(currColId, currValue);
+        _numericAccumulator.gather(currColId, currValue, maskBegin, maskEnd);
     }
 };
 
