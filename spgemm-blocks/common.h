@@ -19,16 +19,37 @@ void verifyInputs(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, co
 }
 
 template<typename IT, typename NT>
-IT calculateFlops(const CSR<IT, NT> &A, const CSR<IT, NT> &B, IT *flopsPerRow) {
+IT calculateFlops(const CSR<IT, NT> &A, const CSR<IT, NT> &B, IT *flopsPerRow, int numThreads) {
     IT flops = 0; // total flop (multiplication) needed to generate C
 
-#pragma omp parallel for reduction(+:flops)
+#pragma omp parallel for reduction(+:flops) num_threads(numThreads)
     for (IT i = 0; i < A.rows; ++i) {
         IT flopsRow = 0;
         for (IT j = A.rowptr[i]; j < A.rowptr[i + 1]; ++j) {
             IT inner = A.colids[j];
             IT npins = B.rowptr[inner + 1] - B.rowptr[inner];
             flopsRow += npins;
+        }
+        flopsPerRow[i] = flopsRow;
+        flops += flopsRow;
+    }
+
+    return flops;
+}
+
+template<typename IT, typename NT>
+IT calculateFlops(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT *flopsPerRow, int numThreads) {
+    IT flops = 0; // total flop (multiplication) needed to generate C
+
+#pragma omp parallel for reduction(+:flops) num_threads(numThreads)
+    for (IT i = 0; i < A.rows; ++i) {
+        IT flopsRow = 0;
+        if (M.rowptr[i + 1] != M.rowptr[i]) {
+            for (IT j = A.rowptr[i]; j < A.rowptr[i + 1]; ++j) {
+                IT inner = A.colids[j];
+                IT npins = B.rowptr[inner + 1] - B.rowptr[inner];
+                flopsRow += npins;
+            }
         }
         flopsPerRow[i] = flopsRow;
         flops += flopsRow;
@@ -60,10 +81,9 @@ IT estimateResultSize(IT rowBeginIdx, IT rowEndIdx, IT *flopsPerRow,
     return size;
 }
 
-template<bool calcUpperBoundSizeC, bool calcMaxRowSizeA, bool calcMaxRowSizeM,
-        class IT, class NT>
+template<bool calcUpperBoundSizeC = true, bool calcMaxRowSizeA = true, bool calcMaxRowSizeM = true, class IT, class NT>
 std::tuple<IT, IT, IT> scanInputs(IT rowBeginIdx, IT rowEndIdx, IT *flopsPerRow,
-                                      const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M) {
+                                  const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M) {
     IT sizeC = 0;
     IT maxRowSizeM = 0;
     IT maxRowSizeA = 0;

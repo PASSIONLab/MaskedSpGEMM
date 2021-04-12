@@ -27,6 +27,7 @@
 #include "../spa_mult.h"
 #include "../spgemm-blocks/masked-spgemm.h"
 #include "../spgemm-blocks/masked-spgemm-prof.h"
+#include "../spgemm-blocks/masked-spgemm-poly.h"
 
 using namespace std;
 
@@ -70,7 +71,7 @@ std::string checksum(const AT<IT, NT> &A) {
 }
 
 static const char *getFileName(const char *path) {
-    int len = strlen(path);
+    size_t len = strlen(path);
     while (path[len] != '/' && len >= 0) { len--; }
     return path + len + 1;
 }
@@ -110,7 +111,7 @@ void run(const std::string &name,
             ave_msec += msec;
         }
 
-        ave_msec /= niters;
+        ave_msec /= static_cast<double>(niters);
         double mflops = (double) nfop / ave_msec / 1000;
 
         std::cout << name << " returned with " << C.nnz << " nonzeros. "
@@ -369,7 +370,17 @@ int main(int argc, char *argv[]) {
 
     std::size_t flop = get_flop(A_csc, A_csc);
 
-    if (prof) {
+    if (true) {
+        run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,         innerIters, tnums, flop, A_csr, A_csr, A_csr);
+
+        run("MaskedSpGEMM1p<MaskedHeap_v1>",      MaskedSpGEMM1p<MaskedHeap_v1>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedHeap_v2>",      MaskedSpGEMM1p<MaskedHeap_v2>,       innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedHash>",         MaskedSpGEMM1p<MaskedHash>,          innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,         innerIters, tnums, flop, A_csr, A_csr, A_csr);
+        run("MaskedSpGEMM1p<MaskIndexed>",        MaskedSpGEMM1p<MaskIndexed>,         innerIters, tnums, flop, A_csr, A_csr, A_csr);
+
+        run("MaskedSpGEMM1p",                     MaskedSpGEMM1p,                      innerIters, tnums, flop, A_csr, A_csr, A_csr);
+    } else if (prof) {
         std::vector<long *> data;
         setRowData(A_csr, A_csr, A_csr, data);
 //        printRowData(data, A_csr.rows, innerIters, innerIters, {});

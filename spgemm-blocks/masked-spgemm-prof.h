@@ -14,7 +14,7 @@ void MaskedSpGEMM1p_prof(long *rowTimes, const CSR<IT, NT> &A, const CSR<IT, NT>
 
     // Estimate work
     IT *flopsPerRow = my_malloc<IT>(A.rows);
-    IT flops = calculateFlops(A, B, flopsPerRow);
+    IT flops = calculateFlops(A, B, flopsPerRow, numThreads);
 
     // Calculate cumulative work
     IT *cumulativeWork = my_malloc<IT>(A.rows);

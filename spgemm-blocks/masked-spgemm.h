@@ -22,7 +22,7 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
 
     // Estimate work
     IT *flopsPerRow = my_malloc<IT>(A.rows);
-    IT flops = calculateFlops(A, B, flopsPerRow);
+    IT flops = calculateFlops(A, B, M, flopsPerRow, numThreads);
 
     // Calculate cumulative work
     IT *cumulativeWork = my_malloc<IT>(A.rows);
@@ -58,7 +58,7 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         // Numeric phase
         alg.getNumericAccumulator().setBuffer(buffer, bufferSize, dirty);
         for (IT row = rowBeginIdx; row < rowEndIdx; ++row) {
-            if (M.rowptr[row] != M.rowptr[row + 1]) {
+            if (flopsPerRow[row]) {
                 alg.numericRow(A, B, M, multop, addop, row, currColId, currValue);
             } else {
                 rowNvals[row] = 0;
@@ -76,15 +76,11 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         setRowOffsets(C, threadsNvals, rowBeginIdx, rowEndIdx, rowNvals, numThreads, thisThread);
         copyValuesToC(C, rowBeginIdx, colIdsLocal, valuesLocal, threadsNvals[thisThread]);
 
-        my_free(colIdsLocal);
-        my_free(valuesLocal);
+        my_free(colIdsLocal, valuesLocal);
         freeAligned(buffer);
     }
 
-    my_free(flopsPerRow);
-    my_free(cumulativeWork);
-    my_free(rowNvals);
-    my_free(threadsNvals);
+    my_free(flopsPerRow, cumulativeWork, rowNvals, threadsNvals);
 }
 
 template<template<class, class> class RowAlgorithm, class IT, class NT, class MultiplyOperation, class AddOperation>
@@ -97,7 +93,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
 
     // Estimate work
     IT *flopsPerRow = my_malloc<IT>(A.rows);
-    IT flops = calculateFlops(A, B, flopsPerRow);
+    IT flops = calculateFlops(A, B, M, flopsPerRow, numThreads);
 
     // Calculate cumulative work
     IT *cumulativeWork = my_malloc<IT>(A.rows);
@@ -128,7 +124,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         alg.getSymbolicAccumulator().setBuffer(buffer, bufferSize, dirty);
         IT nvals = 0;
         for (IT row = rowBeginIdx; row < rowEndIdx; row++) {
-            if (M.rowptr[row] != M.rowptr[row + 1]) {
+            if (flopsPerRow[row]) {
                 alg.symbolicRow(A, B, M, row, rowNvals);
             } else {
                 rowNvals[row] = 0;
@@ -160,10 +156,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         freeAligned(buffer);
     }
 
-    my_free(flopsPerRow);
-    my_free(cumulativeWork);
-    my_free(rowNvals);
-    my_free(threadsNvals);
+    my_free(flopsPerRow, cumulativeWork, rowNvals, threadsNvals);
 }
 
 #endif //SPGEMM_GENERIC_H

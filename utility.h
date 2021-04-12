@@ -152,6 +152,12 @@ template <typename T> inline void my_free(T *a) {
 #endif
 }
 
+template <class T, class ...Ts>
+inline void my_free(T *a, Ts *...as) {
+    my_free(a);
+    my_free(as...);
+}
+
 // Prefix sum (Sequential)
 template <typename T> void seq_scan(T *in, T *out, T N) {
   out[0] = 0;
