@@ -1,27 +1,27 @@
-#ifndef MASKED_SPGEMM_MASK_INDEXED_ACCUMULATOR_H
-#define MASKED_SPGEMM_MASK_INDEXED_ACCUMULATOR_H
+#ifndef MASKED_SPGEMM_MASK_COMPRESSED_ACCUMULATOR_H
+#define MASKED_SPGEMM_MASK_COMPRESSED_ACCUMULATOR_H
 
 #include <cassert>
 
 
 template<class S, class V>
-struct MaskIndexedEntry {
+struct MCAEntry {
     S state;
     V value;
 };
 
 template<class S>
-struct MaskIndexedEntry<S, void> {
+struct MCAEntry<S, void> {
     S state;
 };
 
 template<class KeyT, class ValueT>
-class MaskIndexedAccumulator {
+class MaskCompressedAccumulator {
 private:
     using T = std::make_unsigned_t<KeyT>;
     using StateT = uint8_t;
 
-    using EntryT = MaskIndexedEntry<StateT, ValueT>;
+    using EntryT = MCAEntry<StateT, ValueT>;
 
 public:
     inline static const StateT EMPTY = std::numeric_limits<StateT>::max();
@@ -35,15 +35,15 @@ protected:
     size_t _dirty;
 
 public:
-    MaskIndexedAccumulator(T maxIndex) : _maxIndex(maxIndex) {}
+    MaskCompressedAccumulator(T maxIndex) : _maxIndex(maxIndex) {}
 
-    MaskIndexedAccumulator(const MaskIndexedAccumulator &other) = delete;
+    MaskCompressedAccumulator(const MaskCompressedAccumulator &other) = delete;
 
-    MaskIndexedAccumulator(MaskIndexedAccumulator &&other) = delete;
+    MaskCompressedAccumulator(MaskCompressedAccumulator &&other) = delete;
 
-    MaskIndexedAccumulator &operator=(const MaskIndexedAccumulator &) = delete;
+    MaskCompressedAccumulator &operator=(const MaskCompressedAccumulator &) = delete;
 
-    MaskIndexedAccumulator &operator=(MaskIndexedAccumulator &&) = delete;
+    MaskCompressedAccumulator &operator=(MaskCompressedAccumulator &&) = delete;
 
     [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() {
         return {_maxIndex * sizeof(EntryT), sizeof(EntryT)};
@@ -85,7 +85,7 @@ public:
         assert(0 <= idx && idx < _maxIndex);
         if (_entries[idx].state != EMPTY) {
             _entries[idx].state = EMPTY;
-            if constexpr (std::is_same_v<ValueT, void>) {
+            if constexpr (!std::is_same_v<ValueT, void>) {
                 memset(&_entries[idx].value, 0xFF, sizeof(ValueT));
             }
         }
@@ -100,4 +100,4 @@ public:
     }
 };
 
-#endif //MASKED_SPGEMM_MASK_INDEXED_ACCUMULATOR_H
+#endif //MASKED_SPGEMM_MASK_COMPRESSED_ACCUMULATOR_H

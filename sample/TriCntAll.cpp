@@ -380,7 +380,7 @@ int main(int argc, char *argv[]) {
             run("MaskedSpGEMM1p<MaskedHeap_v2>",      MaskedSpGEMM1p<MaskedHeap_v2>,      warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
             run("MaskedSpGEMM1p<MaskedHash>",         MaskedSpGEMM1p<MaskedHash>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
             run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,        warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM1p<MaskIndexed>",        MaskedSpGEMM1p<MaskIndexed>,        warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MCA>",                MaskedSpGEMM1p<MCA>,                warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
             run("MaskedSpGEMM1p",                     MaskedSpGEMM1p,                     warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
             // @formatter:on
         } else if (mode == "Prof") {
@@ -388,55 +388,55 @@ int main(int argc, char *argv[]) {
             setRowData(A_csr, A_csr, A_csr, data);
 
             // @formatter:off
-            run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,        warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM1p<MaskedHash>",         MaskedSpGEMM1p<MaskedHash>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM1p<MaskIndexed>",        MaskedSpGEMM1p<MaskIndexed>,        warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM1p<MaskedHeap_v1>",      MaskedSpGEMM1p<MaskedHeap_v1>,      warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM1p<MaskedHeap_v2>",      MaskedSpGEMM1p<MaskedHeap_v2>,      warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedSPA2A>",       MaskedSpGEMM1p<MaskedSPA2A>,        warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedHash>",        MaskedSpGEMM1p<MaskedHash>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MCA>",               MaskedSpGEMM1p<MCA>,                warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedHeap_v1>",     MaskedSpGEMM1p<MaskedHeap_v1>,      warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedHeap_v2>",     MaskedSpGEMM1p<MaskedHeap_v2>,      warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
 
-            profile("MaskedSpGEMM1p<MaskedSPA2A>",    MaskedSpGEMM1p_prof<MaskedSPA2A>,   warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
-            profile("MaskedSpGEMM1p<MaskedHash>",     MaskedSpGEMM1p_prof<MaskedHash>,    warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
-            profile("MaskedSpGEMM1p<MaskIndexed>",    MaskedSpGEMM1p_prof<MaskIndexed>,   warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
-            profile("MaskedSpGEMM1p<MaskedHeap_v1>",  MaskedSpGEMM1p_prof<MaskedHeap_v1>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
-            profile("MaskedSpGEMM1p<MaskedHeap_v2>",  MaskedSpGEMM1p_prof<MaskedHeap_v2>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
+            profile("MaskedSpGEMM1p<MaskedSPA2A>",   MaskedSpGEMM1p_prof<MaskedSPA2A>,   warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
+            profile("MaskedSpGEMM1p<MaskedHash>",    MaskedSpGEMM1p_prof<MaskedHash>,    warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
+            profile("MaskedSpGEMM1p<MCA>",           MaskedSpGEMM1p_prof<MCA>,           warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
+            profile("MaskedSpGEMM1p<MaskedHeap_v1>", MaskedSpGEMM1p_prof<MaskedHeap_v1>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
+            profile("MaskedSpGEMM1p<MaskedHeap_v2>", MaskedSpGEMM1p_prof<MaskedHeap_v2>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
             // @formatter:on
 
             printRowData(data, A_csr.rows, innerIters, (innerIters + 1) / 2,
-                         {"MaskedSPA2A", "MaskedHash", "MaskIndexed", "MaskedHeap_v1", "MaskedHeap_v2"});
+                         {"MaskedSPA2A", "MaskedHash", "MCA", "MaskedHeap_v1", "MaskedHeap_v2"});
         } else {
             // @formatter:off
             std::cout << "LOG,start" << std::endl;
 
-            run("innerSpGEMM_nohash<false-false>", innerSpGEMM_nohash<false, false>,   warmupIters, innerIters, tnums, flop, A_csr, A_csc, A_csr);
+            run("innerSpGEMM_nohash<false-false>", innerSpGEMM_nohash<false, false>,  warmupIters, innerIters, tnums, flop, A_csr, A_csc, A_csr);
             std::cout << "LOG,separator" << std::endl;
 
-            run("mxm_hash_mask",                      mxm_hash_mask,                      warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("mxm_hash_mask_wobin",                mxm_hash_mask_wobin,                warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM2p<MaskedHash>",         MaskedSpGEMM2p<MaskedHash>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM1p<MaskedHash>",         MaskedSpGEMM1p<MaskedHash>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("mxm_hash_mask",                     mxm_hash_mask,                      warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("mxm_hash_mask_wobin",               mxm_hash_mask_wobin,                warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MaskedHash>",        MaskedSpGEMM2p<MaskedHash>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedHash>",        MaskedSpGEMM1p<MaskedHash>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
             std::cout << "LOG,separator" << std::endl;
 
-            run("MaskedSPASpGEMM",                    MaskedSPASpGEMM,                    warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM2p<MaskedSPA>",          MaskedSpGEMM2p<MaskedSPA>,          warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM1p<MaskedSPA>",          MaskedSpGEMM1p<MaskedSPA>,          warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM2p<MaskedSPA2A>",        MaskedSpGEMM2p<MaskedSPA2A>,        warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM1p<MaskedSPA2A>",        MaskedSpGEMM1p<MaskedSPA2A>,        warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSPASpGEMM",                   MaskedSPASpGEMM,                    warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MaskedSPA>",         MaskedSpGEMM2p<MaskedSPA>,          warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedSPA>",         MaskedSpGEMM1p<MaskedSPA>,          warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MaskedSPA2A>",       MaskedSpGEMM2p<MaskedSPA2A>,        warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedSPA2A>",       MaskedSpGEMM1p<MaskedSPA2A>,        warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
             std::cout << "LOG,separator" << std::endl;
 
-            run("HeapSpGEMM<rowAlg::MaskIndexed_v1>", HeapSpGEMM<rowAlg::MaskIndexed_v1>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("HeapSpGEMM<rowAlg::MaskIndexed_v2>", HeapSpGEMM<rowAlg::MaskIndexed_v2>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("HeapSpGEMM<rowAlg::MaskIndexed_v3>", HeapSpGEMM<rowAlg::MaskIndexed_v3>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM2p<MaskIndexed>",        MaskedSpGEMM2p<MaskIndexed>,        warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM1p<MaskIndexed>",        MaskedSpGEMM1p<MaskIndexed>,        warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("HeapSpGEMM<rowAlg::MCA_v1>",        HeapSpGEMM<rowAlg::MCA_v1>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("HeapSpGEMM<rowAlg::MCA_v2>",        HeapSpGEMM<rowAlg::MCA_v2>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("HeapSpGEMM<rowAlg::MCA_v3>",        HeapSpGEMM<rowAlg::MCA_v3>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MCA>",               MaskedSpGEMM2p<MCA>,                warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MCA>",               MaskedSpGEMM1p<MCA>,                warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
             std::cout << "LOG,separator" << std::endl;
 
-            run("HeapSpGEMM<rowAlg::MaskedHeap_v0>",  HeapSpGEMM<rowAlg::MaskedHeap_v0>,  warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("HeapSpGEMM<rowAlg::MaskedHeap_v1>",  HeapSpGEMM<rowAlg::MaskedHeap_v1>,  warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("HeapSpGEMM<rowAlg::MaskedHeap_v2>",  HeapSpGEMM<rowAlg::MaskedHeap_v2>,  warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM2p<MaskedHeap_v1>",      MaskedSpGEMM2p<MaskedHeap_v1>,      warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM1p<MaskedHeap_v1>",      MaskedSpGEMM1p<MaskedHeap_v1>,      warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM2p<MaskedHeap_v2>",      MaskedSpGEMM2p<MaskedHeap_v2>,      warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
-            run("MaskedSpGEMM1p<MaskedHeap_v2>",      MaskedSpGEMM1p<MaskedHeap_v2>,      warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("HeapSpGEMM<rowAlg::MaskedHeap_v0>", HeapSpGEMM<rowAlg::MaskedHeap_v0>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("HeapSpGEMM<rowAlg::MaskedHeap_v1>", HeapSpGEMM<rowAlg::MaskedHeap_v1>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("HeapSpGEMM<rowAlg::MaskedHeap_v2>", HeapSpGEMM<rowAlg::MaskedHeap_v2>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MaskedHeap_v1>",     MaskedSpGEMM2p<MaskedHeap_v1>,     warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedHeap_v1>",     MaskedSpGEMM1p<MaskedHeap_v1>,     warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM2p<MaskedHeap_v2>",     MaskedSpGEMM2p<MaskedHeap_v2>,     warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
+            run("MaskedSpGEMM1p<MaskedHeap_v2>",     MaskedSpGEMM1p<MaskedHeap_v2>,     warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
             // @formatter:on
         }
     }

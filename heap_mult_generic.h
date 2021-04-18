@@ -472,7 +472,7 @@ struct MaskedHeap_v2 : MaskedHeapBase {
     }
 };
 
-struct MaskIndexedBase {
+struct MCABase {
     const static bool masked = true;
 
     template<class IT, class NT>
@@ -499,7 +499,7 @@ struct MaskIndexedBase {
 };
 
 
-struct MaskIndexed_v1 : MaskIndexedBase {
+struct MCA_v1 : MCABase {
 
     const static bool masked = true;
 
@@ -570,7 +570,7 @@ struct MaskIndexed_v1 : MaskIndexedBase {
     }
 };
 
-struct MaskIndexed_v2 : MaskIndexedBase {
+struct MCA_v2 : MCABase {
 
     const static bool masked = true;
 
@@ -641,7 +641,7 @@ struct MaskIndexed_v2 : MaskIndexedBase {
     }
 };
 
-struct MaskIndexed_v3 : MaskIndexedBase {
+struct MCA_v3 : MCABase {
 
     const static bool masked = true;
 

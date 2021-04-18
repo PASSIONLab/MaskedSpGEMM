@@ -199,9 +199,9 @@ int main(int argc, char *argv[]) {
         run("HeapSpGEMM<rowAlg::MaskedBasicHeap_v1> CSR", HeapSpGEMM<rowAlg::MaskedHeap_v0>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
         run("HeapSpGEMM<rowAlg::MaskedBasicHeap_v2> CSR", HeapSpGEMM<rowAlg::MaskedHeap_v1>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
         run("HeapSpGEMM<rowAlg::MaskedBasicHeap_v3> CSR", HeapSpGEMM<rowAlg::MaskedHeap_v2>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
-        run("HeapSpGEMM<rowAlg::MaskIndexed_v1> CSR", HeapSpGEMM<rowAlg::MaskIndexed_v1>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
-        run("HeapSpGEMM<rowAlg::MaskIndexed_v2> CSR", HeapSpGEMM<rowAlg::MaskIndexed_v2>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
-        run("HeapSpGEMM<rowAlg::MaskIndexed_v3> CSR", HeapSpGEMM<rowAlg::MaskIndexed_v3>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
+        run("HeapSpGEMM<rowAlg::MCA_v1> CSR", HeapSpGEMM<rowAlg::MCA_v1>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
+        run("HeapSpGEMM<rowAlg::MCA_v2> CSR", HeapSpGEMM<rowAlg::MCA_v2>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
+        run("HeapSpGEMM<rowAlg::MCA_v3> CSR", HeapSpGEMM<rowAlg::MCA_v3>, innerIters, tnums, flop, A_csr, B_csr, M_csr);
         // @formatter:on
     }
 

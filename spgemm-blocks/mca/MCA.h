@@ -1,13 +1,13 @@
-#ifndef MASKED_SPGEMM_MASK_INDEXED_H
-#define MASKED_SPGEMM_MASK_INDEXED_H
+#ifndef MASKED_SPGEMM_MCA_H
+#define MASKED_SPGEMM_MCA_H
 
-#include "MaskIndexedAccumulator.h"
+#include "MaskCompressedAccumulator.h"
 
 template<class IT, class NT>
-class MaskIndexed {
+class MCA {
 private:
-    using SymbolicAccumulatorT = MaskIndexedAccumulator<IT, void>;
-    using NumericAccumulatorT = MaskIndexedAccumulator<IT, NT>;
+    using SymbolicAccumulatorT = MaskCompressedAccumulator<IT, void>;
+    using NumericAccumulatorT = MaskCompressedAccumulator<IT, NT>;
     SymbolicAccumulatorT _symbolicAccumulator;
     NumericAccumulatorT _numericAccumulator;
 
@@ -15,7 +15,7 @@ public:
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = true;
 
-    explicit MaskIndexed(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
+    explicit MCA(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
             : _symbolicAccumulator(maxRowSizeM), _numericAccumulator(maxRowSizeM) {};
 
     std::tuple<size_t, size_t> getMemoryRequirement() {
@@ -132,4 +132,4 @@ public:
 
 };
 
-#endif //MASKED_SPGEMM_MASK_INDEXED_H
+#endif //MASKED_SPGEMM_MCA_H

@@ -41,26 +41,26 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
 //        MaskedHeap_v1<IT, NT> heap{B.cols, maxRowSizeA, maxRowSizeM};
 //        auto[bufferSizeHeap, bufferAlignmentHeap] = heap.getMemoryRequirement();
 
-        MaskIndexed<IT, NT> maskIndexed{B.cols, maxRowSizeA, maxRowSizeM};
-        auto[bufferSizeMaskIndexed, bufferAlignmentMaskIndexed] = maskIndexed.getMemoryRequirement();
+        MCA<IT, NT> mca{B.cols, maxRowSizeA, maxRowSizeM};
+        auto[bufferSizeMCA, bufferAlignmentMCA] = mca.getMemoryRequirement();
 
         size_t bufferSize = 0;
 //        bufferSize = std::max(bufferSize, bufferSizeHash);
         bufferSize = std::max(bufferSize, bufferSizeSPA);
 //        bufferSize = std::max(bufferSize, bufferSizeHeap);
-        bufferSize = std::max(bufferSize, bufferSizeMaskIndexed);
+        bufferSize = std::max(bufferSize, bufferSizeMCA);
 
         size_t bufferAlignment = 1;
 //        bufferAlignment = std::lcm(bufferAlignment, bufferAlignmentHash);
         bufferAlignment = std::lcm(bufferAlignment, bufferAlignmentSPA);
 //        bufferAlignment = std::lcm(bufferAlignment, bufferSizeHeap);
-        bufferAlignment = std::lcm(bufferAlignment, bufferAlignmentMaskIndexed);
+        bufferAlignment = std::lcm(bufferAlignment, bufferAlignmentMCA);
 
         auto buffer = mallocAligned(bufferSize, bufferAlignment);
         size_t dirty = bufferSize;
 
         spa.getNumericAccumulator().setBuffer(buffer, bufferSize, dirty);
-        maskIndexed.getNumericAccumulator().setBuffer(buffer, bufferSize, dirty);
+        mca.getNumericAccumulator().setBuffer(buffer, bufferSize, dirty);
 
         // Allocate temporary memory for C's column IDs and Values
         IT *colIdsLocal = my_malloc<IT>(upperBoundSizeC);
@@ -72,7 +72,7 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         for (IT row = rowBeginIdx; row < rowEndIdx; ++row) {
             if (flopsPerRow[row] != 0) {
                 if ((M.rowptr[row + 1] - M.rowptr[row]) * (A.rowptr[row + 1] - A.rowptr[row]) < flopsPerRow[row]) {
-                    maskIndexed.numericRow(A, B, M, multop, addop, row, currColId, currValue);
+                    mca.numericRow(A, B, M, multop, addop, row, currColId, currValue);
                 } else {
                     spa.numericRow(A, B, M, multop, addop, row, currColId, currValue);
                 }
