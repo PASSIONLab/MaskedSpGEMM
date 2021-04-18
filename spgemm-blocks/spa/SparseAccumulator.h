@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cassert>
 #include <numeric>
+#include <tuple>
 
 #include "../util.h"
 

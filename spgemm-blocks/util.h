@@ -5,6 +5,7 @@
 #include <cstring>
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 
 template<class T>
 bool isAligned(const T *ptr, size_t alignment) noexcept {
