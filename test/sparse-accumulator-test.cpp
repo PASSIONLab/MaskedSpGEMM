@@ -1,11 +1,11 @@
 #include <iostream>
 
 #include "../spgemm-blocks/util.h"
-#include "../spgemm-blocks/spa/SparseAccumulator.h"
+#include "../spgemm-blocks/msa/MaskedSparseAccumulator1A.h"
 
 int main() {
     using KeyT = uint64_t;
-    using AccumT = SparseAccumulator<KeyT, void>;
+    using AccumT = MaskedSparseAccumulator1A<KeyT, void>;
     const size_t maxIndex = 100;
     const size_t maxEntries = 80;
 

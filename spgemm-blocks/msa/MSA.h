@@ -1,15 +1,15 @@
 #ifndef MASKED_SPGEMM_MASKED_SPA_H
 #define MASKED_SPGEMM_MASKED_SPA_H
 
-#include "SparseAccumulator.h"
-#include "SparseAccumulator2A.h"
+#include "MaskedSparseAccumulator1A.h"
+#include "MaskedSparseAccumulator2A.h"
 
 
 template<class IT, class NT>
-class MaskedSPA {
+class MSA1A {
 private:
-    using SymbolicAccumulator = SparseAccumulator<IT, void>;
-    using NumericAccumulatorT = SparseAccumulator<IT, NT>;
+    using SymbolicAccumulator = MaskedSparseAccumulator1A<IT, void>;
+    using NumericAccumulatorT = MaskedSparseAccumulator1A<IT, NT>;
     SymbolicAccumulator _symbolicAccumulator;
     NumericAccumulatorT _numericAccumulator;
 
@@ -17,7 +17,7 @@ public:
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = false;
 
-    explicit MaskedSPA(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
+    explicit MSA1A(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
             : _symbolicAccumulator(maxIndex), _numericAccumulator(maxIndex) {}
 
     [[nodiscard]]  std::tuple<size_t, size_t> getMemoryRequirement() {
@@ -106,10 +106,10 @@ public:
 };
 
 template<class IT, class NT>
-class MaskedSPA2A {
+class MSA2A {
 private:
-    using SymbolicAccumulator = SparseAccumulator2A<IT, void>;
-    using NumericAccumulatorT = SparseAccumulator2A<IT, NT>;
+    using SymbolicAccumulator = MaskedSparseAccumulator2A<IT, void>;
+    using NumericAccumulatorT = MaskedSparseAccumulator2A<IT, NT>;
     SymbolicAccumulator _symbolicAccumulator;
     NumericAccumulatorT _numericAccumulator;
 
@@ -117,7 +117,7 @@ public:
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = false;
 
-    explicit MaskedSPA2A(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
+    explicit MSA2A(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
             : _symbolicAccumulator(maxIndex), _numericAccumulator(maxIndex) {}
 
     [[nodiscard]]  std::tuple<size_t, size_t> getMemoryRequirement() {

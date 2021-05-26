@@ -35,7 +35,7 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
 //        MaskedHash<IT, NT> hash{B.cols, maxRowSizeA, maxRowSizeM};
 //        auto[bufferSizeHash, bufferAlignmentHash] = hash.getMemoryRequirement();
 
-        MaskedSPA2A<IT, NT> spa{B.cols, maxRowSizeA, maxRowSizeM};
+        MSA2A<IT, NT> spa{B.cols, maxRowSizeA, maxRowSizeM};
         auto[bufferSizeSPA, bufferAlignmentSPA] = spa.getMemoryRequirement();
 
 //        MaskedHeap_v1<IT, NT> heap{B.cols, maxRowSizeA, maxRowSizeM};

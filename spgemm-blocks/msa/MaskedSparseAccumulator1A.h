@@ -23,7 +23,7 @@ struct SPAEntry<S, void> {
 };
 
 template<class KeyT, class ValueT>
-class SparseAccumulator {
+class MaskedSparseAccumulator1A {
 protected:
     using T = std::make_unsigned_t<KeyT>;
     using StateT = uint8_t;
@@ -42,15 +42,15 @@ protected:
     size_t _dirty;
 
 public:
-    SparseAccumulator(T maxIndex) : _maxIndex(maxIndex) {}
+    MaskedSparseAccumulator1A(T maxIndex) : _maxIndex(maxIndex) {}
 
-    SparseAccumulator(const SparseAccumulator &other) = delete;
+    MaskedSparseAccumulator1A(const MaskedSparseAccumulator1A &other) = delete;
 
-    SparseAccumulator(SparseAccumulator &&other) = delete;
+    MaskedSparseAccumulator1A(MaskedSparseAccumulator1A &&other) = delete;
 
-    SparseAccumulator &operator=(const SparseAccumulator &) = delete;
+    MaskedSparseAccumulator1A &operator=(const MaskedSparseAccumulator1A &) = delete;
 
-    SparseAccumulator &operator=(SparseAccumulator &&) = delete;
+    MaskedSparseAccumulator1A &operator=(MaskedSparseAccumulator1A &&) = delete;
 
     [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() {
         return {_maxIndex * sizeof(EntryT), sizeof(EntryT)};

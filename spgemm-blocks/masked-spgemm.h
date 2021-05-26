@@ -7,7 +7,7 @@
 #include "util.h"
 #include "hash/HashAccumulator.h"
 #include "hash/MaskedHash.h"
-#include "spa/MaskedSPA.h"
+#include "msa/MSA.h"
 #include "mca/MCA.h"
 #include "heap/MaskedHeap.h"
 
