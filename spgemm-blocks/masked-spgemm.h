@@ -6,10 +6,10 @@
 #include "scan.h"
 #include "util.h"
 #include "hash/HashAccumulator.h"
-#include "hash/MaskedHash.h"
-#include "msa/MSA.h"
-#include "mca/MCA.h"
-#include "heap/MaskedHeap.h"
+#include "hash/MaskedHashAlgorithm.h"
+#include "msa/MSAAlgorithm.h"
+#include "mca/MCAAlgorithm.h"
+#include "heap/MaskedHeapAlgorithm.h"
 
 
 template<template<class, class> class RowAlgorithm, class IT, class NT, class MultiplyOperation, class AddOperation>
