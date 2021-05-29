@@ -13,8 +13,7 @@ public:
     inline const static bool CALC_MAX_ROW_SIZE_A = true;
     inline const static bool CALC_MAX_ROW_SIZE_M = false;
 
-    MaskedHeap_v0(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) :
-            _heap(maxRowSizeA) {};
+    MaskedHeap_v0(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : _heap(maxRowSizeA) {};
 
     [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() { return _heap.getMemoryRequirement(); }
 
@@ -38,7 +37,10 @@ public:
             auto &hentry = _heap.top();
 
             while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-            if (maskIdx >= maskEnd) { break; }
+            if (maskIdx >= maskEnd) {
+                _heap.clear();
+                break;
+            }
 
             if (hentry.key == M.colids[maskIdx] && prevKey != hentry.key) {
                 prevKey = hentry.key;
@@ -68,7 +70,10 @@ public:
             auto &hentry = _heap.top();
 
             while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-            if (maskIdx >= maskEnd) { break; }
+            if (maskIdx >= maskEnd) {
+                _heap.clear();
+                break;
+            }
 
             if (hentry.key == M.colids[maskIdx]) {
                 NT value = multop(A.values[hentry.runr], B.values[hentry.loc]);
@@ -146,7 +151,10 @@ public:
             auto &hentry = _heap.top();
 
             while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-            if (maskIdx >= maskEnd) { break; }
+            if (maskIdx >= maskEnd) {
+                _heap.clear();
+                break;
+            }
 
             if (hentry.key == M.colids[maskIdx] && prevKey != hentry.key) {
                 prevKey = hentry.key;
@@ -177,7 +185,10 @@ public:
             auto &hentry = _heap.top();
 
             while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-            if (maskIdx >= maskEnd) { break; }
+            if (maskIdx >= maskEnd) {
+                _heap.clear();
+                break;
+            }
 
             if (hentry.key == M.colids[maskIdx]) {
                 NT value = multop(A.values[hentry.runr], B.values[hentry.loc]);
@@ -268,7 +279,10 @@ public:
             auto &hentry = _heap.top();
 
             while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-            if (maskIdx >= maskEnd) { break; }
+            if (maskIdx >= maskEnd) {
+                _heap.clear();
+                break;
+            }
 
             if (hentry.key == M.colids[maskIdx] && prevKey != hentry.key) {
                 prevKey = hentry.key;
@@ -298,7 +312,10 @@ public:
             auto &hentry = _heap.top();
 
             while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-            if (maskIdx >= maskEnd) { break; }
+            if (maskIdx >= maskEnd) {
+                _heap.clear();
+                break;
+            }
 
             if (hentry.key == M.colids[maskIdx]) {
                 NT value = multop(A.values[hentry.runr], B.values[hentry.loc]);

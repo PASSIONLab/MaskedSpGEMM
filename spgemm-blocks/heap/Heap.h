@@ -71,13 +71,11 @@ public:
         ++_size;
     }
 
-    [[nodiscard]] bool isEmpty() {
-        return _size == 0;
-    }
+    [[nodiscard]] bool isEmpty() { return _size == 0; }
 
-    [[nodiscard]] EntryT& top() {
-        return _entries[0];
-    }
+    [[nodiscard]] EntryT &top() { return _entries[0]; }
+
+    void clear() { _size = 0; }
 
     void make() {
         if (_size > _maxSize) { _maxSize = _size; }
