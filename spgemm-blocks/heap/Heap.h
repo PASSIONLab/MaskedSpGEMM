@@ -5,6 +5,7 @@
 
 template<class IT>
 class Heap {
+public:
     struct EntryT {
         IT key;
         IT runr;
@@ -23,6 +24,7 @@ class Heap {
         bool operator==(const EntryT &rhs) const { return (key == rhs.key); }
     };
 
+private:
     const IT _capacity;
     IT _size;
     EntryT *_entries;

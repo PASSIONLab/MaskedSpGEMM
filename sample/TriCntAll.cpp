@@ -328,6 +328,11 @@ void process(CSC<IT, NT> &A) {
     delete[] triples;
 }
 
+#define RUN_CSR_IMPL(NAME, FUNC) run(NAME, FUNC, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr)
+#define RUN_1P_CSR(ALG) RUN_CSR_IMPL(#ALG "-1P", MaskedSpGEMM1p<ALG>)
+#define RUN_2P_CSR(ALG) RUN_CSR_IMPL(#ALG "-2P", MaskedSpGEMM2p<ALG>)
+
+
 int main(int argc, char *argv[]) {
     using Value_t = long unsigned;
     using Index_t = long;
@@ -373,6 +378,13 @@ int main(int argc, char *argv[]) {
             run("MaskedSpGEMM2p<MaskedHash>",         MaskedSpGEMM2p<MaskedHash>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
             run("MaskedSpGEMM1p<MaskedHash>",         MaskedSpGEMM1p<MaskedHash>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr);
             // @formatter:on
+        } else if (mode == "Heap") {
+            RUN_1P_CSR(MaskedHeap_v0);
+            RUN_2P_CSR(MaskedHeap_v0);
+            RUN_1P_CSR(MaskedHeap_v1);
+            RUN_2P_CSR(MaskedHeap_v1);
+            RUN_1P_CSR(MaskedHeap_v2);
+            RUN_2P_CSR(MaskedHeap_v2);
         } else if (mode == "All1p") {
             // @formatter:off
             run("innerSpGEMM_nohash<false-false>", innerSpGEMM_nohash<false, false>,    warmupIters, innerIters, tnums, flop, A_csr, A_csc, A_csr);
