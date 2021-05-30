@@ -12,17 +12,20 @@
 #include "heap/MaskedHeapAlgorithm.h"
 
 
-template<template<class, class> class RowAlgorithm, class IT, class NT, class MultiplyOperation, class AddOperation>
+template<template<class, class, bool> class RowAlgorithm, bool Complemented = false,
+        class IT, class NT, class MultiplyOperation, class AddOperation>
 void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
                     MultiplyOperation multop, AddOperation addop, unsigned numThreads = 0) {
-    using RowAlg = RowAlgorithm<IT, NT>;
+    using RowAlg = RowAlgorithm<IT, NT, Complemented>;
+
     // Calculate number of threads and init C
     setNumThreads(numThreads);
     verifyInputs(A, B, C, M);
 
     // Estimate work
     IT *flopsPerRow = my_malloc<IT>(A.rows);
-    IT flops = calculateFlops(A, B, M, flopsPerRow, numThreads);
+    IT flops = Complemented ? calculateFlops(A, B, flopsPerRow, numThreads)
+                            : calculateFlops(A, B, M, flopsPerRow, numThreads);
 
     // Calculate cumulative work
     IT *cumulativeWork = my_malloc<IT>(A.rows);
@@ -40,7 +43,7 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         auto[rowBeginIdx, rowEndIdx] = distributeWork(flops, cumulativeWork, A.rows, numThreads, thisThread);
 
         // Scan the input matrices
-        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM] = scanInputs<true, RowAlg::CALC_MAX_ROW_SIZE_A, RowAlg::CALC_MAX_ROW_SIZE_M>(
+        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM] = scanInputs<Complemented, true, RowAlg::CALC_MAX_ROW_SIZE_A, RowAlg::CALC_MAX_ROW_SIZE_M>(
                 rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
 
         // Initialize row algorithm
@@ -83,17 +86,20 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
     my_free(flopsPerRow, cumulativeWork, rowNvals, threadsNvals);
 }
 
-template<template<class, class> class RowAlgorithm, class IT, class NT, class MultiplyOperation, class AddOperation>
+template<template<class, class, bool> class RowAlgorithm, bool Complemented = false,
+        class IT, class NT, class MultiplyOperation, class AddOperation>
 void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
                     MultiplyOperation multop, AddOperation addop, unsigned numThreads = 0) {
-    using RowAlg = RowAlgorithm<IT, NT>;
+    using RowAlg = RowAlgorithm<IT, NT, Complemented>;
+
     // Calculate number of threads and init C
     setNumThreads(numThreads);
     verifyInputs(A, B, C, M);
 
     // Estimate work
     IT *flopsPerRow = my_malloc<IT>(A.rows);
-    IT flops = calculateFlops(A, B, M, flopsPerRow, numThreads);
+    IT flops = Complemented ? calculateFlops(A, B, flopsPerRow, numThreads)
+                            : calculateFlops(A, B, M, flopsPerRow, numThreads);
 
     // Calculate cumulative work
     IT *cumulativeWork = my_malloc<IT>(A.rows);
@@ -111,7 +117,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         auto[rowBeginIdx, rowEndIdx] = distributeWork(flops, cumulativeWork, A.rows, numThreads, thisThread);
 
         // Scan the input matrices
-        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM] = scanInputs<false, RowAlg::CALC_MAX_ROW_SIZE_A, RowAlg::CALC_MAX_ROW_SIZE_M>(
+        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM] = scanInputs<Complemented, false, RowAlg::CALC_MAX_ROW_SIZE_A, RowAlg::CALC_MAX_ROW_SIZE_M>(
                 rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
 
         // Initialize row algorithm

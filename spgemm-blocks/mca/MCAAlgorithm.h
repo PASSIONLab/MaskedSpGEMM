@@ -3,8 +3,11 @@
 
 #include "MaskCompressedAccumulator.h"
 
-template<class IT, class NT>
+
+template<class IT, class NT, bool Complemented = false>
 class MCA {
+    static_assert(Complemented == false);
+
 private:
     using SymbolicAccumulatorT = MaskCompressedAccumulator<IT, void>;
     using NumericAccumulatorT = MaskCompressedAccumulator<IT, NT>;

@@ -5,8 +5,10 @@
 #include "MaskedSparseAccumulator2A.h"
 
 
-template<class IT, class NT>
+template<class IT, class NT, bool Complemented = false>
 class MSA1A {
+    static_assert(Complemented == false);
+
 private:
     using SymbolicAccumulator = MaskedSparseAccumulator1A<IT, void>;
     using NumericAccumulatorT = MaskedSparseAccumulator1A<IT, NT>;
@@ -105,8 +107,10 @@ public:
 
 };
 
-template<class IT, class NT>
+template<class IT, class NT, bool Complemented = false>
 class MSA2A {
+    static_assert(Complemented == false);
+
 private:
     using SymbolicAccumulator = MaskedSparseAccumulator2A<IT, void>;
     using NumericAccumulatorT = MaskedSparseAccumulator2A<IT, NT>;

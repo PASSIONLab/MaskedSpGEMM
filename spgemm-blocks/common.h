@@ -81,7 +81,7 @@ IT estimateResultSize(IT rowBeginIdx, IT rowEndIdx, IT *flopsPerRow,
     return size;
 }
 
-template<bool calcUpperBoundSizeC = true, bool calcMaxRowSizeA = true, bool calcMaxRowSizeM = true, class IT, class NT>
+template<bool complemented, bool calcUpperBoundSizeC = true, bool calcMaxRowSizeA = true, bool calcMaxRowSizeM = true, class IT, class NT>
 std::tuple<IT, IT, IT> scanInputs(IT rowBeginIdx, IT rowEndIdx, IT *flopsPerRow,
                                   const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M) {
     IT sizeC = 0;
@@ -89,7 +89,10 @@ std::tuple<IT, IT, IT> scanInputs(IT rowBeginIdx, IT rowEndIdx, IT *flopsPerRow,
     IT maxRowSizeA = 0;
 
     for (IT row = rowBeginIdx; row < rowEndIdx; row++) {
-        if (calcUpperBoundSizeC) { sizeC += std::min(flopsPerRow[row], M.rowptr[row + 1] - M.rowptr[row]); }
+        if (calcUpperBoundSizeC) {
+            if (!complemented) { sizeC += std::min(flopsPerRow[row], M.rowptr[row + 1] - M.rowptr[row]); }
+            else { sizeC += flopsPerRow[row]; }
+        }
         if (calcMaxRowSizeA) { maxRowSizeA = std::max(maxRowSizeA, A.rowptr[row + 1] - A.rowptr[row]); }
         if (calcMaxRowSizeM) { maxRowSizeM = std::max(maxRowSizeM, M.rowptr[row + 1] - M.rowptr[row]); }
     }

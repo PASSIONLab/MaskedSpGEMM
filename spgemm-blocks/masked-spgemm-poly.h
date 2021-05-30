@@ -1,10 +1,10 @@
 #ifndef MASKEDSPGEMM_MASKED_SPGEMM_POLY_H
 #define MASKEDSPGEMM_MASKED_SPGEMM_POLY_H
 
+// TODO: add complement support
 template<class IT, class NT, class MultiplyOperation, class AddOperation>
 void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
                     MultiplyOperation multop, AddOperation addop, unsigned numThreads = 0) {
-
     // Calculate number of threads and init C
     setNumThreads(numThreads);
     verifyInputs(A, B, C, M);
@@ -29,7 +29,7 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         auto[rowBeginIdx, rowEndIdx] = distributeWork(flops, cumulativeWork, A.rows, numThreads, thisThread);
 
         // Scan the input matrices
-        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM] = scanInputs(rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
+        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM] = scanInputs<false>(rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
 
         // Initialize row algorithms
 //        MaskedHash<IT, NT> hash{B.cols, maxRowSizeA, maxRowSizeM};

@@ -3,8 +3,11 @@
 
 #include "../common.h"
 
-template<class IT, class NT>
+
+template<class IT, class NT, bool Complemented = false>
 class MaskedHash {
+    static_assert(Complemented == false);
+
 private:
     HashAccumulator<IT, void, void> _symbolicAccumulator;
     HashAccumulator<IT, NT, bool> _numericAccumulator;

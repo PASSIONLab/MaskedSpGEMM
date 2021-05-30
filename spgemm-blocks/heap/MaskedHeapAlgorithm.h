@@ -4,8 +4,10 @@
 #include "Heap.h"
 
 
-template<class IT, class NT>
+template<class IT, class NT, bool Complemented = false>
 class MaskedHeap_v0 {
+    static_assert(Complemented == false);
+
 private:
     Heap<IT> _heap;
 
@@ -119,8 +121,10 @@ public:
     }
 };
 
-template<class IT, class NT>
+template<class IT, class NT, bool Complemented = false>
 class MaskedHeap_v1 {
+    static_assert(Complemented == false);
+
 private:
     Heap<IT> _heap;
 
@@ -246,8 +250,10 @@ public:
     }
 };
 
-template<class IT, class NT>
+template<class IT, class NT, bool Complemented = false>
 class MaskedHeap_v2 {
+    static_assert(Complemented == false);
+
 private:
     Heap<IT> _heap;
 
