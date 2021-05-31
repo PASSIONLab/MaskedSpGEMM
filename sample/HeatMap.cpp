@@ -30,14 +30,14 @@ double run(void(*f)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &, const 
         auto start = std::chrono::high_resolution_clock::now();
         f(A, B, C, M, std::multiplies<NT>{}, std::plus<NT>{}, nthreads);
         auto end = std::chrono::high_resolution_clock::now();
-        auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
         totalTime += time;
 //        std::cout << std::setw(8) << time << std::setw(8) << C.nnz << std::endl;
     }
 
     C.make_empty();
 
-    return double(totalTime) / double(niters);
+    return double(totalTime) / double(niters) / 1e6;
 }
 
 template<class IT, class NT>
@@ -74,7 +74,7 @@ int main() {
 
     size_t niter = 25, witer = 3, nthreads = 12;
     Index_t dimensionMin = 128 * 1024, dAMin = 1, dBMin = 1, dMMin = 1;
-    Index_t dimensionMax = 128 * 1024, dAMax = 128, dBMax = 128, dMMax = 1288;
+    Index_t dimensionMax = 128 * 1024, dAMax = 128, dBMax = 128, dMMax = 128;
 
     auto flopsPerRow = new Index_t[dimensionMax];
 
