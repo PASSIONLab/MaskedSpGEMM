@@ -41,7 +41,7 @@ double run(void(*f)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &, const 
 }
 
 template<class IT, class NT>
-void createMatrices(const std::string &name, IT dimension, IT degMin, IT degMax,
+void createMatrices(const std::string &name, IT nrows, IT ncols, IT degMin, IT degMax,
                     std::vector<std::pair<CSR<IT, NT>, IT>> &inputs) {
     std::cout << "Crating " << name << "s... ";
     std::cout.flush();
@@ -53,8 +53,8 @@ void createMatrices(const std::string &name, IT dimension, IT degMin, IT degMax,
     IT idx = 0;
     for (IT deg = degMin; deg <= degMax; deg *= 2) {
         Triple<IT, NT> *triples = nullptr;
-        auto nvals = generateRandomTriples(dimension, dimension, dimension * deg, triples);
-        CSC<IT, NT> csc(triples, nvals, dimension, dimension);
+        auto nvals = generateRandomTriples(nrows, ncols, nrows * deg, triples);
+        CSC<IT, NT> csc(triples, nvals, nrows, ncols);
         delete[] triples;
         inputs[idx++] = std::make_pair(CSR<IT, NT>(csc), deg);
         csc.make_empty();
@@ -63,8 +63,8 @@ void createMatrices(const std::string &name, IT dimension, IT degMin, IT degMax,
     std::cout << "Done" << std::endl;
 }
 
-template<class IT, class NT>
-void deleteMatrices(std::vector<std::pair<CSR<IT, NT>, IT>> &matrices) {
+template< template<class, class> class AT, class IT, class NT>
+void deleteMatrices(std::vector<std::pair<AT<IT, NT>, IT>> &matrices) {
     for (auto &it : matrices) { it.first.make_empty(); }
 }
 
@@ -75,6 +75,7 @@ int main() {
     size_t niter = 25, witer = 3, nthreads = 12;
     Index_t dimensionMin = 128 * 1024, dAMin = 1, dBMin = 1, dMMin = 1;
     Index_t dimensionMax = 128 * 1024, dAMax = 128, dBMax = 128, dMMax = 128;
+    Index_t maxRowsA = 64 * 1024;
 
     auto flopsPerRow = new Index_t[dimensionMax];
 
@@ -93,9 +94,9 @@ int main() {
 
     for (Index_t dim = dimensionMin; dim <= dimensionMax; dim *= 2) {
         std::vector<std::pair<CSR<Index_t, Value_t>, Index_t>> As, Bs, Ms;
-        createMatrices("A", dim, dAMin, dAMax, As);
-        createMatrices("B", dim, dBMin, dBMax, Bs);
-        createMatrices("M", dim, dMMin, dMMax, Ms);
+        createMatrices("A", std::min(maxRowsA, dim), dim, dAMin, dAMax, As);
+        createMatrices("B", dim, dim, dBMin, dBMax, Bs);
+        createMatrices("M", std::min(maxRowsA, dim), dim, dMMin, dMMax, Ms);
 
         std::cout << "degA," << "degM," << "MaskedHash," << "MSA2A," << "MCA," << "MaskedHeap_v1," << "MaskedHeap_v2"
                   << std::endl;
