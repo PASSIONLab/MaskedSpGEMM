@@ -168,7 +168,7 @@ innerSpGEMM_nohash(const CSR<IT,NT> & A, const CSC<IT,NT> & B, CSR<IT,NT> & C_fi
     //TODO:: optimize prefix sum
     C_final.rowptr[0] = 0;
     for (IT i = 1; i <= C_final.rows; ++i) {
-        C_final.rowptr[i] =  C_final.rowptr[i-1] + rownnz[i];//A.rowptr[rowPerThread * i];
+        C_final.rowptr[i] =  C_final.rowptr[i-1] + rownnz[i-1];//A.rowptr[rowPerThread * i];
     }
 
     // cout << "Dot SpGEMM with Mask C_final" << endl;
