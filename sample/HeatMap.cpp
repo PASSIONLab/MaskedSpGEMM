@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iomanip>
+#include <otx/otx.h>
 #include "../util/triple-util.h"
 #include "../CSC.h"
 #include "../CSR.h"
@@ -43,8 +44,8 @@ double run(void(*f)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &, const 
 template<class IT, class NT>
 void createMatrices(const std::string &name, IT nrows, IT ncols, IT degMin, IT degMax,
                     std::vector<std::pair<CSC<IT, NT>, IT>> &csc, std::vector<std::pair<CSR<IT, NT>, IT>> &csr) {
-    std::cout << "Crating " << name << "s... ";
-    std::cout.flush();
+//    std::cout << "Crating " << name << "s... ";
+//    std::cout.flush();
 
     IT numInputs = 0;
     for (IT deg = degMin; deg <= degMax; deg *= 2) { numInputs++; }
@@ -63,7 +64,7 @@ void createMatrices(const std::string &name, IT nrows, IT ncols, IT degMin, IT d
         ++idx;
     }
 
-    std::cout << "Done" << std::endl;
+//    std::cout << "Done" << std::endl;
 }
 
 template<template<class, class> class AT, class IT, class NT>
@@ -80,16 +81,42 @@ void createMatrices(const std::string &name, IT nrows, IT ncols, IT degMin, IT d
     deleteMatrices(csc);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     using Index_t = uint32_t;
     using Value_t = long unsigned;
 
-    size_t niter = 10, witer = 2, nthreads = 12;
-    Index_t dimensionMin = 1024, dAMin = 1, dBMin = 1, dMMin = 1;
-    Index_t dimensionMax = 1024 * 1024, dAMax = 128, dBMax = 128, dMMax = 256;
-    Index_t maxRowsA = 32 * 1024;
-    bool sameAB = true;
-    omp_set_num_threads(nthreads);
+    auto witer = otx::argTo<size_t>(argc, argv, "--witer", 0);
+    auto niter = otx::argTo<size_t>(argc, argv, "--niter", 1);
+    auto nthreads = otx::argTo<size_t>(argc, argv, "--nthreads", 1);
+
+    auto dimensionMin = otx::argTo<Index_t>(argc, argv, "--dimMin", 128);
+    auto dimensionMax = otx::argTo<Index_t>(argc, argv, "--dimMax", 128);
+
+    auto dAMin = otx::argTo<Index_t>(argc, argv, "--dAMin", 1);
+    auto dAMax = otx::argTo<Index_t>(argc, argv, "--dAMax", 8);
+
+    auto dBMin = otx::argTo<Index_t>(argc, argv, "--dBMin", 1);
+    auto dBMax = otx::argTo<Index_t>(argc, argv, "--dBMax", 8);
+
+    auto dMMin = otx::argTo<Index_t>(argc, argv, "--dMMin", 1);
+    auto dMMax = otx::argTo<Index_t>(argc, argv, "--dMMax", 8);
+
+    auto maxRowsA = otx::argTo<Index_t>(argc, argv, "--maxRowsA", dAMax);
+    auto sameAB = otx::argTo<bool>(argc, argv, "--sameAB", false);
+
+//    std::cout << "Iterations: " << witer << " + " << niter << std::endl;
+//    std::cout << "nthreads: " << nthreads << std::endl;
+//
+//    std::cout << "dimension: " << dimensionMin << " - " << dimensionMax << std::endl;
+//    std::cout << "A degree: " << dAMin << " - " << dAMax << std::endl;
+//    std::cout << "B degree: " << dBMin << " - " << dBMax << std::endl;
+//    std::cout << "M degree: " << dMMin << " - " << dMMax << std::endl;
+//
+//    std::cout << "Max rows A: " << maxRowsA << std::endl;
+//    std::cout << "Same size for A and B: " << (sameAB ? "true" : "false") << std::endl;
+//    std::cout << std::endl;
+
+    omp_set_num_threads(int(nthreads));
 
     auto flopsPerRow = new Index_t[dimensionMax];
 
@@ -129,14 +156,13 @@ int main() {
         createMatrices("B", dim, dim, dBMin, dBMax, BsCSC, BsCSR);
         createMatrices("M", std::min(maxRowsA, dim), dim, dMMin, dMMax, MsCSR);
 
-
         for (int ia = 0; ia < AsCSR.size(); ia++) {
             for (int ib = 0; ib < BsCSR.size(); ib++) {
                 if (sameAB) { ib = ia; }
                 for (int im = 0; im < MsCSR.size(); im++) {
                     auto flops = calculateFlops(AsCSR[ia].first, BsCSR[ib].first, flopsPerRow, 12);
                     std::cout << dim << ",";
-                    if (sameAB) { std::cout << AsCSR[ia].second << ", "; }
+                    if (sameAB) { std::cout << AsCSR[ia].second << ","; }
                     else { std::cout << AsCSR[ia].second << "," << BsCSR[ib].second << ","; }
                     std::cout << MsCSR[im].second << "," << flops;
 

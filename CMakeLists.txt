@@ -32,10 +32,18 @@ macro(add_example _name _src)
     target_compile_features(${_name} PUBLIC cxx_std_17)
 endmacro()
 
+include(FetchContent)
+FetchContent_Declare(
+        otx
+        GIT_REPOSITORY https://github.com/srki/otx.git
+)
+FetchContent_MakeAvailable(otx)
+
 add_example(masked-all sample/MaskedAllSpGEMM.cpp)
 add_example(complement-masked-all sample/ComplementMaskedSpGEMM.cpp)
 add_example(tricnt-all sample/TriCntAll.cpp)
 add_example(heatmap sample/HeatMap.cpp)
+target_link_libraries(heatmap otx-cpp)
 
 add_subdirectory(test)
 
