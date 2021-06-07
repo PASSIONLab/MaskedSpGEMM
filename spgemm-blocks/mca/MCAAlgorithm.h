@@ -44,9 +44,8 @@ public:
         for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
             const IT inner = A.colids[j];
             IT loc = B.rowptr[inner];
-            IT key = A.colids[loc];
-
             if (loc == B.rowptr[inner + 1]) { continue; }
+            IT key = B.colids[loc];
 
             IT maskIdx = maskBegin;
 
@@ -89,9 +88,8 @@ public:
         for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
             const IT inner = A.colids[j];
             IT loc = B.rowptr[inner];
-            IT key = A.colids[loc];
-
             if (loc == B.rowptr[inner + 1]) { continue; }
+            IT key = B.colids[loc];
 
             IT maskIdx = maskBegin;
 
