@@ -42,40 +42,54 @@ double run(void(*f)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &, const 
 
 template<class IT, class NT>
 void createMatrices(const std::string &name, IT nrows, IT ncols, IT degMin, IT degMax,
-                    std::vector<std::pair<CSR<IT, NT>, IT>> &inputs) {
+                    std::vector<std::pair<CSC<IT, NT>, IT>> &csc, std::vector<std::pair<CSR<IT, NT>, IT>> &csr) {
     std::cout << "Crating " << name << "s... ";
     std::cout.flush();
 
     IT numInputs = 0;
     for (IT deg = degMin; deg <= degMax; deg *= 2) { numInputs++; }
-    inputs.resize(numInputs);
+    csc.resize(numInputs);
+    csr.resize(numInputs);
 
     IT idx = 0;
     for (IT deg = degMin; deg <= degMax; deg *= 2) {
         Triple<IT, NT> *triples = nullptr;
         auto nvals = generateRandomTriples(nrows, ncols, nrows * deg, triples);
-        CSC<IT, NT> csc(triples, nvals, nrows, ncols);
+        CSC<IT, NT> matrix(triples, nvals, nrows, ncols);
         delete[] triples;
-        inputs[idx++] = std::make_pair(CSR<IT, NT>(csc), deg);
-        csc.make_empty();
+
+        csc[idx] = std::make_pair(matrix, deg);
+        csr[idx] = std::make_pair(CSR<IT, NT>(matrix), deg);
+        ++idx;
     }
 
     std::cout << "Done" << std::endl;
 }
 
-template< template<class, class> class AT, class IT, class NT>
+template<template<class, class> class AT, class IT, class NT>
 void deleteMatrices(std::vector<std::pair<AT<IT, NT>, IT>> &matrices) {
     for (auto &it : matrices) { it.first.make_empty(); }
+}
+
+
+template<class IT, class NT>
+void createMatrices(const std::string &name, IT nrows, IT ncols, IT degMin, IT degMax,
+                    std::vector<std::pair<CSR<IT, NT>, IT>> &csr) {
+    std::vector<std::pair<CSC<IT, NT>, IT>> csc;
+    createMatrices(name, nrows, ncols, degMin, degMax, csc, csr);
+    deleteMatrices(csc);
 }
 
 int main() {
     using Index_t = uint32_t;
     using Value_t = long unsigned;
 
-    size_t niter = 25, witer = 3, nthreads = 12;
-    Index_t dimensionMin = 128 * 1024, dAMin = 1, dBMin = 1, dMMin = 1;
-    Index_t dimensionMax = 128 * 1024, dAMax = 128, dBMax = 128, dMMax = 128;
-    Index_t maxRowsA = 64 * 1024;
+    size_t niter = 10, witer = 2, nthreads = 12;
+    Index_t dimensionMin = 1024, dAMin = 1, dBMin = 1, dMMin = 1;
+    Index_t dimensionMax = 1024 * 1024, dAMax = 128, dBMax = 128, dMMax = 256;
+    Index_t maxRowsA = 32 * 1024;
+    bool sameAB = true;
+    omp_set_num_threads(nthreads);
 
     auto flopsPerRow = new Index_t[dimensionMax];
 
@@ -92,36 +106,62 @@ int main() {
                     {"MaskedHeap_v2", MaskedSpGEMM1p<MaskedHeap_v2>},
             };
 
-    for (Index_t dim = dimensionMin; dim <= dimensionMax; dim *= 2) {
-        std::vector<std::pair<CSR<Index_t, Value_t>, Index_t>> As, Bs, Ms;
-        createMatrices("A", std::min(maxRowsA, dim), dim, dAMin, dAMax, As);
-        createMatrices("B", dim, dim, dBMin, dBMax, Bs);
-        createMatrices("M", std::min(maxRowsA, dim), dim, dMMin, dMMax, Ms);
-
-        std::cout << "degA," << "degM," << "MaskedHash," << "MSA2A," << "MCA," << "MaskedHeap_v1," << "MaskedHeap_v2"
-                  << std::endl;
-
-        for (auto &itA : As) {
-//            for (auto &itB : Bs) {
+    std::vector<std::pair<std::string,
+            void (*)(const CSR<Index_t, Value_t> &, const CSC<Index_t, Value_t> &,
+                     CSR<Index_t, Value_t> &, const CSR<Index_t, Value_t> &,
+                     multiplies<Value_t>, plus<Value_t>, unsigned)>>
+            csrcsc
             {
-                auto &itB = itA;
-                for (auto &itM : Ms) {
-                    auto flops = calculateFlops(itA.first, itB.first, flopsPerRow, 12);
-//                    std::cout << dim << " " << itA.second << " " << itB.second << " "
-//                              << itM.second << " " << flops << std::endl;
+//                    {"innerSpGEMM_nohash", innerSpGEMM_nohash<false, false>},
+            };
 
-                    std::cout << itA.second << "," << itM.second;
+    std::cout << "dimension,";
+    if (sameAB) { std::cout << "degAB,"; } else { std::cout << "degA," << "debB,"; }
+    std::cout << "degM," << "flops";
+    for (const auto &it : csrcsc) { std::cout << "," << it.first; }
+    for (const auto &it : csrscr) { std::cout << "," << it.first; }
+    std::cout << std::endl;
+
+    for (Index_t dim = dimensionMin; dim <= dimensionMax; dim *= 2) {
+        std::vector<std::pair<CSR<Index_t, Value_t>, Index_t>> AsCSR, BsCSR, MsCSR;
+        std::vector<std::pair<CSC<Index_t, Value_t>, Index_t>> BsCSC;
+        createMatrices("A", std::min(maxRowsA, dim), dim, dAMin, dAMax, AsCSR);
+        createMatrices("B", dim, dim, dBMin, dBMax, BsCSC, BsCSR);
+        createMatrices("M", std::min(maxRowsA, dim), dim, dMMin, dMMax, MsCSR);
+
+
+        for (int ia = 0; ia < AsCSR.size(); ia++) {
+            for (int ib = 0; ib < BsCSR.size(); ib++) {
+                if (sameAB) { ib = ia; }
+                for (int im = 0; im < MsCSR.size(); im++) {
+                    auto flops = calculateFlops(AsCSR[ia].first, BsCSR[ib].first, flopsPerRow, 12);
+                    std::cout << dim << ",";
+                    if (sameAB) { std::cout << AsCSR[ia].second << ", "; }
+                    else { std::cout << AsCSR[ia].second << "," << BsCSR[ib].second << ","; }
+                    std::cout << MsCSR[im].second << "," << flops;
+
+                    for (const auto &alg : csrcsc) {
+                        auto time = run(alg.second, AsCSR[ia].first, BsCSC[ib].first, MsCSR[im].first,
+                                        witer, niter, nthreads);
+
+                        std::cout << "," << time;
+                    }
+
                     for (const auto &alg : csrscr) {
-                        std::cout << "," << run(alg.second, itA.first, itB.first, itM.first, witer, niter, nthreads);;
+                        auto time = run(alg.second, AsCSR[ia].first, BsCSR[ib].first, MsCSR[im].first,
+                                        witer, niter, nthreads);
+                        std::cout << "," << time;
                     }
                     std::cout << std::endl;
                 }
+                if (sameAB) { break; }
             }
         }
 
-        deleteMatrices(As);
-        deleteMatrices(Bs);
-        deleteMatrices(Ms);
+        deleteMatrices(AsCSR);
+        deleteMatrices(BsCSR);
+        deleteMatrices(BsCSC);
+        deleteMatrices(MsCSR);
     }
 
     delete[] flopsPerRow;
