@@ -8,6 +8,7 @@
 #include "../spgemm-blocks/masked-spgemm.h"
 #include "../spgemm-blocks/common.h"
 #include "../inner_mult.h"
+#include "../spgemm-blocks/inner/masked-spgemm-inner.h"
 
 template<class IT, class NT,
         template<class, class> class AT,
@@ -140,6 +141,7 @@ int main(int argc, char *argv[]) {
             csrcsc
             {
 //                    {"innerSpGEMM_nohash", innerSpGEMM_nohash<false, false>},
+                    {"MaskedInnerSpGEMM1p", MaskedSpGEMM1p<MaskedInner>}
             };
 
     std::cout << "dimension,";
