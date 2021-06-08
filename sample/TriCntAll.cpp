@@ -61,13 +61,16 @@ template<class IT, class NT, template<class, class> class AT>
 std::string checksum(const AT<IT, NT> &A) {
     uint16_t valuesCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.values), A.nnz * sizeof(NT));
     uint16_t idsCSC;
+    uint16_t ptrCSC;
     if constexpr (std::is_same<AT<IT, NT>, CSR<IT, NT>>::value) {
         idsCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.colids), A.nnz * sizeof(IT));
+        ptrCSC = calculateChecksum(reinterpret_cast<uint8_t*>(A.rowptr), A.rows * sizeof(IT));
     } else {
         idsCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.rowids), A.nnz * sizeof(IT));
+        ptrCSC = calculateChecksum(reinterpret_cast<uint8_t*>(A.colptr), A.cols * sizeof(IT));
     }
 
-    return to_string(valuesCSC) + "|" + to_string(idsCSC);
+    return to_string(ptrCSC) + "|" + to_string(valuesCSC) + "|" + to_string(idsCSC);
 }
 
 static const char *getFileName(const char *path) {
