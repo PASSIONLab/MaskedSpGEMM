@@ -161,8 +161,8 @@ innerSpGEMM_nohash(const CSR<IT,NT> & A, const CSC<IT,NT> & B, CSR<IT,NT> & C_fi
     for (IT i = 1; i < numThreads; ++i) {
         IT loc = min(i * rowPerThread, A.rows);
         dest += th_nnz[i-1];
-        memcpy (C_final.colids + dest, C.colids + A.rowptr[loc], th_nnz[i] * sizeof(C.colids[0]));
-        memcpy (C_final.values + dest, C.values + A.rowptr[loc], th_nnz[i] * sizeof(C.values[0])); 
+        memcpy (C_final.colids + dest, C.colids + M.rowptr[loc], th_nnz[i] * sizeof(C.colids[0]));
+        memcpy (C_final.values + dest, C.values + M.rowptr[loc], th_nnz[i] * sizeof(C.values[0]));
     }
 
     //TODO:: optimize prefix sum
