@@ -27,7 +27,7 @@ public:
     static const T SCALE = 107;
     static const T DEFAULT_CAPACITY = 16;
 
-    static const std::ratio<2, 8> LOAD_FACTOR;
+    using LOAD_FACTOR = std::ratio<2, 8>;
 
 protected:
     T _capacity;
@@ -44,7 +44,7 @@ protected:
         while (size < requestedSize) { size <<= 1; }
 
         // (requestedSize / size) > LOAD_FACTOR (assumes LOAD_FACTOR < 2)
-        while (requestedSize * LOAD_FACTOR.den > size * LOAD_FACTOR.num) { size <<= 1; }
+        while (requestedSize * LOAD_FACTOR::den > size * LOAD_FACTOR::num) { size <<= 1; }
         return size;
     }
 
