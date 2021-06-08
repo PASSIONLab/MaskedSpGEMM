@@ -28,6 +28,8 @@
 #include "../spgemm-blocks/masked-spgemm.h"
 #include "../spgemm-blocks/masked-spgemm-prof.h"
 #include "../spgemm-blocks/masked-spgemm-poly.h"
+#include "../spgemm-blocks/inner/masked-spgemm-inner.h"
+#include "../spgemm-blocks/inner/MaskedInnerSpGEMM.h"
 
 using namespace std;
 
@@ -64,10 +66,10 @@ std::string checksum(const AT<IT, NT> &A) {
     uint16_t ptrCSC;
     if constexpr (std::is_same<AT<IT, NT>, CSR<IT, NT>>::value) {
         idsCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.colids), A.nnz * sizeof(IT));
-        ptrCSC = calculateChecksum(reinterpret_cast<uint8_t*>(A.rowptr), A.rows * sizeof(IT));
+        ptrCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.rowptr), A.rows * sizeof(IT));
     } else {
         idsCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.rowids), A.nnz * sizeof(IT));
-        ptrCSC = calculateChecksum(reinterpret_cast<uint8_t*>(A.colptr), A.cols * sizeof(IT));
+        ptrCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.colptr), A.cols * sizeof(IT));
     }
 
     return to_string(ptrCSC) + "|" + to_string(valuesCSC) + "|" + to_string(idsCSC);
@@ -371,7 +373,13 @@ int main(int argc, char *argv[]) {
     std::size_t flop = get_flop(A_csc, A_csc);
 
     for (size_t i = 0; i < outerIters; i++) {
-        if (mode == "SPA") {
+        if (mode == "inner" || mode == "dot") {
+            RUN_CSR_CSC((innerSpGEMM_nohash<false, false>));
+            RUN_CSR_CSC(MaskedSpGEMM1p);
+            RUN_CSR_CSC(MaskedSpGEMM2p);
+            RUN_CSR_CSC(MaskedSpGEMM1p<MaskedInner>);
+            RUN_CSR_CSC(MaskedSpGEMM2p<MaskedInner>);
+        } else if (mode == "SPA") {
             RUN_CSR(MaskedSPASpGEMM);
             RUN_CSR_1P(MSA2A);
             RUN_CSR_2P(MSA2A);

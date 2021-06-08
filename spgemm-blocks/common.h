@@ -9,8 +9,12 @@ void setNumThreads(unsigned &numThreads) {
     }
 }
 
-template<typename IT, typename NT>
-void verifyInputs(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M) {
+template<class IT, class NT,
+        template<class, class> class AT,
+        template<class, class> class BT,
+        template<class, class> class CT,
+        template<class, class> class MT>
+void verifyInputs(const AT<IT, NT> &A, const BT<IT, NT> &B, CT<IT, NT> &C, const MT<IT, NT> &M) {
     assert(A.cols == B.rows);
     assert(M.rows == A.rows);
     assert(M.cols == B.cols);
@@ -58,6 +62,25 @@ IT calculateFlops(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> 
     return flops;
 }
 
+template<typename IT, typename NT>
+IT calculateWork(const CSR<IT, NT> &A, const CSC<IT, NT> &B, const CSR<IT, NT> &M, IT *workPerRow, int numThreads) {
+    IT work = 0;
+
+#pragma omp parallel for reduction(+:work) num_threads(numThreads)
+    for (IT i = 0; i < M.rows; ++i) {
+        IT workRow = 0;
+        for (IT j = M.rowptr[i]; j < M.rowptr[i+1]; ++j) {
+            IT lenA = A.rowptr[i + 1] - A.rowptr[i];
+            IT lenB = B.colptr[M.colids[j] + 1] - B.colptr[M.colids[j]];
+            if (lenA != 0 && lenB != 0) { workRow += lenA + lenB; }
+        }
+        workPerRow[i] = workRow;
+        work += workRow;
+    }
+
+    return work;
+}
+
 
 template<class IT>
 std::tuple<IT, IT> distributeWork(IT totalWork, IT *accumWorkPerRow, IT nrows, int numThreads, int thisThread) {
@@ -100,8 +123,11 @@ std::tuple<IT, IT, IT> scanInputs(IT rowBeginIdx, IT rowEndIdx, IT *flopsPerRow,
     return {sizeC, maxRowSizeA, maxRowSizeM};
 }
 
-template<class IT, class NT>
-void initC(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, IT *threadsNvals, int numThreads) {
+template<class IT, class NT,
+        template<class, class> class AT,
+        template<class, class> class BT,
+        template<class, class> class CT>
+void initC(const AT<IT, NT> &A, const BT<IT, NT> &B, CT<IT, NT> &C, IT *threadsNvals, int numThreads) {
     C.rows = A.rows;
     C.cols = B.cols;
     C.rowptr = my_malloc<IT>(C.rows + 1);
