@@ -4,10 +4,10 @@
 
 #include <x86intrin.h>
 
-template<template<class, class> class RowAlgorithm, class IT, class NT, class MultiplyOperation, class AddOperation>
+template<template<class, class, bool> class RowAlgorithm, class IT, class NT, class MultiplyOperation, class AddOperation>
 void MaskedSpGEMM1p_prof(long *rowTimes, const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
                     MultiplyOperation multop, AddOperation addop, unsigned numThreads = 0) {
-    using RowAlg = RowAlgorithm<IT, NT>;
+    using RowAlg = RowAlgorithm<IT, NT, false>;
     // Calculate number of threads and init C
     setNumThreads(numThreads);
     verifyInputs(A, B, C, M);
