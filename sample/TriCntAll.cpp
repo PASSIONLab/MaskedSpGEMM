@@ -373,7 +373,7 @@ int main(int argc, char *argv[]) {
     std::size_t flop = get_flop(A_csc, A_csc);
 
     for (size_t i = 0; i < outerIters; i++) {
-        if (mode == "inner" || mode == "dot") {
+        if (mode == "Inner" || mode == "Dot") {
             RUN_CSR_CSC((innerSpGEMM_nohash<false, false>));
             RUN_CSR_CSC(MaskedSpGEMM1p);
             RUN_CSR_CSC(MaskedSpGEMM2p);
