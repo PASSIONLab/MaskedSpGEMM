@@ -5,7 +5,7 @@
 #include "../spgemm-blocks/hash/HashAccumulator.h"
 
 
-template<template<class, class> class HashTableT, class K, class V>
+template<template<class, class, class = void> class HashTableT, class K, class V>
 void testAllOps(size_t nops, size_t niter, K maxKey) {
     using ValueT = std::conditional_t<std::is_void_v<V>, int, V>;
 
