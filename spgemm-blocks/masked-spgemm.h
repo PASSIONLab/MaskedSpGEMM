@@ -62,7 +62,9 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         alg.getNumericAccumulator().setBuffer(buffer, bufferSize, dirty);
         for (IT row = rowBeginIdx; row < rowEndIdx; ++row) {
             if (flopsPerRow[row]) {
+                auto rowColIdBegin = currColId;
                 alg.numericRow(A, B, M, multop, addop, row, currColId, currValue);
+                rowNvals[row] = currColId - rowColIdBegin;
             } else {
                 rowNvals[row] = 0;
             }
