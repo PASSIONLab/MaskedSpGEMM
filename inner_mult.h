@@ -70,7 +70,7 @@ innerSpGEMM_nohash(const CSR<IT,NT> & A, const CSC<IT,NT> & B, CSR<IT,NT> & C_fi
         C.values[i] = 0;
     }
     
-    BIN<IT, NT> bin(A.rows, IMB_PWMIN);
+    BIN<IT, NT> bin(A.rows, IMB_PWMIN, threadCount);
 
     /* Set max bin */
     // Double check, changed 3rd param to colptr
