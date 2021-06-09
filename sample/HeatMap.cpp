@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 
     auto witer = otx::argTo<size_t>(argc, argv, "--witer", 0);
     auto niter = otx::argTo<size_t>(argc, argv, "--niter", 1);
-    auto nthreads = otx::argTo<size_t>(argc, argv, "--nthreads", 1);
+    auto nthreads = otx::argTo<int>(argc, argv, "--nthreads", 1);
 
     auto dimensionMin = otx::argTo<Index_t>(argc, argv, "--dimMin", 128);
     auto dimensionMax = otx::argTo<Index_t>(argc, argv, "--dimMax", 128);
@@ -104,20 +104,23 @@ int main(int argc, char *argv[]) {
 
     auto maxRowsA = otx::argTo<Index_t>(argc, argv, "--maxRowsA", dAMax);
     auto sameAB = otx::argTo<bool>(argc, argv, "--sameAB", false);
+    auto verbose = otx::argTo<bool>(argc, argv, "--verbose", false);
 
-//    std::cout << "Iterations: " << witer << " + " << niter << std::endl;
-//    std::cout << "nthreads: " << nthreads << std::endl;
-//
-//    std::cout << "dimension: " << dimensionMin << " - " << dimensionMax << std::endl;
-//    std::cout << "A degree: " << dAMin << " - " << dAMax << std::endl;
-//    std::cout << "B degree: " << dBMin << " - " << dBMax << std::endl;
-//    std::cout << "M degree: " << dMMin << " - " << dMMax << std::endl;
-//
-//    std::cout << "Max rows A: " << maxRowsA << std::endl;
-//    std::cout << "Same size for A and B: " << (sameAB ? "true" : "false") << std::endl;
-//    std::cout << std::endl;
+    if (verbose) {
+        std::cout << "Iterations: " << witer << " + " << niter << std::endl;
+        std::cout << "nthreads: " << nthreads << std::endl;
 
-    omp_set_num_threads(int(nthreads));
+        std::cout << "dimension: " << dimensionMin << " - " << dimensionMax << std::endl;
+        std::cout << "A degree: " << dAMin << " - " << dAMax << std::endl;
+        std::cout << "B degree: " << dBMin << " - " << dBMax << std::endl;
+        std::cout << "M degree: " << dMMin << " - " << dMMax << std::endl;
+
+        std::cout << "Max rows A: " << maxRowsA << std::endl;
+        std::cout << "Same size for A and B: " << (sameAB ? "true" : "false") << std::endl;
+        std::cout << std::endl;
+    }
+
+    omp_set_num_threads(nthreads);
 
     auto flopsPerRow = new Index_t[dimensionMax];
 
@@ -141,7 +144,7 @@ int main(int argc, char *argv[]) {
             csrcsc
             {
 //                    {"innerSpGEMM_nohash", innerSpGEMM_nohash<false, false>},
-                    {"MaskedInnerSpGEMM1p", MaskedSpGEMM1p<MaskedInner>}
+                    {"MaskedInnerSpGEMM", MaskedSpGEMM1p<MaskedInner>},
             };
 
     std::cout << "dimension,";
@@ -158,25 +161,27 @@ int main(int argc, char *argv[]) {
         createMatrices("B", dim, dim, dBMin, dBMax, BsCSC, BsCSR);
         createMatrices("M", std::min(maxRowsA, dim), dim, dMMin, dMMax, MsCSR);
 
-        for (int ia = 0; ia < AsCSR.size(); ia++) {
-            for (int ib = 0; ib < BsCSR.size(); ib++) {
-                if (sameAB) { ib = ia; }
-                for (int im = 0; im < MsCSR.size(); im++) {
-                    auto flops = calculateFlops(AsCSR[ia].first, BsCSR[ib].first, flopsPerRow, 12);
+        for (int idxA = 0; idxA < AsCSR.size(); idxA++) {
+            for (int idxB = 0; idxB < BsCSR.size(); idxB++) {
+                if (sameAB) { idxB = idxA; }
+                for (int idxM = 0; idxM < MsCSR.size(); idxM++) {
+                    // Print header
+                    auto flops = calculateFlops(AsCSR[idxA].first, BsCSR[idxB].first, flopsPerRow, nthreads);
                     std::cout << dim << ",";
-                    if (sameAB) { std::cout << AsCSR[ia].second << ","; }
-                    else { std::cout << AsCSR[ia].second << "," << BsCSR[ib].second << ","; }
-                    std::cout << MsCSR[im].second << "," << flops;
+                    if (sameAB) { std::cout << AsCSR[idxA].second << ","; }
+                    else { std::cout << AsCSR[idxA].second << "," << BsCSR[idxB].second << ","; }
+                    std::cout << MsCSR[idxM].second << "," << flops;
 
+                    // Run CSR-CSC algorithms
                     for (const auto &alg : csrcsc) {
-                        auto time = run(alg.second, AsCSR[ia].first, BsCSC[ib].first, MsCSR[im].first,
+                        auto time = run(alg.second, AsCSR[idxA].first, BsCSC[idxB].first, MsCSR[idxM].first,
                                         witer, niter, nthreads);
-
                         std::cout << "," << time;
                     }
 
+                    // RUN CSR-CSR algorithms
                     for (const auto &alg : csrscr) {
-                        auto time = run(alg.second, AsCSR[ia].first, BsCSR[ib].first, MsCSR[im].first,
+                        auto time = run(alg.second, AsCSR[idxA].first, BsCSR[idxB].first, MsCSR[idxM].first,
                                         witer, niter, nthreads);
                         std::cout << "," << time;
                     }
