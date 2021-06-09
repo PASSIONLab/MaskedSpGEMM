@@ -32,31 +32,50 @@ public:
 
         IT currRowNvals = 0;
         IT prevKey = std::numeric_limits<IT>::max();
+
         // Traverse the heaps
-        while (!_heap.isEmpty()) {
-            auto &hentry = _heap.top();
+        if (!Complemented) {
+            while (!_heap.isEmpty()) {
+                auto &hentry = _heap.top();
 
-            while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-            if (maskIdx >= maskEnd) { if (!Complemented) { _heap.clear(); } else { break; }}
+                while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
+                if (maskIdx >= maskEnd) {
+                    _heap.clear();
+                    break;
+                }
 
-            if ((!Complemented && (hentry.key == M.colids[maskIdx] && prevKey != hentry.key)) ||
-                (Complemented && ((maskIdx >= maskEnd || hentry.key != M.colids[maskIdx]) && prevKey != hentry.key))) {
-                prevKey = hentry.key;
-                currRowNvals++;
+                if (hentry.key == M.colids[maskIdx] && prevKey != hentry.key) {
+                    prevKey = hentry.key;
+                    currRowNvals++;
+                }
+
+                insertNext(A, B, hentry);
+            }
+        } else {
+            while (!_heap.isEmpty()) {
+                auto &hentry = _heap.top();
+
+                while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
+                if (maskIdx >= maskEnd) { break; }
+
+                if (hentry.key != M.colids[maskIdx] && prevKey != hentry.key) {
+                    prevKey = hentry.key;
+                    currRowNvals++;
+                }
+
+                insertNext(A, B, hentry);
             }
 
-            insertNext(A, B, hentry);
-        }
+            while (!_heap.isEmpty()) {
+                auto &hentry = _heap.top();
 
-        while (Complemented && !_heap.isEmpty()) {
-            auto &hentry = _heap.top();
+                if (prevKey != hentry.key) {
+                    prevKey = hentry.key;
+                    currRowNvals++;
+                }
 
-            if (prevKey != hentry.key) {
-                prevKey = hentry.key;
-                currRowNvals++;
+                insertNext(A, B, hentry);
             }
-
-            insertNext(A, B, hentry);
         }
 
         rowNvals[row] = currRowNvals;
@@ -75,14 +94,56 @@ public:
         IT prevKey = std::numeric_limits<IT>::max();
         --currValue, --currColId;
         // Traverse the heaps
-        while (!_heap.isEmpty()) {
-            auto &hentry = _heap.top();
+        if (!Complemented) {
+            while (!_heap.isEmpty()) {
+                auto &hentry = _heap.top();
 
-            while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-            if (maskIdx >= maskEnd) { if (!Complemented) { _heap.clear(); } else { break; }}
+                while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
+                if (maskIdx >= maskEnd) {
+                    _heap.clear();
+                    break;
+                }
 
-            if ((!Complemented && (hentry.key == M.colids[maskIdx])) ||
-                (+Complemented && (hentry.key != M.colids[maskIdx]))) {
+                if (hentry.key == M.colids[maskIdx]) {
+                    NT value = multop(A.values[hentry.runr], B.values[hentry.loc]);
+
+                    // Use short circuiting
+                    if (prevKey == hentry.key) {
+                        *currValue = addop(value, *currValue);
+                    } else {
+                        prevKey = hentry.key;
+                        *(++currValue) = value;
+                        *(++currColId) = hentry.key;
+                    }
+                }
+
+                insertNext(A, B, hentry);
+            }
+        } else {
+            while (!_heap.isEmpty()) {
+                auto &hentry = _heap.top();
+
+                while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
+                if (maskIdx >= maskEnd) { break; }
+
+                if (hentry.key != M.colids[maskIdx]) {
+                    NT value = multop(A.values[hentry.runr], B.values[hentry.loc]);
+
+                    // Use short circuiting
+                    if (prevKey == hentry.key) {
+                        *currValue = addop(value, *currValue);
+                    } else {
+                        prevKey = hentry.key;
+                        *(++currValue) = value;
+                        *(++currColId) = hentry.key;
+                    }
+                }
+
+                insertNext(A, B, hentry);
+            }
+
+            while (!_heap.isEmpty()) {
+                auto &hentry = _heap.top();
                 NT value = multop(A.values[hentry.runr], B.values[hentry.loc]);
 
                 // Use short circuiting
@@ -93,25 +154,9 @@ public:
                     *(++currValue) = value;
                     *(++currColId) = hentry.key;
                 }
+
+                insertNext(A, B, hentry);
             }
-
-            insertNext(A, B, hentry);
-        }
-
-        while (Complemented && !_heap.isEmpty()) {
-            auto &hentry = _heap.top();
-            NT value = multop(A.values[hentry.runr], B.values[hentry.loc]);
-
-            // Use short circuiting
-            if (prevKey == hentry.key) {
-                *currValue = addop(value, *currValue);
-            } else {
-                prevKey = hentry.key;
-                *(++currValue) = value;
-                *(++currColId) = hentry.key;
-            }
-
-            insertNext(A, B, hentry);
         }
 
         ++currValue, ++currColId;

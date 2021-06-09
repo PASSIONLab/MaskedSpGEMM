@@ -393,10 +393,18 @@ int main(int argc, char *argv[]) {
         } else if (mode == "Heap") {
             RUN_CSR_1P(MaskedHeap_v0);
             RUN_CSR_2P(MaskedHeap_v0);
+            RUN_CSR_1P(MaskedHeap<0>::Impl);
             RUN_CSR_1P(MaskedHeap_v1);
             RUN_CSR_2P(MaskedHeap_v1);
+            RUN_CSR_1P(MaskedHeap<1>::Impl);
+            RUN_CSR_1P(MaskedHeap<2>::Impl);
+            RUN_CSR_1P(MaskedHeap<8>::Impl);
+            RUN_CSR_1P(MaskedHeap<32>::Impl);
+            RUN_CSR_1P(MaskedHeap<128>::Impl);
+            RUN_CSR_1P(MaskedHeap<512>::Impl);
             RUN_CSR_1P(MaskedHeap_v2);
             RUN_CSR_2P(MaskedHeap_v2);
+            RUN_CSR_1P(MaskedHeap<std::numeric_limits<std::size_t>::max()>::Impl);
         } else if (mode == "All1p") {
             RUN_CSR_CSC((innerSpGEMM_nohash<false, false>));
             RUN_CSR_1P(MaskedHeap_v1);

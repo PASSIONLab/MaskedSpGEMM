@@ -10,6 +10,7 @@
 #include "msa/MSAAlgorithm.h"
 #include "mca/MCAAlgorithm.h"
 #include "heap/MaskedHeapAlgorithm.h"
+#include "heap/MaskedHeapAlgorithmInspect.h"
 
 
 template<template<class, class, bool> class RowAlgorithm, bool Complemented = false,
