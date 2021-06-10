@@ -230,47 +230,6 @@ struct HashAccumulator<K, V1, bool> : public HashAccumulatorBase<HashAccumEntryT
 
 //endregion
 
-//region KV
-
-template<class K, class V1>
-struct HashAccumEntryT<K, V1, void> {
-    K key;
-    V1 value1;
-};
-
-template<class K, class V1>
-struct HashAccumulator<K, V1, void> : public HashAccumulatorBase<HashAccumEntryT<K, V1>> {
-
-    using super = HashAccumulatorBase<HashAccumEntryT<K, V1>>;
-
-    HashAccumulator(size_t maxRowSizeM) : super(maxRowSizeM) {};
-
-    bool insert(K key, V1 value1) {
-        auto idx = super::findIdx(key);
-        if (this->_table[idx].key != this->EMPTY) { return false; }
-
-        this->_table[idx].key = key;
-        this->_table[idx].value1 = value1;
-        return true;
-    }
-
-    // gather valid values
-    template<typename IT, typename NT>
-    void gather(IT *idx_ptr, NT *val_ptr) {
-        for (auto &it : this->_table) {
-            if (it.key != this->EMPTY) {
-                *idx_ptr = it.key;
-                *val_ptr = it.value;
-                ++idx_ptr;
-                ++val_ptr;
-            }
-            it = this->EMPTY;
-        }
-    }
-};
-
-//endregion
-
 //region K
 
 template<class K>
