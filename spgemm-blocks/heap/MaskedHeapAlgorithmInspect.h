@@ -268,4 +268,13 @@ struct MaskedHeap {
     };
 };
 
+template<class IT, class NT, bool Complemented = false>
+using MaskedHeapNaive = MaskedHeap<0>::Impl<IT, NT, Complemented>;
+
+template<class IT, class NT, bool Complemented = false>
+using MaskedHeapBasic = MaskedHeap<1>::Impl<IT, NT, Complemented>;
+
+template<class IT, class NT, bool Complemented = false>
+using MaskedHeapDot = MaskedHeap<std::numeric_limits<std::size_t>::max()>::Impl<IT, NT, Complemented>;
+
 #endif //MASKED_SPGEMM_MASKED_HEAP_ALGORITHM_INSPECT_H
