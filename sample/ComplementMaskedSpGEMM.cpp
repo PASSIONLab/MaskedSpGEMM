@@ -61,13 +61,16 @@ template<class IT, class NT, template<class, class> class AT>
 std::string checksum(const AT<IT, NT> &A) {
     uint16_t valuesCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.values), A.nnz * sizeof(NT));
     uint16_t idsCSC;
+    uint16_t ptrCSC;
     if constexpr (std::is_same<AT<IT, NT>, CSR<IT, NT>>::value) {
+        ptrCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.rowptr), A.rows * sizeof(IT));
         idsCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.colids), A.nnz * sizeof(IT));
     } else {
+        ptrCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.colptr), A.cols * sizeof(IT));
         idsCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.rowids), A.nnz * sizeof(IT));
     }
 
-    return to_string(valuesCSC) + "|" + to_string(idsCSC);
+    return to_string(ptrCSC) + "|" + to_string(idsCSC) + "|" + to_string(valuesCSC);
 }
 
 static const char *getFileName(const char *path) {
@@ -111,9 +114,16 @@ void run(const std::string &name,
         ave_msec /= static_cast<double>(niters);
         double mflops = (double) nflop / ave_msec / 1000;
 
-        std::cout << "LOG," << fileName << "," << name << "," << typeid(IT).name() << "|" << typeid(NT).name()
-                  << "," << tnum << "," << ave_msec << "," << mflops << ","
-                  << C.nnz << "," << C.sumall() << "," << checksum(C) << std::endl;
+        std::cout << "LOG,"
+                  << std::setw(20) << fileName << ","
+                  << std::setw(20) << name << ","
+                  << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ","
+                  << std::setw(3) << tnum << ","
+                  << std::setw(10) << ave_msec << ","
+                  << std::setw(10) << mflops << ","
+                  << std::setw(10) << C.nnz << ","
+                  << std::setw(10) << C.sumall() << ","
+                  << std::setw(20) << checksum(C) << std::endl;
 
         C.make_empty();
     }
@@ -146,7 +156,7 @@ int main(int argc, char *argv[]) {
     size_t outerIters  = std::getenv("OUTER_ITERS")  ? std::stoul(std::getenv("OUTER_ITERS"))  : 1;
     size_t innerIters  = std::getenv("INNER_ITERS")  ? std::stoul(std::getenv("INNER_ITERS"))  : 1;
     size_t warmupIters = std::getenv("WARMUP_ITERS") ? std::stoul(std::getenv("WARMUP_ITERS")) : (innerIters == 1 ? 0 : 1);
-    string mode        = std::getenv("MODE")         ? std::getenv("MODE")                         : "";
+    string mode        = std::getenv("MODE")         ? std::getenv("MODE")                     : "";
     // @formatter:on
 
     std::cout << "Iters: " << outerIters << " x (" << warmupIters << "," << innerIters << ")" << std::endl << std::endl;
@@ -154,8 +164,13 @@ int main(int argc, char *argv[]) {
     std::size_t flop = get_flop(A_csc, A_csc);
 
     for (size_t i = 0; i < outerIters; i++) {
+        RUN_CSR_1P(MaskedHeap_v0, true);
         if (mode == "Heap") {
             RUN_CSR_1P(MaskedHeap_v0, true);
+        } else if (mode == "MSA") {
+            RUN_CSR_1P(MSA1A, true);
+            RUN_CSR_1P(MSA2A, true);
+            RUN_CSR_2P(MSA2A, true);
         } else {
             std::cerr << "Mode unspecified!" << std::endl;
         }

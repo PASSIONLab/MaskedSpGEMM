@@ -91,7 +91,7 @@ template<class IT, class NT,
 void run(const std::string &name,
          void(*f)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &, const MT<IT, NT> &,
                   multiplies<NT>, plus<NT>, unsigned),
-         size_t witers, size_t niters, vector<int> &tnums, size_t nfop,
+         size_t witers, size_t niters, vector<int> &tnums, size_t nflop,
          const AT<IT, NT> &A, const BT<IT, NT> &B, const MT<IT, NT> &M) {
     for (int tnum : tnums) {
         omp_set_num_threads(tnum); // TODO: update get_flop to use numThreads methods and remove this
@@ -114,11 +114,18 @@ void run(const std::string &name,
         }
 
         ave_msec /= static_cast<double>(niters);
-        double mflops = (double) nfop / ave_msec / 1000;
+        double mflops = (double) nflop / ave_msec / 1000;
 
-        std::cout << "LOG," << fileName << "," << name << "," << typeid(IT).name() << "|" << typeid(NT).name()
-                  << "," << tnum << "," << ave_msec << "," << mflops << ","
-                  << C.nnz << "," << C.sumall() << "," << checksum(C) << std::endl;
+        std::cout << "LOG,"
+                  << std::setw(20) << fileName << ","
+                  << std::setw(40) << name << ","
+                  << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ","
+                  << std::setw(3) << tnum << ","
+                  << std::setw(10) << ave_msec << ","
+                  << std::setw(10) << mflops << ","
+                  << std::setw(10) << C.nnz << ","
+                  << std::setw(10) << C.sumall() << ","
+                  << std::setw(20) << checksum(C) << std::endl;
 
         C.make_empty();
     }
@@ -127,7 +134,7 @@ void run(const std::string &name,
 template<class IT, class NT>
 void setRowData(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
                 std::vector<long *> &data) {
-    using AccumulatorT = MaskedSparseAccumulator2A<IT, void>;
+    using AccumulatorT = MaskedSparseAccumulator2A<IT, void, false>;
 
     auto ncols = new long[A.rows];
     auto rowSizesA = new long[A.rows];
@@ -182,7 +189,7 @@ void setRowData(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M
                     IT inner = A.colids[j];
                     for (IT k = B.rowptr[inner]; k < B.rowptr[inner + 1]; k++) {
                         auto &state = spa.getState(B.colids[k]);
-                        if (state == AccumulatorT::EMPTY) { continue; }
+                        if (state == AccumulatorT::NOT_ALLOWED) { continue; }
 
                         if (state == AccumulatorT::ALLOWED) {
                             currRowNvals++;
@@ -206,8 +213,6 @@ void setRowData(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M
 
         freeAligned(mem);
     }
-
-
 }
 
 void printRowData(std::vector<long *> &data, size_t nrows, size_t niter, size_t nsamples,
@@ -381,9 +386,13 @@ int main(int argc, char *argv[]) {
             RUN_CSR_CSC(MaskedSpGEMM2p<MaskedInner>);
         } else if (mode == "SPA") {
             RUN_CSR(MaskedSPASpGEMM);
+            RUN_CSR_1P(MSA2A_old);
             RUN_CSR_1P(MSA2A);
+            RUN_CSR_2P(MSA2A_old);
             RUN_CSR_2P(MSA2A);
             RUN_CSR_1P(MSA1A);
+            RUN_CSR_1P(MSA1A_old);
+            RUN_CSR_2P(MSA1A_old);
             RUN_CSR_2P(MSA1A);
         } else if (mode == "Hash") {
             RUN_CSR(mxm_hash_mask_wobin);
@@ -393,18 +402,22 @@ int main(int argc, char *argv[]) {
         } else if (mode == "Heap") {
             RUN_CSR_1P(MaskedHeap_v0);
             RUN_CSR_2P(MaskedHeap_v0);
-            RUN_CSR_1P(MaskedHeap<0>::Impl);
+            RUN_CSR_1P(MaskedHeapNaive);
+
             RUN_CSR_1P(MaskedHeap_v1);
             RUN_CSR_2P(MaskedHeap_v1);
-            RUN_CSR_1P(MaskedHeap<1>::Impl);
+            RUN_CSR_1P(MaskedHeapBasic);
+            RUN_CSR_2P(MaskedHeapBasic);
             RUN_CSR_1P(MaskedHeap<2>::Impl);
             RUN_CSR_1P(MaskedHeap<8>::Impl);
             RUN_CSR_1P(MaskedHeap<32>::Impl);
             RUN_CSR_1P(MaskedHeap<128>::Impl);
             RUN_CSR_1P(MaskedHeap<512>::Impl);
+
             RUN_CSR_1P(MaskedHeap_v2);
             RUN_CSR_2P(MaskedHeap_v2);
-            RUN_CSR_1P(MaskedHeap<std::numeric_limits<std::size_t>::max()>::Impl);
+            RUN_CSR_1P(MaskedHeapDot);
+            RUN_CSR_2P(MaskedHeapDot);
         } else if (mode == "All1p") {
             RUN_CSR_CSC((innerSpGEMM_nohash<false, false>));
             RUN_CSR_1P(MaskedHeap_v1);

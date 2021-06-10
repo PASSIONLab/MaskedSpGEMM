@@ -1,5 +1,5 @@
-#ifndef MASKED_SPGEMM_SPARSE_ACCUMULATOR_H
-#define MASKED_SPGEMM_SPARSE_ACCUMULATOR_H
+#ifndef MASKED_SPGEMM_SPARSE_ACCUMULATOR_1A_H
+#define MASKED_SPGEMM_SPARSE_ACCUMULATOR_1A_H
 
 #include <utility>
 #include <limits>
@@ -10,6 +10,7 @@
 #include <tuple>
 
 #include "../util.h"
+
 
 template<class S, class V>
 struct SPAEntry {
@@ -22,7 +23,7 @@ struct SPAEntry<S, void> {
     S state;
 };
 
-template<class KeyT, class ValueT>
+template<class KeyT, class ValueT, bool Complemented = false>
 class MaskedSparseAccumulator1A {
 protected:
     using T = std::make_unsigned_t<KeyT>;
@@ -31,15 +32,21 @@ protected:
     using EntryT = SPAEntry<StateT, ValueT>;
 
 public:
-    inline static const StateT EMPTY = std::numeric_limits<StateT>::max();
-    inline static const StateT ALLOWED = 0;
+    inline static const bool HAS_VALUE = !std::is_same_v<ValueT, void>;
+
+    // Initial value (default value) for the states is 0b11....11.
+    inline static const StateT NOT_ALLOWED = !Complemented ? std::numeric_limits<StateT>::max() : 0;
+    inline static const StateT ALLOWED = !Complemented ? 0 : std::numeric_limits<StateT>::max();
     inline static const StateT INITIALIZED = 1;
+
+    inline static const StateT DEFAULT_STATE = !Complemented ? NOT_ALLOWED : ALLOWED;
 
 protected:
     const T _maxIndex;
     EntryT *_entries;
 
     size_t _dirty;
+    std::vector<KeyT> _dirtyIndices; // TODO: replace with an array
 
 public:
     MaskedSparseAccumulator1A(T maxIndex) : _maxIndex(maxIndex) {}
@@ -71,10 +78,17 @@ public:
         return _dirty;
     }
 
-    [[nodiscard]] bool isEmpty(T idx) const {
+    StateT &getState(T idx) {
         assert(0 <= idx && idx < _maxIndex);
 
-        return _entries[idx].state == EMPTY;
+        return _entries[idx].state;
+    }
+
+    template<class U = ValueT>
+    std::enable_if_t<!std::is_same_v<U, void>, ValueT> &getValue(T idx) {
+        assert(0 <= idx && idx < _maxIndex);
+
+        return _entries[idx].value;
     }
 
     [[nodiscard]] EntryT &operator[](T idx) {
@@ -84,29 +98,63 @@ public:
     }
 
     void setAllowed(KeyT key) {
-        assert(0 <= key && key < this->_maxIndex);
-        assert(this->_entries[key].state == EMPTY);
+        assert(0 <= key && key < _maxIndex);
+        assert(_entries[key].state == NOT_ALLOWED);
 
-        this->_entries[key].state = ALLOWED;
+        _entries[key].state = ALLOWED;
+    }
+
+    void setNotAllowed(KeyT key) {
+        assert(0 <= key && key < _maxIndex);
+        assert(_entries[key].state == ALLOWED);
+
+        _entries[key].state = NOT_ALLOWED;
+    }
+
+    void setInitialized(KeyT key) {
+        assert(0 <= key && key < _maxIndex);
+        assert(_entries[key].state == ALLOWED);
+
+        _entries[key].state = INITIALIZED;
+        _dirtyIndices.push_back(key);
     }
 
     bool erase(T idx) const {
         assert(0 <= idx && idx < _maxIndex);
 
-        if (isEmpty(idx)) { return false; }
-        _entries[idx].state = EMPTY;
+        if (_entries[idx].state != INITIALIZED) { return false; }
+        _entries[idx].state = DEFAULT_STATE;
         return true;
     }
 
     void clear(T idx) {
         assert(0 <= idx && idx < _maxIndex);
 
-        if (_entries[idx].state != EMPTY) {
-            _entries[idx].state = EMPTY;
-            if constexpr (!std::is_same_v<ValueT, void>) {
-                memset(&_entries[idx].value, 0xFF, sizeof(ValueT));
-            }
+        if (_entries[idx].state != DEFAULT_STATE) {
+            _entries[idx].state = DEFAULT_STATE;
+            if constexpr (HAS_VALUE) { memset(&_entries[idx].value, 0xFF, sizeof(ValueT)); }
         }
+    }
+
+    void resetStates() {
+        for (const auto idx : _dirtyIndices) { clear(idx); }
+        _dirtyIndices.clear();
+    }
+
+    template<class Iter>
+    void resetStates(Iter first, Iter last) {
+        for (; first != last; ++first) { clear(*first); }
+        resetStates();
+    }
+
+    void gather(KeyT *&keyIter, ValueT *&valueIter) {
+        if (false /* TODO: sorted */) { std::sort(_dirtyIndices.begin(), _dirtyIndices.end()); }
+        for (const auto idx : _dirtyIndices) {
+            *(keyIter++) = idx;
+            *(valueIter++) = _entries[idx].value;
+            clear(idx);
+        }
+        _dirtyIndices.clear();
     }
 
     void clearAll() {
@@ -125,4 +173,4 @@ public:
     }
 };
 
-#endif //MASKED_SPGEMM_SPARSE_ACCUMULATOR_H
+#endif //MASKED_SPGEMM_SPARSE_ACCUMULATOR_1A_H

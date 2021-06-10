@@ -1,70 +1,19 @@
-#ifndef MASKED_SPGEMM_MASKED_SPA_H
-#define MASKED_SPGEMM_MASKED_SPA_H
+#ifndef MASKED_SPGEMM_MSA_ALGORITHM_H
+#define MASKED_SPGEMM_MSA_ALGORITHM_H
 
-#include "MaskedSparseAccumulator1A.h"
-#include "MaskedSparseAccumulator2A.h"
+#include "MSAAlgorithmBase.h"
 
+//region MSA 1A
 
-template<class IT, class NT, bool Complemented = false>
-class MSA1A {
-    static_assert(Complemented == false);
+template<class IT, class NT, bool Complemented>
+class MSA1A;
 
-private:
-    using SymbolicAccumulator = MaskedSparseAccumulator1A<IT, void>;
-    using NumericAccumulatorT = MaskedSparseAccumulator1A<IT, NT>;
-    SymbolicAccumulator _symbolicAccumulator;
-    NumericAccumulatorT _numericAccumulator;
+template<class IT, class NT>
+class MSA1A<IT, NT, false> : public MSABase<MaskedSparseAccumulator1A, IT, NT, false> {
+    using super = MSABase<MaskedSparseAccumulator1A, IT, NT, false>;
 
 public:
-    inline const static bool CALC_MAX_ROW_SIZE_A = false;
-    inline const static bool CALC_MAX_ROW_SIZE_M = false;
-
-    explicit MSA1A(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
-            : _symbolicAccumulator(maxIndex), _numericAccumulator(maxIndex) {}
-
-    [[nodiscard]]  std::tuple<size_t, size_t> getMemoryRequirement() {
-        auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement();
-        auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement();
-
-        return {std::max(symbolicSize, numericSize), std::lcm(symbolicAlignment, numericAlignment)};
-    }
-
-    [[nodiscard]] SymbolicAccumulator &getSymbolicAccumulator() { return _symbolicAccumulator; }
-
-    [[nodiscard]] NumericAccumulatorT &getNumericAccumulator() { return _numericAccumulator; }
-
-    [[gnu::always_inline]]
-    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
-//        assert(_symbolicAccumulator.isInitialized());
-
-        const auto maskBegin = &M.colids[M.rowptr[row]];
-        const auto maskEnd = &M.colids[M.rowptr[row + 1]];
-
-        // Insert all mask elements to the SPA
-        for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            _symbolicAccumulator.setAllowed(*maskIt);
-        }
-
-        IT currRowNvals = 0;
-        for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
-            IT inner = A.colids[j];
-            for (IT k = B.rowptr[inner]; k < B.rowptr[inner + 1]; k++) {
-                bool erased = _symbolicAccumulator.erase(B.colids[k]);
-                if (erased) {
-                    currRowNvals++;
-                }
-            }
-        }
-
-        // Reset - Remove all mask elements from the SPA
-        for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            _symbolicAccumulator.clear(*maskIt);
-        }
-
-        rowNvals[row] = currRowNvals;
-
-//        assert(_symbolicAccumulator.isInitialized());
-    }
+    explicit MSA1A(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : super(maxIndex, maxRowSizeA, maxRowSizeM) {}
 
     template<typename MultiplyOperation, typename AddOperation>
     [[gnu::always_inline]]
@@ -75,18 +24,18 @@ public:
 
         // Insert all mask elements to the SPA
         for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            _numericAccumulator.setAllowed(*maskIt);
+            this->_numericAccumulator.setAllowed(*maskIt);
         }
 
         for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
             IT inner = A.colids[j];
             for (IT k = B.rowptr[inner]; k < B.rowptr[inner + 1]; k++) {
-                auto &entry = _numericAccumulator[B.colids[k]];
+                auto &entry = this->_numericAccumulator[B.colids[k]];
 
-                if (entry.state == NumericAccumulatorT::ALLOWED) {
+                if (entry.state == super::NumericAccumulatorT::ALLOWED) {
                     entry.value = multop(A.values[j], B.values[k]);
-                    entry.state = NumericAccumulatorT::INITIALIZED;
-                } else if (entry.state == NumericAccumulatorT::INITIALIZED) {
+                    entry.state = super::NumericAccumulatorT::INITIALIZED;
+                } else if (entry.state == super::NumericAccumulatorT::INITIALIZED) {
                     entry.value = addop(entry.value, multop(A.values[j], B.values[k]));
                 }
             }
@@ -94,79 +43,24 @@ public:
 
         // Copy the values from the hash table to the output
         for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            auto &entry = _numericAccumulator[*maskIt];
+            auto &entry = this->_numericAccumulator[*maskIt];
 
-            if (entry.state == NumericAccumulatorT::INITIALIZED) {
+            if (entry.state == super::NumericAccumulatorT::INITIALIZED) {
                 *(currColId++) = *maskIt;
                 *(currValue++) = entry.value;
             }
 
-            _numericAccumulator.clear(*maskIt);
+            this->_numericAccumulator.clear(*maskIt);
         }
     }
-
 };
 
-template<class IT, class NT, bool Complemented = false>
-class MSA2A {
-    static_assert(Complemented == false);
-
-private:
-    using SymbolicAccumulator = MaskedSparseAccumulator2A<IT, void>;
-    using NumericAccumulatorT = MaskedSparseAccumulator2A<IT, NT>;
-    SymbolicAccumulator _symbolicAccumulator;
-    NumericAccumulatorT _numericAccumulator;
+template<class IT, class NT>
+class MSA1A<IT, NT, true> : public MSABase<MaskedSparseAccumulator1A, IT, NT, true> {
+    using super = MSABase<MaskedSparseAccumulator1A, IT, NT, true>;
 
 public:
-    inline const static bool CALC_MAX_ROW_SIZE_A = false;
-    inline const static bool CALC_MAX_ROW_SIZE_M = false;
-
-    explicit MSA2A(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
-            : _symbolicAccumulator(maxIndex), _numericAccumulator(maxIndex) {}
-
-    [[nodiscard]]  std::tuple<size_t, size_t> getMemoryRequirement() {
-        auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement();
-        auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement();
-
-        return {std::max(symbolicSize, numericSize), std::lcm(symbolicAlignment, numericAlignment)};
-    }
-
-    [[nodiscard]] SymbolicAccumulator &getSymbolicAccumulator() { return _symbolicAccumulator; }
-
-    [[nodiscard]] NumericAccumulatorT &getNumericAccumulator() { return _numericAccumulator; }
-
-    [[gnu::always_inline]]
-    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
-//        assert(_symbolicAccumulator.isInitialized());
-
-        const auto maskBegin = &M.colids[M.rowptr[row]];
-        const auto maskEnd = &M.colids[M.rowptr[row + 1]];
-
-        // Insert all mask elements to the SPA
-        for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            _symbolicAccumulator.setAllowed(*maskIt);
-        }
-
-        IT currRowNvals = 0;
-        for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
-            IT inner = A.colids[j];
-            for (IT k = B.rowptr[inner]; k < B.rowptr[inner + 1]; k++) {
-                bool erased = _symbolicAccumulator.erase(B.colids[k]);
-                if (erased) {
-                    currRowNvals++;
-                }
-            }
-        }
-
-        // Reset - Remove all mask elements from the SPA
-        for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            _symbolicAccumulator.clear(*maskIt);
-        }
-
-        rowNvals[row] = currRowNvals;
-
-//        assert(_symbolicAccumulator.isInitialized());
-    }
+    explicit MSA1A(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : super(maxIndex, maxRowSizeA, maxRowSizeM) {}
 
     template<typename MultiplyOperation, typename AddOperation>
     [[gnu::always_inline]]
@@ -177,52 +71,128 @@ public:
 
         // Insert all mask elements to the SPA
         for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            _numericAccumulator.setAllowed(*maskIt);
+            this->_numericAccumulator.setNotAllowed(*maskIt);
         }
 
         for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
             IT inner = A.colids[j];
             for (IT k = B.rowptr[inner]; k < B.rowptr[inner + 1]; k++) {
-                auto &state = _numericAccumulator.getState(B.colids[k]);
-                if (state == NumericAccumulatorT::EMPTY) { continue; }
+                auto &entry = this->_numericAccumulator[B.colids[k]];
 
-                auto &value = _numericAccumulator.getValue(B.colids[k]);
+                if (entry.state == super::NumericAccumulatorT::ALLOWED) {
+                    entry.value = multop(A.values[j], B.values[k]);
+                    this->_numericAccumulator.setInitialized(B.colids[k]);
+                } else if (entry.state == super::NumericAccumulatorT::INITIALIZED) {
+                    entry.value = addop(entry.value, multop(A.values[j], B.values[k]));
+                }
+            }
+        }
 
-                if (state == NumericAccumulatorT::ALLOWED) {
+        this->_numericAccumulator.gather(currColId, currValue);
+        this->_numericAccumulator.resetStates(maskBegin, maskEnd);
+    }
+};
+
+//endregion
+
+//region MSA 2A
+
+template<class IT, class NT, bool Complemented>
+class MSA2A;
+
+template<class IT, class NT>
+class MSA2A<IT, NT, false> : public MSABase<MaskedSparseAccumulator2A, IT, NT, false> {
+    using super = MSABase<MaskedSparseAccumulator2A, IT, NT, false>;
+
+public:
+    explicit MSA2A(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : super(maxIndex, maxRowSizeA, maxRowSizeM) {}
+
+    template<typename MultiplyOperation, typename AddOperation>
+    [[gnu::always_inline]]
+    void numericRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
+                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue) {
+        const auto maskBegin = &M.colids[M.rowptr[row]];
+        const auto maskEnd = &M.colids[M.rowptr[row + 1]];
+
+        // Insert all mask elements to the SPA
+        for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
+            this->_numericAccumulator.setAllowed(*maskIt);
+        }
+
+        for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
+            IT inner = A.colids[j];
+            for (IT k = B.rowptr[inner]; k < B.rowptr[inner + 1]; k++) {
+                auto &state = this->_numericAccumulator.getState(B.colids[k]);
+                if (state == super::NumericAccumulatorT::NOT_ALLOWED) { continue; }
+
+                auto &value = this->_numericAccumulator.getValue(B.colids[k]);
+
+                if (state == super::NumericAccumulatorT::ALLOWED) {
                     value = multop(A.values[j], B.values[k]);
-                    state = NumericAccumulatorT::INITIALIZED;
+                    state = super::NumericAccumulatorT::INITIALIZED;
                 } else {
-                    assert(state == NumericAccumulatorT::INITIALIZED);
+                    assert(state == super::NumericAccumulatorT::INITIALIZED);
                     value = addop(value, multop(A.values[j], B.values[k]));
                 }
-
-//                auto key = B.colids[k];
-//                if (_numericAccumulator._storage._states[key] == NumericAccumulatorT::EMPTY) { continue; }
-//
-//
-//                if (_numericAccumulator._storage._states[key] == NumericAccumulatorT::ALLOWED) {
-//                    _numericAccumulator._storage._values[key] = multop(A.values[j], B.values[k]);
-//                    _numericAccumulator._storage._states[key] = NumericAccumulatorT::INITIALIZED;
-//                } else {
-//                    assert(_numericAccumulator._storage._states[key] == NumericAccumulatorT::INITIALIZED);
-//                    _numericAccumulator._storage._values[key] = addop(_numericAccumulator._storage._values[key], multop(A.values[j], B.values[k]));
-//                }
             }
         }
 
         // Copy the values from the hash table to the output
         for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            auto &state = _numericAccumulator.getState(*maskIt);
+            auto &state = this->_numericAccumulator.getState(*maskIt);
 
-            if (state == NumericAccumulatorT::INITIALIZED) {
+            if (state == super::NumericAccumulatorT::INITIALIZED) {
                 *(currColId++) = *maskIt;
-                *(currValue++) = _numericAccumulator.getValue(*maskIt);
+                *(currValue++) = this->_numericAccumulator.getValue(*maskIt);
             }
 
-            _numericAccumulator.clear(*maskIt);
+            this-> _numericAccumulator.clear(*maskIt);
         }
     }
-
 };
 
-#endif //MASKED_SPGEMM_MASKED_SPA_H
+template<class IT, class NT>
+class MSA2A<IT, NT, true> : public MSABase<MaskedSparseAccumulator2A, IT, NT, true> {
+    using super = MSABase<MaskedSparseAccumulator2A, IT, NT, true>;
+
+public:
+    explicit MSA2A(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : super(maxIndex, maxRowSizeA, maxRowSizeM) {}
+
+    template<typename MultiplyOperation, typename AddOperation>
+    [[gnu::always_inline]]
+    void numericRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
+                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue) {
+        const auto maskBegin = &M.colids[M.rowptr[row]];
+        const auto maskEnd = &M.colids[M.rowptr[row + 1]];
+
+        // Insert all mask elements to the SPA
+        for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
+            this->_numericAccumulator.setNotAllowed(*maskIt);
+        }
+
+        for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
+            IT inner = A.colids[j];
+            for (IT k = B.rowptr[inner]; k < B.rowptr[inner + 1]; k++) {
+                auto &state = this->_numericAccumulator.getState(B.colids[k]);
+                if (state == super::NumericAccumulatorT::NOT_ALLOWED) { continue; }
+
+                auto &value = this->_numericAccumulator.getValue(B.colids[k]);
+
+                if (state == super::NumericAccumulatorT::ALLOWED) {
+                    value = multop(A.values[j], B.values[k]);
+                    this->_numericAccumulator.setInitialized(B.colids[k]);
+                } else {
+                    assert(state == super::NumericAccumulatorT::INITIALIZED);
+                    value = addop(value, multop(A.values[j], B.values[k]));
+                }
+            }
+        }
+
+        this->_numericAccumulator.gather(currColId, currValue);
+        this->_numericAccumulator.resetStates(maskBegin, maskEnd);
+    }
+};
+
+//endregion
+
+#endif //MASKED_SPGEMM_MSA_ALGORITHM_H

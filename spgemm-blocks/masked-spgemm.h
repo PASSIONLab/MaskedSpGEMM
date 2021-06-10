@@ -7,6 +7,7 @@
 #include "util.h"
 #include "hash/HashAccumulator.h"
 #include "hash/MaskedHashAlgorithm.h"
+#include "msa/MSAAlgorithm_old.h"
 #include "msa/MSAAlgorithm.h"
 #include "mca/MCAAlgorithm.h"
 #include "heap/MaskedHeapAlgorithm.h"
