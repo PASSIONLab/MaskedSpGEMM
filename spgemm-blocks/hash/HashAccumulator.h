@@ -54,8 +54,8 @@ public:
     }
 
 public:
-    explicit HashAccumulatorBase(size_t maxRowSizeM)
-            : _capacity(adjustSize(maxRowSizeM)), _size(0), _mask(0), _table{nullptr}, _dirty(0), _maxSize(0) {};
+    explicit HashAccumulatorBase(size_t capacity)
+            : _capacity(adjustSize(capacity)), _size(0), _mask(0), _table{nullptr}, _dirty(0), _maxSize(0) {};
 
     HashAccumulatorBase(const HashAccumulatorBase &other) = delete;
 
@@ -95,7 +95,7 @@ public:
         for (size_t i = 0; i < _capacity; ++i) { _table[i].key = EMPTY; }
     }
 
-    void reset() {
+    void resetStates() {
         for (size_t i = 0; i < _size; ++i) { _table[i].key = EMPTY; }
     }
 
@@ -136,13 +136,13 @@ public:
         return true;
     }
 
-protected:
     T findIdx(K key) const {
         T hv = (key * SCALE) & _mask;
         while (_table[hv].key != EMPTY && _table[hv].key != key) { hv = (hv + 1) & _mask; }
         return hv;
     }
 
+protected:
     // return idx of the key that's guaranteed to be in the hashmap
     T findIdxForce(K key) const {
         T hv = (key * SCALE) & _mask;
@@ -159,7 +159,7 @@ protected:
 template<class K, class V1 = void, class V2 = void>
 struct HashAccumulator;
 
-//region KVV
+//region KVV; key-value-bool
 
 template<class K, class V1 = void, class V2 = void>
 struct HashAccumEntryT {
@@ -169,19 +169,33 @@ struct HashAccumEntryT {
 };
 
 template<class K, class V1>
-struct HashAccumulator<K, V1, bool> : public HashAccumulatorBase<HashAccumEntryT<K, V1, bool>> {
+class HashAccumulator<K, V1, bool> : public HashAccumulatorBase<HashAccumEntryT<K, V1, bool>> {
 
     using super = HashAccumulatorBase<HashAccumEntryT<K, V1, bool>>;
 
-    HashAccumulator(size_t maxRowSizeM) : super(maxRowSizeM) {};
+private:
+    std::vector<K> _keys;
 
+public:
+    explicit HashAccumulator(size_t capacity) : super(capacity) {};
+
+    template<bool TrackKeys>
+    bool insert(typename super::T idx, K key, V1 value1, bool value2) {
+        this->_table[idx].key = key;
+        this->_table[idx].value1 = value1;
+        this->_table[idx].value2 = value2;
+
+        if (TrackKeys) { _keys.push_back(key); }
+
+        return true;
+    }
+
+    template<bool TrackKeys>
     bool insert(K key, V1 value1, bool value2) {
         auto idx = super::findIdx(key);
         if (this->_table[idx].key != this->EMPTY) { return false; }
 
-        this->_table[idx].key = key;
-        this->_table[idx].value1 = value1;
-        this->_table[idx].value2 = value2;
+        insert<TrackKeys>(idx, key, value1, value2);
         return true;
     }
 
@@ -210,8 +224,8 @@ struct HashAccumulator<K, V1, bool> : public HashAccumulatorBase<HashAccumEntryT
         }
     }
 
-    template<typename IT, typename NT>
-    void gather(IT *&idxPtr, NT *&valPtr, const IT *keysBegin, const IT *keysEnd) {
+    template<class IT, class NT, class KeyIterator>
+    void gather(IT *&idxPtr, NT *&valPtr, const KeyIterator keysBegin, const KeyIterator keysEnd) {
         for (auto keysIt = keysBegin; keysIt != keysEnd; ++keysIt) {
             auto idx = this->findIdxForce(*keysIt);
             auto &elem = this->_table[idx];
@@ -226,6 +240,12 @@ struct HashAccumulator<K, V1, bool> : public HashAccumulatorBase<HashAccumEntryT
             elem.key = this->EMPTY;
         }
     }
+
+    template<typename IT, typename NT>
+    void gatherList(IT *&idxPtr, NT *&valPtr) {
+        gather(idxPtr, valPtr, _keys.begin(), _keys.end());
+        _keys.clear();
+    }
 };
 
 //endregion
@@ -238,18 +258,34 @@ struct HashAccumEntryT<K, void, void> {
 };
 
 template<class K>
-struct HashAccumulator<K, void, void> : public HashAccumulatorBase<HashAccumEntryT<K>> {
-
+class HashAccumulator<K, void, void> : public HashAccumulatorBase<HashAccumEntryT<K>> {
     using super = HashAccumulatorBase<HashAccumEntryT<K>>;
 
-    HashAccumulator(size_t maxRowSizeM) : super(maxRowSizeM) {};
+private:
+    std::vector<K> _keys;
 
+public:
+    explicit HashAccumulator(size_t capacity) : super(capacity) {};
+
+    template<bool TrackKeys>
     bool insert(K key) {
         auto idx = super::findIdx(key);
         if (this->_table[idx].key != this->EMPTY) { return false; }
 
         this->_table[idx].key = key;
+
+        if (TrackKeys) { _keys.push_back(key); }
+
         return true;
+    }
+
+    void resetStatesList() {
+        for (auto key : _keys) {
+            auto idx = super::findIdx(key);
+            this->_table[idx].key = this->EMPTY;
+        }
+
+        _keys.clear();
     }
 };
 

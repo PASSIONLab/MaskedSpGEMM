@@ -29,19 +29,20 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         auto[rowBeginIdx, rowEndIdx] = distributeWork(flops, cumulativeWork, A.rows, numThreads, thisThread);
 
         // Scan the input matrices
-        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM] = scanInputs<false>(rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
+        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM, maxRowFlops]
+        = scanInputs<false, true, true, true, true>(rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
 
         // Initialize row algorithms
 //        MaskedHash<IT, NT> hash{B.cols, maxRowSizeA, maxRowSizeM};
 //        auto[bufferSizeHash, bufferAlignmentHash] = hash.getMemoryRequirement();
 
-        MSA2A<IT, NT, false> spa{B.cols, maxRowSizeA, maxRowSizeM};
+        MSA2A<false, false>::Impl<IT, NT> spa{B.cols, maxRowSizeA, maxRowSizeM, maxRowFlops};
         auto[bufferSizeSPA, bufferAlignmentSPA] = spa.getMemoryRequirement();
 
 //        MaskedHeap_v1<IT, NT> heap{B.cols, maxRowSizeA, maxRowSizeM};
 //        auto[bufferSizeHeap, bufferAlignmentHeap] = heap.getMemoryRequirement();
 
-        MCA<IT, NT> mca{B.cols, maxRowSizeA, maxRowSizeM};
+        MCA<false, false>::Impl<IT, NT> mca{B.cols, maxRowSizeA, maxRowSizeM, maxRowFlops};
         auto[bufferSizeMCA, bufferAlignmentMCA] = mca.getMemoryRequirement();
 
         size_t bufferSize = 0;

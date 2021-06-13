@@ -1,7 +1,7 @@
 #ifndef MASKED_SPGEMM_MASKED_SPGEMM_INNER_H
 #define MASKED_SPGEMM_MASKED_SPGEMM_INNER_H
 
-#include "InnerAlgorithm.h"
+#include "inner/InnerAlgorithm.h"
 
 template<template<class, class, bool> class RowAlgorithm, bool Complemented = false,
         class IT, class NT, class MultiplyOperation, class AddOperation>

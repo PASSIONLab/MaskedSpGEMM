@@ -38,9 +38,9 @@ void testAllOps(size_t nops, size_t niter, K maxKey) {
 
                     bool inserted;
                     if constexpr (std::is_void_v<V>) {
-                        inserted = hashTable.insert(key);
+                        inserted = hashTable.template insert<false>(key);
                     } else {
-                        inserted = hashTable.insert(key, value, true);
+                        inserted = hashTable.template insert<false>(key, value, true);
                     }
                     if (inserted != (cnt == 0)) {
                         std::cerr << "Insertion error. Key: \"" << key << "\"" << std::endl;

@@ -8,7 +8,7 @@
 #include "../spgemm-blocks/masked-spgemm.h"
 #include "../spgemm-blocks/common.h"
 #include "../inner_mult.h"
-#include "../spgemm-blocks/inner/masked-spgemm-inner.h"
+#include "../spgemm-blocks/masked-spgemm-inner.h"
 
 template<class IT, class NT,
         template<class, class> class AT,
@@ -130,12 +130,13 @@ int main(int argc, char *argv[]) {
                      multiplies<Value_t>, plus<Value_t>, unsigned)>>
             csrscr
             {
-                    {"MaskedHash",    MaskedSpGEMM1p<MaskedHash>},
-                    {"MSA2A",         MaskedSpGEMM1p<MSA2A>},
-                    {"MCA",           MaskedSpGEMM1p<MCA>},
-                    {"MaskedHeap_v1", MaskedSpGEMM1p<MaskedHeap_v1>},
-                    {"MaskedHeap_v2", MaskedSpGEMM1p<MaskedHeap_v2>},
+                    {"MaskedHash",       MaskedSpGEMM1p<MaskedHash<false, false>::Impl>},
+                    {"MSA2A",            MaskedSpGEMM1p<MSA2A<false, false>::Impl>},
+                    {"MCA",              MaskedSpGEMM1p<MCA<false, false>::Impl>},
+                    {"MaskedHeap k=1",   MaskedSpGEMM1p<MaskedHeap<false, true, 1>::Impl>},
+                    {"MaskedHeap k=max", MaskedSpGEMM1p<MaskedHeap<false, true, MaskedHeapDot>::Impl>},
             };
+
 
     std::vector<std::pair<std::string,
             void (*)(const CSR<Index_t, Value_t> &, const CSC<Index_t, Value_t> &,

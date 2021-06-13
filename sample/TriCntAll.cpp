@@ -24,112 +24,15 @@
 #include "../inner_mult.h"
 #include "../heap_mult_generic.h"
 #include "sample_common.hpp"
+#include "sample-util.h"
 #include "../spa_mult.h"
 #include "../spgemm-blocks/masked-spgemm.h"
 #include "../spgemm-blocks/masked-spgemm-prof.h"
 #include "../spgemm-blocks/masked-spgemm-poly.h"
-#include "../spgemm-blocks/inner/masked-spgemm-inner.h"
+#include "../spgemm-blocks/masked-spgemm-inner.h"
 #include "../spgemm-blocks/inner/MaskedInnerSpGEMM.h"
 
 using namespace std;
-
-static uint16_t calculateChecksum(uint8_t *data, size_t length) {
-    uint32_t checksum = 0;
-    auto *data16 = (uint16_t *) data;
-    auto length16 = length >> (size_t) 1;
-
-    while (length16--) {
-        checksum += *data16;
-        data16++;
-        if (checksum & 0xFFFF0000) {
-            checksum &= 0xFFFF;
-            checksum++;
-        }
-    }
-
-    // If number of bytes is odd, add remaining byte
-    if (length & 0x1) {
-        checksum += *((uint8_t *) data16);
-        if (checksum & 0xFFFF0000) {
-            checksum &= 0xFFFF;
-            checksum++;
-        }
-    }
-
-    return (uint16_t) ~(checksum & 0xFFFF);
-}
-
-template<class IT, class NT, template<class, class> class AT>
-std::string checksum(const AT<IT, NT> &A) {
-    uint16_t valuesCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.values), A.nnz * sizeof(NT));
-    uint16_t idsCSC;
-    uint16_t ptrCSC;
-    if constexpr (std::is_same<AT<IT, NT>, CSR<IT, NT>>::value) {
-        idsCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.colids), A.nnz * sizeof(IT));
-        ptrCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.rowptr), A.rows * sizeof(IT));
-    } else {
-        idsCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.rowids), A.nnz * sizeof(IT));
-        ptrCSC = calculateChecksum(reinterpret_cast<uint8_t *>(A.colptr), A.cols * sizeof(IT));
-    }
-
-    return to_string(ptrCSC) + "|" + to_string(valuesCSC) + "|" + to_string(idsCSC);
-}
-
-static const char *getFileName(const char *path) {
-    size_t len = strlen(path);
-    while (path[len] != '/' && len >= 0) { len--; }
-    return path + len + 1;
-}
-
-const char *fileName;
-
-template<class IT, class NT,
-        template<class, class> class AT,
-        template<class, class> class BT,
-        template<class, class> class CT = AT,
-        template<class, class> class MT>
-void run(const std::string &name,
-         void(*f)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &, const MT<IT, NT> &,
-                  multiplies<NT>, plus<NT>, unsigned),
-         size_t witers, size_t niters, vector<int> &tnums, size_t nflop,
-         const AT<IT, NT> &A, const BT<IT, NT> &B, const MT<IT, NT> &M) {
-    for (int tnum : tnums) {
-        omp_set_num_threads(tnum); // TODO: update get_flop to use numThreads methods and remove this
-
-        CT<IT, NT> C;
-
-        // The first iteration is excluded from evaluation if there is only one iteration
-        for (int i = 0; i < witers; ++i) { f(A, B, C, M, multiplies<NT>(), plus<NT>(), tnum); }
-
-        double ave_msec = 0;
-        for (int i = 0; i < niters; ++i) {
-            C.make_empty();
-
-            double start = omp_get_wtime();
-            f(A, B, C, M, multiplies<NT>(), plus<NT>(), tnum);
-            double end = omp_get_wtime();
-
-            double msec = (end - start) * 1000;
-            ave_msec += msec;
-        }
-
-        ave_msec /= static_cast<double>(niters);
-        double mflops = (double) nflop / ave_msec / 1000;
-
-        std::cout << "LOG,"
-                  << std::setw(20) << fileName << ","
-                  << std::setw(40) << name << ","
-                  << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ","
-                  << std::setw(3) << tnum << ","
-                  << std::setw(10) << ave_msec << ","
-                  << std::setw(10) << mflops << ","
-                  << std::setw(10) << C.nnz << ","
-                  << std::setw(10) << C.sumall() << ","
-                  << std::setw(20) << checksum(C) << std::endl;
-
-        C.make_empty();
-    }
-}
 
 template<class IT, class NT>
 void setRowData(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
@@ -251,7 +154,7 @@ template<class IT, class NT,
         template<class, class> class BT,
         template<class, class> class CT = AT,
         template<class, class> class MT>
-void profile(const std::string &name,
+void profile(const std::string &fileName, const std::string &name,
              void(*f)(long *, const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &, const MT<IT, NT> &,
                       multiplies<NT>, plus<NT>, unsigned),
              size_t witers, size_t niters, vector<int> &tnums, size_t nfop,
@@ -294,7 +197,7 @@ void profile(const std::string &name,
 }
 
 template<class IT, class NT>
-void process(CSC<IT, NT> &A) {
+void preprocessInput(CSC<IT, NT> &A) {
     std::vector<std::pair<IT, IT>> rowcnts(A.rows, std::pair<IT, IT>{0, 0});
 
     for (IT i = 0; i < A.rows; i++) { rowcnts[i].second = i; }
@@ -338,12 +241,13 @@ void process(CSC<IT, NT> &A) {
     delete[] triples;
 }
 
-#define RUN_CSR_IMPL(NAME, FUNC) run(NAME, FUNC, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr)
+#define RUN_CSR_IMPL(NAME, FUNC) run(fileName, NAME, FUNC, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr)
 #define RUN_CSR(ALG) RUN_CSR_IMPL(#ALG, ALG)
 #define RUN_CSR_1P(ALG) RUN_CSR_IMPL(#ALG "-1P", MaskedSpGEMM1p<ALG>)
 #define RUN_CSR_2P(ALG) RUN_CSR_IMPL(#ALG "-2P", MaskedSpGEMM2p<ALG>)
 
-#define RUN_CSR_CSC_IMPL(NAME, FUNC) run(NAME, FUNC, warmupIters, innerIters, tnums, flop, A_csr, A_csc, A_csr)
+
+#define RUN_CSR_CSC_IMPL(NAME, FUNC) run(fileName, NAME, FUNC, warmupIters, innerIters, tnums, flop, A_csr, A_csc, A_csr)
 #define RUN_CSR_CSC(ALG) RUN_CSR_CSC_IMPL(#ALG, ALG)
 
 int main(int argc, char *argv[]) {
@@ -359,11 +263,11 @@ int main(int argc, char *argv[]) {
         tnums = {atoi(argv[2])};
     }
 
-    fileName = getFileName(argv[1]);
+    std::string fileName = getFileName(argv[1]);
     string inputname1 = argv[1];
     CSC<Index_t, Value_t> A_csc;
     ReadASCII(inputname1, A_csc);
-    process(A_csc);
+    preprocessInput(A_csc);
     CSR<Index_t, Value_t> A_csr(A_csc); //converts, allocates and populates
 
     // @formatter:off
@@ -373,109 +277,86 @@ int main(int argc, char *argv[]) {
     string mode        = std::getenv("MODE")         ? std::getenv("MODE")                         : "";
     // @formatter:on
 
+    if (mode.empty()) { std::cerr << "Mode unspecified!" << std::endl; }
+    std::transform(mode.begin(), mode.end(), mode.begin(), [](unsigned char c) { return std::tolower(c); });
+
     std::cout << "Iters: " << outerIters << " x (" << warmupIters << "," << innerIters << ")" << std::endl << std::endl;
 
     std::size_t flop = get_flop(A_csc, A_csc);
 
     for (size_t i = 0; i < outerIters; i++) {
-        if (mode == "Inner" || mode == "Dot") {
+        if (mode == "inner" || mode == "dot" || mode == "all") {
             RUN_CSR_CSC((innerSpGEMM_nohash<false, false>));
-            RUN_CSR_CSC(MaskedSpGEMM1p);
-            RUN_CSR_CSC(MaskedSpGEMM2p);
+            RUN_CSR_CSC(MaskedSpGEMM1pInnerProduct);
+            RUN_CSR_CSC(MaskedSpGEMM2pInnerProduct);
             RUN_CSR_CSC(MaskedSpGEMM1p<MaskedInner>);
             RUN_CSR_CSC(MaskedSpGEMM2p<MaskedInner>);
-        } else if (mode == "SPA") {
+        }
+
+        if (mode == "msa" || mode == "all") {
             RUN_CSR(MaskedSPASpGEMM);
+
             RUN_CSR_1P(MSA2A_old);
-            RUN_CSR_1P(MSA2A);
             RUN_CSR_2P(MSA2A_old);
-            RUN_CSR_2P(MSA2A);
-            RUN_CSR_1P(MSA1A);
+            RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>));
+
             RUN_CSR_1P(MSA1A_old);
             RUN_CSR_2P(MSA1A_old);
-            RUN_CSR_2P(MSA1A);
-        } else if (mode == "Hash") {
+            RUN_CSR((MaskedSpGEMM1p<MSA1A<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MSA1A<false, false>::Impl>));
+        }
+
+        if (mode == "hash" || mode == "all") {
             RUN_CSR(mxm_hash_mask_wobin);
             RUN_CSR(mxm_hash_mask);
-            RUN_CSR_1P(MaskedHash);
-            RUN_CSR_2P(MaskedHash);
-        } else if (mode == "Heap") {
+            RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>));
+        }
+
+        if (mode == "heap" || mode == "all") {
             RUN_CSR_1P(MaskedHeap_v0);
             RUN_CSR_2P(MaskedHeap_v0);
-            RUN_CSR_1P(MaskedHeapNaive);
+            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 0>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 0>::Impl>));
 
             RUN_CSR_1P(MaskedHeap_v1);
             RUN_CSR_2P(MaskedHeap_v1);
-            RUN_CSR_1P(MaskedHeapBasic);
-            RUN_CSR_2P(MaskedHeapBasic);
-            RUN_CSR_1P(MaskedHeap<2>::Impl);
-            RUN_CSR_1P(MaskedHeap<8>::Impl);
-            RUN_CSR_1P(MaskedHeap<32>::Impl);
-            RUN_CSR_1P(MaskedHeap<128>::Impl);
-            RUN_CSR_1P(MaskedHeap<512>::Impl);
+            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 1>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 1>::Impl>));
+
+            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 8>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 8>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 64>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 64>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 512>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 512>::Impl>));
 
             RUN_CSR_1P(MaskedHeap_v2);
             RUN_CSR_2P(MaskedHeap_v2);
-            RUN_CSR_1P(MaskedHeapDot);
-            RUN_CSR_2P(MaskedHeapDot);
-        } else if (mode == "All1p") {
-            RUN_CSR_CSC((innerSpGEMM_nohash<false, false>));
-            RUN_CSR_1P(MaskedHeap_v1);
-            RUN_CSR_1P(MaskedHeap_v2);
-            RUN_CSR_1P(MaskedHash);
-            RUN_CSR_1P(MSA2A);
-            RUN_CSR_1P(MCA);
+            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+        }
+
+        if (mode == "all1p") {
+            RUN_CSR_CSC(MaskedSpGEMM1p<MaskedInner>);
+            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 1>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MSA1A<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MCA<false, false>::Impl>));
             RUN_CSR(MaskedSpGEMM1p);
-        } else if (mode == "Prof") {
-            std::vector<long *> data;
-            setRowData(A_csr, A_csr, A_csr, data);
+        }
 
-            RUN_CSR_1P(MSA2A);
-            RUN_CSR_1P(MaskedHash);
-            RUN_CSR_1P(MCA);
-            RUN_CSR_1P(MaskedHeap_v1);
-            RUN_CSR_1P(MaskedHeap_v2);
-
-            // @formatter:off
-            profile("MaskedSpGEMM1p<MSA2A>",         MaskedSpGEMM1p_prof<MSA2A>,         warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
-            profile("MaskedSpGEMM1p<MaskedHash>",    MaskedSpGEMM1p_prof<MaskedHash>,    warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
-            profile("MaskedSpGEMM1p<MCA>",           MaskedSpGEMM1p_prof<MCA>,           warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
-            profile("MaskedSpGEMM1p<MaskedHeap_v1>", MaskedSpGEMM1p_prof<MaskedHeap_v1>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
-            profile("MaskedSpGEMM1p<MaskedHeap_v2>", MaskedSpGEMM1p_prof<MaskedHeap_v2>, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr, data);
-            // @formatter:on
-
-            printRowData(data, A_csr.rows, innerIters, (innerIters + 1) / 2,
-                         {"MSA2A", "MaskedHash", "MCA", "MaskedHeap_v1", "MaskedHeap_v2"});
-        } else {
-            std::cout << "LOG,start" << std::endl;
-            RUN_CSR_CSC((innerSpGEMM_nohash<false, false>));
-            std::cout << "LOG,separator" << std::endl;
-            RUN_CSR(mxm_hash_mask_wobin);
-            RUN_CSR(mxm_hash_mask);
-            RUN_CSR_1P(MaskedHash);
-            RUN_CSR_2P(MaskedHash);
-            std::cout << "LOG,separator" << std::endl;
-            RUN_CSR(MaskedSPASpGEMM);
-            RUN_CSR_1P(MSA2A);
-            RUN_CSR_2P(MSA2A);
-            RUN_CSR_1P(MSA1A);
-            RUN_CSR_2P(MSA1A);
-            std::cout << "LOG,separator" << std::endl;
-            RUN_CSR(HeapSpGEMM<rowAlg::MCA_v1>);
-            RUN_CSR(HeapSpGEMM<rowAlg::MCA_v2>);
-            RUN_CSR(HeapSpGEMM<rowAlg::MCA_v3>);
-            RUN_CSR_1P(MCA);
-            RUN_CSR_2P(MCA);
-            std::cout << "LOG,separator" << std::endl;
-            RUN_CSR(HeapSpGEMM<rowAlg::MaskedHeap_v0>);
-            RUN_CSR(HeapSpGEMM<rowAlg::MaskedHeap_v1>);
-            RUN_CSR(HeapSpGEMM<rowAlg::MaskedHeap_v2>);
-            RUN_CSR_1P(MaskedHeap_v0);
-            RUN_CSR_2P(MaskedHeap_v0);
-            RUN_CSR_1P(MaskedHeap_v1);
-            RUN_CSR_2P(MaskedHeap_v1);
-            RUN_CSR_1P(MaskedHeap_v2);
-            RUN_CSR_2P(MaskedHeap_v2);
+        if (mode == "all2p") {
+            RUN_CSR_CSC(MaskedSpGEMM2p<MaskedInner>);
+            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 1>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MSA1A<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MCA<false, false>::Impl>));
         }
     }
 

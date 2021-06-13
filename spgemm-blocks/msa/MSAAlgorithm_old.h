@@ -5,10 +5,8 @@
 #include "MaskedSparseAccumulator2A.h"
 
 
-template<class IT, class NT, bool Complemented = false>
+template<class IT, class NT>
 class MSA1A_old {
-    static_assert(Complemented == false);
-
 private:
     using SymbolicAccumulator = MaskedSparseAccumulator1A<IT, void, false>;
     using NumericAccumulatorT = MaskedSparseAccumulator1A<IT, NT, false>;
@@ -16,10 +14,12 @@ private:
     NumericAccumulatorT _numericAccumulator;
 
 public:
+    inline const static bool COMPLEMENTED = false;
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = false;
+    inline const static bool CALC_MAX_ROW_FLOPS = false;
 
-    explicit MSA1A_old(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
+    explicit MSA1A_old(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM, IT maxRowFlops)
             : _symbolicAccumulator(maxIndex), _numericAccumulator(maxIndex) {}
 
     [[nodiscard]]  std::tuple<size_t, size_t> getMemoryRequirement() {
@@ -107,10 +107,8 @@ public:
 
 };
 
-template<class IT, class NT, bool Complemented = false>
+template<class IT, class NT>
 class MSA2A_old {
-    static_assert(Complemented == false);
-
 private:
     using SymbolicAccumulator = MaskedSparseAccumulator2A<IT, void, false>;
     using NumericAccumulatorT = MaskedSparseAccumulator2A<IT, NT, false>;
@@ -118,10 +116,12 @@ private:
     NumericAccumulatorT _numericAccumulator;
 
 public:
+    inline const static bool COMPLEMENTED = false;
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
     inline const static bool CALC_MAX_ROW_SIZE_M = false;
+    inline const static bool CALC_MAX_ROW_FLOPS = false;
 
-    explicit MSA2A_old(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
+    explicit MSA2A_old(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM, IT maxRowFlops)
             : _symbolicAccumulator(maxIndex), _numericAccumulator(maxIndex) {}
 
     [[nodiscard]]  std::tuple<size_t, size_t> getMemoryRequirement() {

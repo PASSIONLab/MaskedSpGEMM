@@ -1,4 +1,3 @@
-
 #ifndef MASKED_SPGEMM_UTIL_H
 #define MASKED_SPGEMM_UTIL_H
 

@@ -133,7 +133,7 @@ public:
     bool erase(T idx) const {
         assert(0 <= idx && idx < _maxIndex);
 
-        if (_storage._states[idx] != INITIALIZED) { return false; }
+        if (_storage._states[idx] == DEFAULT_STATE) { return false; }
         _storage._states[idx] = DEFAULT_STATE;
         return true;
     }
@@ -158,8 +158,10 @@ public:
         resetStates();
     }
 
+    template<bool Sorted>
     void gather(KeyT *&keyIter, ValueT *&valueIter) {
-        if (false /* TODO: sorted */) { std::sort(_dirtyIndices.begin(), _dirtyIndices.end()); }
+        if (Sorted) { std::sort(_dirtyIndices.begin(), _dirtyIndices.end()); }
+
         for (const auto idx : _dirtyIndices) {
             *(keyIter++) = idx;
             *(valueIter++) = _storage._values[idx];

@@ -4,16 +4,18 @@
 #include "Heap.h"
 
 
-template<class IT, class NT, bool Complemented = false>
+template<class IT, class NT>
 class MaskedHeap_v0 {
 private:
     Heap<IT> _heap;
 
 public:
+    inline const static bool COMPLEMENTED = false;
     inline const static bool CALC_MAX_ROW_SIZE_A = true;
     inline const static bool CALC_MAX_ROW_SIZE_M = false;
+    inline const static bool CALC_MAX_ROW_FLOPS = false;
 
-    MaskedHeap_v0(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : _heap(maxRowSizeA) {};
+    MaskedHeap_v0(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM, IT maxRowFlops) : _heap(maxRowSizeA) {};
 
     [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() { return _heap.getMemoryRequirement(); }
 
@@ -34,48 +36,21 @@ public:
         IT prevKey = std::numeric_limits<IT>::max();
 
         // Traverse the heaps
-        if (!Complemented) {
-            while (!_heap.isEmpty()) {
-                auto &hentry = _heap.top();
+        while (!_heap.isEmpty()) {
+            auto &hentry = _heap.top();
 
-                while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-                if (maskIdx >= maskEnd) {
-                    _heap.clear();
-                    break;
-                }
-
-                if (hentry.key == M.colids[maskIdx] && prevKey != hentry.key) {
-                    prevKey = hentry.key;
-                    currRowNvals++;
-                }
-
-                insertNext(A, B, hentry);
-            }
-        } else {
-            while (!_heap.isEmpty()) {
-                auto &hentry = _heap.top();
-
-                while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-                if (maskIdx >= maskEnd) { break; }
-
-                if (hentry.key != M.colids[maskIdx] && prevKey != hentry.key) {
-                    prevKey = hentry.key;
-                    currRowNvals++;
-                }
-
-                insertNext(A, B, hentry);
+            while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
+            if (maskIdx >= maskEnd) {
+                _heap.clear();
+                break;
             }
 
-            while (!_heap.isEmpty()) {
-                auto &hentry = _heap.top();
-
-                if (prevKey != hentry.key) {
-                    prevKey = hentry.key;
-                    currRowNvals++;
-                }
-
-                insertNext(A, B, hentry);
+            if (hentry.key == M.colids[maskIdx] && prevKey != hentry.key) {
+                prevKey = hentry.key;
+                currRowNvals++;
             }
+
+            insertNext(A, B, hentry);
         }
 
         rowNvals[row] = currRowNvals;
@@ -94,56 +69,16 @@ public:
         IT prevKey = std::numeric_limits<IT>::max();
         --currValue, --currColId;
         // Traverse the heaps
-        if (!Complemented) {
-            while (!_heap.isEmpty()) {
-                auto &hentry = _heap.top();
+        while (!_heap.isEmpty()) {
+            auto &hentry = _heap.top();
 
-                while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-                if (maskIdx >= maskEnd) {
-                    _heap.clear();
-                    break;
-                }
-
-                if (hentry.key == M.colids[maskIdx]) {
-                    NT value = multop(A.values[hentry.runr], B.values[hentry.loc]);
-
-                    // Use short circuiting
-                    if (prevKey == hentry.key) {
-                        *currValue = addop(value, *currValue);
-                    } else {
-                        prevKey = hentry.key;
-                        *(++currValue) = value;
-                        *(++currColId) = hentry.key;
-                    }
-                }
-
-                insertNext(A, B, hentry);
-            }
-        } else {
-            while (!_heap.isEmpty()) {
-                auto &hentry = _heap.top();
-
-                while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
-                if (maskIdx >= maskEnd) { break; }
-
-                if (hentry.key != M.colids[maskIdx]) {
-                    NT value = multop(A.values[hentry.runr], B.values[hentry.loc]);
-
-                    // Use short circuiting
-                    if (prevKey == hentry.key) {
-                        *currValue = addop(value, *currValue);
-                    } else {
-                        prevKey = hentry.key;
-                        *(++currValue) = value;
-                        *(++currColId) = hentry.key;
-                    }
-                }
-
-                insertNext(A, B, hentry);
+            while (maskIdx < maskEnd && hentry.key > M.colids[maskIdx]) { ++maskIdx; }
+            if (maskIdx >= maskEnd) {
+                _heap.clear();
+                break;
             }
 
-            while (!_heap.isEmpty()) {
-                auto &hentry = _heap.top();
+            if (hentry.key == M.colids[maskIdx]) {
                 NT value = multop(A.values[hentry.runr], B.values[hentry.loc]);
 
                 // Use short circuiting
@@ -154,9 +89,9 @@ public:
                     *(++currValue) = value;
                     *(++currColId) = hentry.key;
                 }
-
-                insertNext(A, B, hentry);
             }
+
+            insertNext(A, B, hentry);
         }
 
         ++currValue, ++currColId;
@@ -188,18 +123,18 @@ public:
     }
 };
 
-template<class IT, class NT, bool Complemented = false>
+template<class IT, class NT>
 class MaskedHeap_v1 {
-    static_assert(Complemented == false);
-
 private:
     Heap<IT> _heap;
 
 public:
+    inline const static bool COMPLEMENTED = false;
     inline const static bool CALC_MAX_ROW_SIZE_A = true;
     inline const static bool CALC_MAX_ROW_SIZE_M = false;
+    inline const static bool CALC_MAX_ROW_FLOPS = false;
 
-    MaskedHeap_v1(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : _heap(maxRowSizeA) {};
+    MaskedHeap_v1(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM, IT maxRowFlops) : _heap(maxRowSizeA) {};
 
     [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() { return _heap.getMemoryRequirement(); }
 
@@ -317,18 +252,18 @@ public:
     }
 };
 
-template<class IT, class NT, bool Complemented = false>
+template<class IT, class NT>
 class MaskedHeap_v2 {
-    static_assert(Complemented == false);
-
 private:
     Heap<IT> _heap;
 
 public:
+    inline const static bool COMPLEMENTED = false;
     inline const static bool CALC_MAX_ROW_SIZE_A = true;
     inline const static bool CALC_MAX_ROW_SIZE_M = false;
+    inline const static bool CALC_MAX_ROW_FLOPS = false;
 
-    MaskedHeap_v2(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM) : _heap(maxRowSizeA) {};
+    MaskedHeap_v2(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM, IT maxRowFlops) : _heap(maxRowSizeA) {};
 
     [[nodiscard]] std::tuple<size_t, size_t> getMemoryRequirement() { return _heap.getMemoryRequirement(); }
 

@@ -11,7 +11,7 @@
  */
 
 template<class IT, class NT, class MultiplyOperation, class AddOperation>
-void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSC<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
+void MaskedSpGEMM1pInnerProduct(const CSR<IT, NT> &A, const CSC<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
                     MultiplyOperation multop, AddOperation addop, unsigned numThreads = 0) {
     // Calculate number of threads and init C
     setNumThreads(numThreads);
@@ -107,7 +107,7 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSC<IT, NT> &B, CSR<IT, NT> &C, 
 }
 
 template<class IT, class NT, class MultiplyOperation, class AddOperation>
-void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSC<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
+void MaskedSpGEMM2pInnerProduct(const CSR<IT, NT> &A, const CSC<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
                     MultiplyOperation multop, AddOperation addop, unsigned numThreads = 0) {
     // Calculate number of threads and init C
     setNumThreads(numThreads);

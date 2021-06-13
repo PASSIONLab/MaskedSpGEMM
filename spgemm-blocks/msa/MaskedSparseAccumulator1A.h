@@ -122,7 +122,7 @@ public:
     bool erase(T idx) const {
         assert(0 <= idx && idx < _maxIndex);
 
-        if (_entries[idx].state != INITIALIZED) { return false; }
+        if (_entries[idx].state == DEFAULT_STATE) { return false; }
         _entries[idx].state = DEFAULT_STATE;
         return true;
     }
@@ -130,10 +130,10 @@ public:
     void clear(T idx) {
         assert(0 <= idx && idx < _maxIndex);
 
-        if (_entries[idx].state != DEFAULT_STATE) {
-            _entries[idx].state = DEFAULT_STATE;
-            if constexpr (HAS_VALUE) { memset(&_entries[idx].value, 0xFF, sizeof(ValueT)); }
-        }
+        if (_entries[idx].state == DEFAULT_STATE) { return; }
+
+        _entries[idx].state = DEFAULT_STATE;
+        if constexpr (HAS_VALUE) { memset(&_entries[idx].value, 0xFF, sizeof(ValueT)); }
     }
 
     void resetStates() {
@@ -147,8 +147,10 @@ public:
         resetStates();
     }
 
+    template<bool Sorted>
     void gather(KeyT *&keyIter, ValueT *&valueIter) {
-        if (false /* TODO: sorted */) { std::sort(_dirtyIndices.begin(), _dirtyIndices.end()); }
+        if (Sorted) { std::sort(_dirtyIndices.begin(), _dirtyIndices.end()); }
+
         for (const auto idx : _dirtyIndices) {
             *(keyIter++) = idx;
             *(valueIter++) = _entries[idx].value;
@@ -161,7 +163,7 @@ public:
         memset(_entries, 0xFF, _maxIndex * sizeof(EntryT));
     }
 
-    bool isInitialized() const {
+    [[nodiscard]] bool isInitialized() const {
         EntryT initialized;
         memset(&initialized, 0xFF, sizeof(EntryT));
 

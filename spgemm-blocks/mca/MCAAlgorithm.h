@@ -4,133 +4,140 @@
 #include "MaskCompressedAccumulator.h"
 
 
-template<class IT, class NT, bool Complemented = false>
-class MCA {
-    static_assert(Complemented == false);
+template<bool Complemented, bool Sorted>
+struct MCA {
 
-private:
-    using SymbolicAccumulatorT = MaskCompressedAccumulator<IT, void>;
-    using NumericAccumulatorT = MaskCompressedAccumulator<IT, NT>;
-    SymbolicAccumulatorT _symbolicAccumulator;
-    NumericAccumulatorT _numericAccumulator;
+    template<class IT, class NT>
+    class Impl {
+        static_assert(Complemented == false);
+        static_assert(Sorted == false);
 
-public:
-    inline const static bool CALC_MAX_ROW_SIZE_A = false;
-    inline const static bool CALC_MAX_ROW_SIZE_M = true;
+    public:
+        inline const static bool COMPLEMENTED = false;
+        inline const static bool CALC_MAX_ROW_SIZE_A = false;
+        inline const static bool CALC_MAX_ROW_SIZE_M = true;
+        inline const static bool CALC_MAX_ROW_FLOPS = false;
 
-    explicit MCA(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM)
-            : _symbolicAccumulator(maxRowSizeM), _numericAccumulator(maxRowSizeM) {};
+    private:
+        using SymbolicAccumulatorT = MaskCompressedAccumulator<IT, void>;
+        using NumericAccumulatorT = MaskCompressedAccumulator<IT, NT>;
+        SymbolicAccumulatorT _symbolicAccumulator;
+        NumericAccumulatorT _numericAccumulator;
 
-    std::tuple<size_t, size_t> getMemoryRequirement() {
-        auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement();
-        auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement();
+    public:
+        explicit Impl(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM, IT maxRowFlops)
+                : _symbolicAccumulator(maxRowSizeM), _numericAccumulator(maxRowSizeM) {};
 
-        return {std::max(symbolicSize, numericSize), std::lcm(symbolicAlignment, numericAlignment)};
-    }
+        std::tuple<size_t, size_t> getMemoryRequirement() {
+            auto[symbolicSize, symbolicAlignment] = _symbolicAccumulator.getMemoryRequirement();
+            auto[numericSize, numericAlignment] = _numericAccumulator.getMemoryRequirement();
 
-    [[nodiscard]] SymbolicAccumulatorT &getSymbolicAccumulator() { return _symbolicAccumulator; }
-
-    [[nodiscard]] NumericAccumulatorT &getNumericAccumulator() { return _numericAccumulator; }
-
-    [[gnu::always_inline]]
-    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
-        const IT maskBegin = M.rowptr[row];
-        const IT maskEnd = M.rowptr[row + 1];
-        const IT maskSize = maskEnd - maskBegin;
-
-        IT currRowNvals = 0;
-
-        // Iterate though nonzeros in the A's current row
-        for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
-            const IT inner = A.colids[j];
-            IT loc = B.rowptr[inner];
-            if (loc == B.rowptr[inner + 1]) { continue; }
-            IT key = B.colids[loc];
-
-            IT maskIdx = maskBegin;
-
-            // Find the intersection between the mask's row and the A's row
-            while (true) {
-                if (key < M.colids[maskIdx]) {
-                    if (++loc < B.rowptr[inner + 1]) { key = B.colids[loc]; } else { break; }
-                } else if (key > M.colids[maskIdx]) {
-                    if (++maskIdx == maskEnd) { break; }
-                } else {
-                    // colid is found in both arrays
-                    const auto idx = maskIdx - maskBegin;
-
-                    if (_symbolicAccumulator[idx].state == SymbolicAccumulatorT::EMPTY) {
-                        _symbolicAccumulator[idx].state = SymbolicAccumulatorT::ALLOWED;
-                        currRowNvals++;
-                    }
-
-                    if (++loc < B.rowptr[inner + 1]) { key = B.colids[loc]; } else { break; }
-                    if (++maskIdx == maskEnd) { break; }
-                }
-            }
+            return {std::max(symbolicSize, numericSize), std::lcm(symbolicAlignment, numericAlignment)};
         }
 
-        /* Remove empty values the destination arrays and set row IDs */
-        _symbolicAccumulator.clearAll(maskSize);
+        [[nodiscard]] SymbolicAccumulatorT &getSymbolicAccumulator() { return _symbolicAccumulator; }
 
-        rowNvals[row] = currRowNvals;
-    }
+        [[nodiscard]] NumericAccumulatorT &getNumericAccumulator() { return _numericAccumulator; }
 
-    template<typename MultiplyOperation, typename AddOperation>
-    [[gnu::always_inline]]
-    void numericRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
-                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue) {
-        const IT maskBegin = M.rowptr[row];
-        const IT maskEnd = M.rowptr[row + 1];
-        const IT maskSize = maskEnd - maskBegin;
+        [[gnu::always_inline]]
+        void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
+            const IT maskBegin = M.rowptr[row];
+            const IT maskEnd = M.rowptr[row + 1];
+            const IT maskSize = maskEnd - maskBegin;
 
-        // Iterate though nonzeros in the A's current row
-        for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
-            const IT inner = A.colids[j];
-            IT loc = B.rowptr[inner];
-            if (loc == B.rowptr[inner + 1]) { continue; }
-            IT key = B.colids[loc];
+            IT currRowNvals = 0;
 
-            IT maskIdx = maskBegin;
+            // Iterate though nonzeros in the A's current row
+            for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
+                const IT inner = A.colids[j];
+                IT loc = B.rowptr[inner];
+                if (loc == B.rowptr[inner + 1]) { continue; }
+                IT key = B.colids[loc];
 
-            // Find the intersection between the mask's row and the A's row
-            while (true) {
-                if (key < M.colids[maskIdx]) {
-                    if (++loc < B.rowptr[inner + 1]) { key = B.colids[loc]; } else { break; }
-                } else if (key > M.colids[maskIdx]) {
-                    if (++maskIdx == maskEnd) { break; }
-                } else {
-                    // colid is found in both arrays
-                    const auto idx = maskIdx - maskBegin;
-                    const NT value = multop(A.values[j], B.values[loc]);
+                IT maskIdx = maskBegin;
 
-                    auto &entry = _numericAccumulator[idx];
-
-                    if (entry.state == NumericAccumulatorT::INITIALIZED) {
-                        entry.value = addop(entry.value, value);
+                // Find the intersection between the mask's row and the A's row
+                while (true) {
+                    if (key < M.colids[maskIdx]) {
+                        if (++loc < B.rowptr[inner + 1]) { key = B.colids[loc]; } else { break; }
+                    } else if (key > M.colids[maskIdx]) {
+                        if (++maskIdx == maskEnd) { break; }
                     } else {
-                        entry.value = value;
-                        entry.state = NumericAccumulatorT::INITIALIZED;
-                    }
+                        // colid is found in both arrays
+                        const auto idx = maskIdx - maskBegin;
 
-                    if (++loc < B.rowptr[inner + 1]) { key = B.colids[loc]; } else { break; }
-                    if (++maskIdx == maskEnd) { break; }
+                        if (_symbolicAccumulator[idx].state == SymbolicAccumulatorT::EMPTY) {
+                            _symbolicAccumulator[idx].state = SymbolicAccumulatorT::ALLOWED;
+                            currRowNvals++;
+                        }
+
+                        if (++loc < B.rowptr[inner + 1]) { key = B.colids[loc]; } else { break; }
+                        if (++maskIdx == maskEnd) { break; }
+                    }
                 }
             }
+
+            /* Remove empty values the destination arrays and set row IDs */
+            _symbolicAccumulator.clearAll(maskSize);
+
+            rowNvals[row] = currRowNvals;
         }
 
-        /* Remove empty values the destination arrays and set row IDs */
-        for (size_t i = 0; i < maskSize; i++) {
-            auto &entry = _numericAccumulator[i];
+        template<typename MultiplyOperation, typename AddOperation>
+        [[gnu::always_inline]]
+        void numericRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
+                        MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue) {
+            const IT maskBegin = M.rowptr[row];
+            const IT maskEnd = M.rowptr[row + 1];
+            const IT maskSize = maskEnd - maskBegin;
 
-            if (entry.state == NumericAccumulatorT::INITIALIZED) {
-                *(currColId++) = M.colids[M.rowptr[row] + i];
-                *(currValue++) = entry.value;
+            // Iterate though nonzeros in the A's current row
+            for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
+                const IT inner = A.colids[j];
+                IT loc = B.rowptr[inner];
+                if (loc == B.rowptr[inner + 1]) { continue; }
+                IT key = B.colids[loc];
+
+                IT maskIdx = maskBegin;
+
+                // Find the intersection between the mask's row and the A's row
+                while (true) {
+                    if (key < M.colids[maskIdx]) {
+                        if (++loc < B.rowptr[inner + 1]) { key = B.colids[loc]; } else { break; }
+                    } else if (key > M.colids[maskIdx]) {
+                        if (++maskIdx == maskEnd) { break; }
+                    } else {
+                        // colid is found in both arrays
+                        const auto idx = maskIdx - maskBegin;
+                        const NT value = multop(A.values[j], B.values[loc]);
+
+                        auto &entry = _numericAccumulator[idx];
+
+                        if (entry.state == NumericAccumulatorT::INITIALIZED) {
+                            entry.value = addop(entry.value, value);
+                        } else {
+                            entry.value = value;
+                            entry.state = NumericAccumulatorT::INITIALIZED;
+                        }
+
+                        if (++loc < B.rowptr[inner + 1]) { key = B.colids[loc]; } else { break; }
+                        if (++maskIdx == maskEnd) { break; }
+                    }
+                }
             }
-        }
-        _numericAccumulator.clearAll(maskSize);
-    }
 
+            /* Remove empty values the destination arrays and set row IDs */
+            for (size_t i = 0; i < maskSize; i++) {
+                auto &entry = _numericAccumulator[i];
+
+                if (entry.state == NumericAccumulatorT::INITIALIZED) {
+                    *(currColId++) = M.colids[M.rowptr[row] + i];
+                    *(currValue++) = entry.value;
+                }
+            }
+            _numericAccumulator.clearAll(maskSize);
+        }
+    };
 };
 
 #endif //MASKED_SPGEMM_MCA_H

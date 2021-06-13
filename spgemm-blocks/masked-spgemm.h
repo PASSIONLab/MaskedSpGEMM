@@ -14,11 +14,11 @@
 #include "heap/MaskedHeapAlgorithmInspect.h"
 
 
-template<template<class, class, bool> class RowAlgorithm, bool Complemented = false,
-        class IT, class NT, class MultiplyOperation, class AddOperation>
+template<template<class, class> class RowAlgorithm, class IT, class NT, class MultiplyOperation, class AddOperation>
 void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
                     MultiplyOperation multop, AddOperation addop, unsigned numThreads = 0) {
-    using RowAlg = RowAlgorithm<IT, NT, Complemented>;
+    using RowAlg = RowAlgorithm<IT, NT>;
+    const bool Complemented = RowAlg::COMPLEMENTED;
 
     // Calculate number of threads and init C
     setNumThreads(numThreads);
@@ -45,11 +45,15 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         auto[rowBeginIdx, rowEndIdx] = distributeWork(flops, cumulativeWork, A.rows, numThreads, thisThread);
 
         // Scan the input matrices
-        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM] = scanInputs<Complemented, true, RowAlg::CALC_MAX_ROW_SIZE_A, RowAlg::CALC_MAX_ROW_SIZE_M>(
-                rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
+        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM, maxRowFlops]
+        = scanInputs<Complemented,
+                true,
+                RowAlg::CALC_MAX_ROW_SIZE_A,
+                RowAlg::CALC_MAX_ROW_SIZE_M,
+                RowAlg::CALC_MAX_ROW_FLOPS>(rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
 
         // Initialize row algorithm
-        RowAlg alg{B.cols, maxRowSizeA, maxRowSizeM};
+        RowAlg alg{B.cols, maxRowSizeA, maxRowSizeM, maxRowFlops};
         auto[bufferSize, bufferAlignment] = alg.getMemoryRequirement();
         auto buffer = mallocAligned(bufferSize, bufferAlignment);
         size_t dirty = bufferSize;
@@ -90,11 +94,11 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
     my_free(flopsPerRow, cumulativeWork, rowNvals, threadsNvals);
 }
 
-template<template<class, class, bool> class RowAlgorithm, bool Complemented = false,
-        class IT, class NT, class MultiplyOperation, class AddOperation>
+template<template<class, class> class RowAlgorithm, class IT, class NT, class MultiplyOperation, class AddOperation>
 void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
                     MultiplyOperation multop, AddOperation addop, unsigned numThreads = 0) {
-    using RowAlg = RowAlgorithm<IT, NT, Complemented>;
+    using RowAlg = RowAlgorithm<IT, NT>;
+    const bool Complemented = RowAlg::COMPLEMENTED;
 
     // Calculate number of threads and init C
     setNumThreads(numThreads);
@@ -121,11 +125,15 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         auto[rowBeginIdx, rowEndIdx] = distributeWork(flops, cumulativeWork, A.rows, numThreads, thisThread);
 
         // Scan the input matrices
-        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM] = scanInputs<Complemented, false, RowAlg::CALC_MAX_ROW_SIZE_A, RowAlg::CALC_MAX_ROW_SIZE_M>(
-                rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
+        auto[upperBoundSizeC, maxRowSizeA, maxRowSizeM, maxRowFlops]
+        = scanInputs<Complemented,
+                false,
+                RowAlg::CALC_MAX_ROW_SIZE_A,
+                RowAlg::CALC_MAX_ROW_SIZE_M,
+                RowAlg::CALC_MAX_ROW_FLOPS>(rowBeginIdx, rowEndIdx, flopsPerRow, A, B, M);
 
         // Initialize row algorithm
-        RowAlg alg{B.cols, maxRowSizeA, maxRowSizeM};
+        RowAlg alg{B.cols, maxRowSizeA, maxRowSizeM, maxRowFlops};
         auto[bufferSize, bufferAlignment] = alg.getMemoryRequirement();
         auto buffer = mallocAligned(bufferSize, bufferAlignment);
         size_t dirty = bufferSize;
@@ -170,3 +178,5 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
 }
 
 #endif //SPGEMM_GENERIC_H
+
+#pragma clang diagnostic pop
