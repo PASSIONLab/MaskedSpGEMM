@@ -8,6 +8,7 @@
 template<template<class, class, class = void> class HashTableT, class K, class V>
 void testAllOps(size_t nops, size_t niter, K maxKey) {
     using ValueT = std::conditional_t<std::is_void_v<V>, int, V>;
+    using TableT = HashTableT<K, V, std::conditional_t<std::is_void_v<V>, void, bool>>;
 
     std::mt19937 gen;
     auto opDist = uniform_int_distribution<K>(0, 2);
@@ -17,7 +18,12 @@ void testAllOps(size_t nops, size_t niter, K maxKey) {
 
     for (size_t iter = 0; iter < niter; ++iter) {
         std::conditional_t<std::is_void_v<V>, std::map<K, bool>, std::map<K, V>> map;
-        HashTableT<K, V> hashTable{std::make_unsigned_t<K>(maxKey * 3 / 2)};
+        TableT hashTable{std::make_unsigned_t<K>(maxKey * 3 / 2)};
+        auto[bufferSize, bufferAlignment] = hashTable.getMemoryRequirement();
+        auto buffer = mallocAligned(bufferSize, bufferAlignment);
+        size_t dirty = bufferSize;
+        hashTable.setBuffer(buffer, bufferSize, dirty);
+        hashTable.resize(maxKey * 3 / 2);
 
         for (size_t i = 0; i < nops; i++) {
             auto op = opDist(gen);
@@ -34,7 +40,7 @@ void testAllOps(size_t nops, size_t niter, K maxKey) {
                     if constexpr (std::is_void_v<V>) {
                         inserted = hashTable.insert(key);
                     } else {
-                        inserted = hashTable.insert(key, value);
+                        inserted = hashTable.insert(key, value, true);
                     }
                     if (inserted != (cnt == 0)) {
                         std::cerr << "Insertion error. Key: \"" << key << "\"" << std::endl;
@@ -56,7 +62,7 @@ void testAllOps(size_t nops, size_t niter, K maxKey) {
                     // find op
                     size_t cnt = map.count(key);
                     auto idx = hashTable.find(key);
-                    bool found = idx != HashTableT<K, V>::NOT_FOUND;
+                    bool found = idx != TableT::NOT_FOUND;
 
                     if (found != (cnt != 0)) { std::cerr << "Search error. Key: \"" << key << "\"" << std::endl; }
 
@@ -73,12 +79,14 @@ void testAllOps(size_t nops, size_t niter, K maxKey) {
                 }
             }
         }
+
+        freeAligned(buffer);
     }
 }
 
 int main() {
-    testAllOps<HashAccumulator, int, void>(1000000, 10, 5);
-    testAllOps<HashAccumulator, int, int>(1000000, 10, 100);
+    testAllOps<HashAccumulator, int, void>(100, 10, 5);
+    testAllOps<HashAccumulator, int, int>(100, 10, 100);
 
 //    using T = unsigned ;
 //
