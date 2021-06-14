@@ -178,5 +178,3 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
 }
 
 #endif //SPGEMM_GENERIC_H
-
-#pragma clang diagnostic pop
