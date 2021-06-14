@@ -224,8 +224,8 @@ public:
         }
     }
 
-    template<class IT, class NT, class KeyIterator>
-    void gather(IT *&idxPtr, NT *&valPtr, const KeyIterator keysBegin, const KeyIterator keysEnd) {
+    template<class KeyIterator>
+    void gather(K *&idxPtr, V1 *&valPtr, const KeyIterator keysBegin, const KeyIterator keysEnd) {
         for (auto keysIt = keysBegin; keysIt != keysEnd; ++keysIt) {
             auto idx = this->findIdxForce(*keysIt);
             auto &elem = this->_table[idx];
@@ -241,8 +241,9 @@ public:
         }
     }
 
-    template<typename IT, typename NT>
-    void gatherList(IT *&idxPtr, NT *&valPtr) {
+    template<bool Sorted>
+    void gatherList(K *&idxPtr, V1 *&valPtr) {
+        if (Sorted) { std::sort(_keys.begin(), _keys.end()); }
         gather(idxPtr, valPtr, _keys.begin(), _keys.end());
         _keys.clear();
     }
@@ -281,7 +282,7 @@ public:
 
     void resetStatesList() {
         for (auto key : _keys) {
-            auto idx = super::findIdx(key);
+            auto idx = super::findIdxForce(key);
             this->_table[idx].key = this->EMPTY;
         }
 

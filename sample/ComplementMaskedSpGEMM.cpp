@@ -75,14 +75,24 @@ int main(int argc, char *argv[]) {
         if (mode == "hash" || mode == "all") {
             RUN_CSR((MaskedSpGEMM1p<MaskedHash<true, false>::Impl>));
             RUN_CSR((MaskedSpGEMM2p<MaskedHash<true, false>::Impl>));
+
+            RUN_CSR((MaskedSpGEMM1p<MaskedHash<true, true>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHash<true, true>::Impl>));
+
         }
 
         if (mode == "msa" || mode == "all") {
             RUN_CSR((MaskedSpGEMM1p<MSA1A<true, false>::Impl>));
             RUN_CSR((MaskedSpGEMM2p<MSA1A<true, false>::Impl>));
 
+            RUN_CSR((MaskedSpGEMM1p<MSA1A<true, true>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MSA1A<true, true>::Impl>));
+
             RUN_CSR((MaskedSpGEMM1p<MSA2A<true, false>::Impl>));
             RUN_CSR((MaskedSpGEMM2p<MSA2A<true, false>::Impl>));
+
+            RUN_CSR((MaskedSpGEMM1p<MSA2A<true, true>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MSA2A<true, true>::Impl>));
         }
     }
 

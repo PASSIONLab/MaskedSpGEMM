@@ -98,8 +98,6 @@ public:
 
 template<class IT, class NT, bool Sorted>
 class MaskedHashComplemented {
-    static_assert(Sorted == false);
-
 public:
     inline const static bool COMPLEMENTED = true;
     inline const static bool CALC_MAX_ROW_SIZE_A = false;
@@ -149,8 +147,8 @@ public:
 
         // Count the number of elements that will be discarded
         for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
-            bool erased = _symbolicAccumulator.erase(*maskIt);
-            if (erased) { --currRowNvals; }
+            bool found = _symbolicAccumulator.find(*maskIt) != SymbolicAccumulatorT::NOT_FOUND;
+            if (found) { --currRowNvals; }
         }
 
         _symbolicAccumulator.resetStatesList();
@@ -187,7 +185,7 @@ public:
         }
 
         // Copy the values from the hash table to the output
-        _numericAccumulator.gatherList(currColId, currValue);
+        _numericAccumulator.template gatherList<Sorted>(currColId, currValue);
         for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
             _numericAccumulator.erase(*maskIt);
         }
