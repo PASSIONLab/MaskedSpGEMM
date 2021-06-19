@@ -5,18 +5,18 @@ project(MaskedSpGEMM
 
 macro(add_example _name _src)
     message(${CMAKE_CURRENT_SOURCE_DIR})
-    add_executable(${_name} ${_src})
+#    add_executable(${_name} ${_src})
 
-#    add_executable(${_name} ${_src}
-#            ../GTgraph/R-MAT/graph.o
-#            ../GTgraph/R-MAT/utils.o
-#            ../GTgraph/R-MAT/init.o
-#            ../GTgraph/R-MAT/globals.o
-#            ../PaRMAT/Release/src/GraphGen_notSorted.o
-#            ../PaRMAT/Release/src/utils.o
-#            ../PaRMAT/Release/src/Edge.o
-#            ../PaRMAT/Release/src/Square.o
-#            ../PaRMAT/Release/src/GraphGen_sorted.o)
+    add_executable(${_name} ${_src}
+            ../GTgraph/R-MAT/graph.o
+            ../GTgraph/R-MAT/utils.o
+            ../GTgraph/R-MAT/init.o
+            ../GTgraph/R-MAT/globals.o
+            ../PaRMAT/Release/src/GraphGen_notSorted.o
+            ../PaRMAT/Release/src/utils.o
+            ../PaRMAT/Release/src/Edge.o
+            ../PaRMAT/Release/src/Square.o
+            ../PaRMAT/Release/src/GraphGen_sorted.o)
 
     target_include_directories(${_name} PRIVATE GTgraph/sprng2.0-lite/include)
     target_link_directories(${_name} PRIVATE GTgraph/sprng2.0-lite/lib)
