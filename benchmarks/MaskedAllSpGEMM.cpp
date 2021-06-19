@@ -22,7 +22,7 @@
 #include "../mask_hash_mult.h"
 #include "../inner_mult.h"
 #include "../heap_mult_generic.h"
-#include "sample_common.hpp"
+#include "../sample/sample_common.hpp"
 #include "../spa_mult.h"
 
 using namespace std;

@@ -5,16 +5,18 @@ project(MaskedSpGEMM
 
 macro(add_example _name _src)
     message(${CMAKE_CURRENT_SOURCE_DIR})
-    add_executable(${_name} ${_src}
-            ../GTgraph/R-MAT/graph.o
-            ../GTgraph/R-MAT/utils.o
-            ../GTgraph/R-MAT/init.o
-            ../GTgraph/R-MAT/globals.o
-            ../PaRMAT/Release/src/GraphGen_notSorted.o
-            ../PaRMAT/Release/src/utils.o
-            ../PaRMAT/Release/src/Edge.o
-            ../PaRMAT/Release/src/Square.o
-            ../PaRMAT/Release/src/GraphGen_sorted.o)
+    add_executable(${_name} ${_src})
+
+#    add_executable(${_name} ${_src}
+#            ../GTgraph/R-MAT/graph.o
+#            ../GTgraph/R-MAT/utils.o
+#            ../GTgraph/R-MAT/init.o
+#            ../GTgraph/R-MAT/globals.o
+#            ../PaRMAT/Release/src/GraphGen_notSorted.o
+#            ../PaRMAT/Release/src/utils.o
+#            ../PaRMAT/Release/src/Edge.o
+#            ../PaRMAT/Release/src/Square.o
+#            ../PaRMAT/Release/src/GraphGen_sorted.o)
 
     target_include_directories(${_name} PRIVATE GTgraph/sprng2.0-lite/include)
     target_link_directories(${_name} PRIVATE GTgraph/sprng2.0-lite/lib)
@@ -39,10 +41,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(otx)
 
-add_example(masked-all sample/MaskedAllSpGEMM.cpp)
-add_example(complement-masked-all sample/ComplementMaskedSpGEMM.cpp)
-add_example(tricnt-all sample/TriCntAll.cpp)
-add_example(heatmap sample/HeatMap.cpp)
+add_example(masked-all benchmarks/MaskedAllSpGEMM.cpp)
+add_example(complement-masked-all benchmarks/ComplementMaskedSpGEMM.cpp)
+add_example(tricnt-all benchmarks/TriCntAll.cpp)
+add_example(heatmap benchmarks/HeatMap.cpp)
 target_link_libraries(heatmap otx-cpp)
 
 add_subdirectory(test)

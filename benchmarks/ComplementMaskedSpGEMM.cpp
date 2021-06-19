@@ -22,9 +22,8 @@
 #include "../hash_mult_hw.h"
 #include "../mask_hash_mult.h"
 #include "../inner_mult.h"
-#include "../heap_mult_generic.h"
-#include "sample_common.hpp"
-#include "sample-util.h"
+#include "../sample/sample_common.hpp"
+#include "benchmarks-util.h"
 #include "../spa_mult.h"
 #include "../spgemm-blocks/masked-spgemm.h"
 
@@ -78,7 +77,6 @@ int main(int argc, char *argv[]) {
 
             RUN_CSR((MaskedSpGEMM1p<MaskedHash<true, true>::Impl>));
             RUN_CSR((MaskedSpGEMM2p<MaskedHash<true, true>::Impl>));
-
         }
 
         if (mode == "msa" || mode == "all") {
