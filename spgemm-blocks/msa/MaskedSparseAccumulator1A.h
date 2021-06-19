@@ -8,6 +8,7 @@
 #include <cassert>
 #include <numeric>
 #include <tuple>
+#include <vector>
 
 #include "../util.h"
 
@@ -46,7 +47,7 @@ protected:
     EntryT *_entries;
 
     size_t _dirty;
-    std::vector<KeyT> _dirtyIndices; // TODO: replace with an array
+    std::vector<KeyT> _dirtyIndices; // TODO: replace with an array (and remove vector include)
 
 public:
     MaskedSparseAccumulator1A(T maxIndex) : _maxIndex(maxIndex) {}

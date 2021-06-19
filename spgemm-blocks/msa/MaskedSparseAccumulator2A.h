@@ -8,6 +8,7 @@
 #include <cassert>
 #include <numeric>
 #include <tuple>
+#include <vector>
 
 #include "../util.h"
 
@@ -44,7 +45,7 @@ protected:
     SPA2AStorage<StateT, ValueT> _storage;
 
     size_t _dirty;
-    std::vector<KeyT> _dirtyIndices; // TODO: replace with an array
+    std::vector<KeyT> _dirtyIndices; // TODO: replace with an array (and remove vector include)
 
 public:
     MaskedSparseAccumulator2A(T maxIndex) : _maxIndex(maxIndex) {}
