@@ -8,12 +8,15 @@
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
+#include <random>
 #include <vector>
-#include <omp.h>
 //#include <tbb/scalable_allocator.h>
 
+#include <omp.h>
+
+#include "grb_util.h"
 #include "utility.h"
-#include <random>
+
 
 using namespace std;
 
@@ -36,6 +39,8 @@ public:
   CSR(const CSC<IT, NT> &csc); // CSC -> CSR conversion
   CSR(const CSR<IT, NT> &rhs); // copy constructor
   CSR(const CSC<IT, NT> &csc, const bool transpose);
+  CSR(const GrB_Matrix &A); // construct from GraphBLAS matrix
+  
   CSR<IT, NT> &operator=(const CSR<IT, NT> &rhs); // assignment operator
   bool operator==(const CSR<IT, NT> &rhs);        // ridefinizione ==
   void shuffleIds(); // Randomly permutating column indices
@@ -88,6 +93,8 @@ public:
       return sum;
   }
   void Sorted();
+
+  void get_grb_mat(GrB_Matrix *A);
 
   IT rows;
   IT cols;
@@ -304,6 +311,58 @@ CSR<IT, NT>::CSR(graph &G) : nnz(G.m), rows(G.n), cols(G.n), zerobased(true) {
   }
   my_free<IT>(work);
 }
+
+
+
+template <class IT,
+		  class NT>
+CSR<IT, NT>::CSR (const GrB_Matrix &A) :
+	zerobased(true)
+{
+	GrB_Index nc, nr, nv;
+	GrB_Matrix_nrows(&nr, A);
+	GrB_Matrix_ncols(&nc, A);
+	GrB_Matrix_nvals(&nv, A);
+
+	this->rows = static_cast<IT>(nr);
+	this->cols = static_cast<IT>(nc);
+	this->nnz  = static_cast<IT>(nv);
+
+	// need cast from GrB_Index to IT
+	GrB_Index	*rids = new GrB_Index[nv];
+	GrB_Index	*cids = new GrB_Index[nv];
+	this->rowptr      = my_malloc<IT>(this->rows+1);
+	this->colids      = my_malloc<IT>(this->nnz);
+	this->values	  = my_malloc<NT>(this->nnz);
+
+	GrbMatrixExtractTuples<NT>()(rids, cids, this->values, &nv, A);
+	assert(nv == this->nnz);
+
+	// assume sorted and check it while forming
+	memset(this->rowptr, 0, sizeof(IT) * (this->rows+1));
+	GrB_Index last_rid = -1, last_cid = -1;
+	for (GrB_Index i = 0; i < nv; ++i)
+	{
+		assert(rids[i] >= last_rid &&
+			   "row ids are not sorted in the GraphBLAS matrix\n");
+		if (rids[i] == last_rid)
+			assert(cids[i] > last_cid &&
+				   "col ids are not sorted in the GraphBLAS matrix\n");
+		last_rid = rids[i];
+		last_cid = cids[i];
+
+		++this->rowptr[rids[i]+1];
+		this->colids[i] = static_cast<IT>(cids[i]);
+	}
+
+	if (this->rows > 0)
+		std::inclusive_scan(this->rowptr+1, this->rowptr+this->rows+1,
+							this->rowptr+1);
+	
+	delete [] rids;
+	delete [] cids;
+}
+	
 
 // check if sorted within rows?
 template <class IT, class NT> void CSR<IT, NT>::Sorted() {
@@ -589,5 +648,51 @@ CSR<IT,NT> Intersect(const CSR<IT,NT> & A, const CSR<IT,NT> & B, AddOperation ad
     }
     return C;
 }
+
+
+
+template <typename IT,
+		  typename NT>
+void
+CSR<IT, NT>::get_grb_mat
+(
+  	GrB_Matrix *A
+)
+{
+	GrB_Index	*rinds = new GrB_Index[this->nnz];
+	GrB_Index	*cinds = new GrB_Index[this->nnz];
+	GrB_Index	 i	   = 0;
+	int			 decr  = 1 - this->zerobased;
+	for (IT r = 0; r < this->rows; ++r)
+	{
+		for (IT cidx = this->rowptr[r]; cidx < this->rowptr[r+1]; ++cidx)
+		{
+			rinds[i]   = static_cast<GrB_Index>(r-decr);
+			cinds[i++] = static_cast<GrB_Index>(this->colids[cidx]-decr);
+		}
+	}
+
+	if (A != NULL)
+	{
+		GrB_Matrix_clear(*A);
+		*A = NULL;
+	}
+
+	GrbMatrixBuild<NT>()(A, rinds, cinds, this->values,
+						 this->rows, this->cols, this->nnz);
+
+	GrB_Index nr, nc, nv;
+	GrB_Matrix_nrows(&nr, *A);
+	GrB_Matrix_ncols(&nc, *A);
+	GrB_Matrix_nvals(&nv, *A);
+	// cout << "GrB Matrix: " << nr << " " << nc << " " << nv << endl;
+
+	delete [] rinds;
+	delete [] cinds;
+
+	
+	return;
+}
+
 
 #endif

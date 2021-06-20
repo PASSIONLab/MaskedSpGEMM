@@ -77,9 +77,16 @@ int ReadASCII(string filename, CSC<IT,NT> & csc)
 
     infile.getline(line,256);
     IT m,n,nnz;
-    std::stringstream ss{line};
-    ss >> m >> n >> nnz;
-
+    if (typeid(IT) == typeid(int)) {
+        sscanf(line, "%d %d %d", &m, &n, &nnz);
+    }
+    else if (typeid(IT) == typeid(long long int)) {
+        sscanf(line, "%ld %ld %ld", &m, &n, &nnz);
+    }
+    else {
+        sscanf(line, "%ld %ld %ld", &m, &n, &nnz);
+    }
+    
     if (isSymmetric) {
         nnz *= 2;
     }
@@ -128,12 +135,119 @@ int ReadASCII(string filename, CSC<IT,NT> & csc)
     double end = omp_get_wtime( );
     // printf("start = %.16g\nend = %.16g\ndiff = %.16g\n", start, end, end - start);
     printf("Converting matrix data from ASCII to COO format: %.16g seconds\n", end - start);
-    std::cout << "Input Matrix: Rows = " << m << ", Columns= " << n << ", nnz = " << nnz << std::endl;
+    printf("Input Matrix: Rows = %d, Columns= %d, nnz = %d\n", m, n, nnz);
 	
     cout << "Converting to csc ... " << endl << endl;
     csc= *(new CSC<IT,NT>(triples, nnz, m, n));
     csc.totalcols = n;
     delete [] triples;
+    return 1;
+}
+
+
+
+template <typename IT, typename NT>
+int ReadASCII_Triples(string	  filename,
+					  IT		 &nr,
+					  IT		 &nc,
+					  IT		 &nvals,
+					  IT		*&rids,
+					  IT		*&cids,
+					  NT        *&vals,
+					  bool		  remove_diags = false)
+{
+    bool isSymmetric = false;
+    double start = omp_get_wtime( );
+    ifstream infile(filename.c_str());
+    char line[256];
+    char c = infile.get();
+    while(c == '%')
+    {
+        infile.getline(line,256);
+        if (strstr(line, "symmetric")) {
+            isSymmetric = true;
+            cout << "Matrix is symmetric" << endl;
+        }
+        c = infile.get();
+    }
+    infile.unget();
+
+	if (remove_diags)
+		cout << "will remove diagonals from the matrix" << endl;
+
+	IT m,n,nnz;
+    infile.getline(line,256);
+    if (typeid(IT) == typeid(int)) {
+        sscanf(line, "%d %d %d", &m, &n, &nnz);
+    }
+    else if (typeid(IT) == typeid(long long int)) {
+        sscanf(line, "%ld %ld %ld", &m, &n, &nnz);
+    }
+    else {
+        sscanf(line, "%ld %ld %ld", &m, &n, &nnz);
+    }
+    
+    if (isSymmetric) {
+        nnz *= 2;
+    }
+
+	rids = new IT[nnz];
+	cids = new IT[nnz];
+	vals = new NT[nnz];
+    if (infile.is_open())
+    {
+        IT cnz = 0;
+        while (! infile.eof() && cnz < nnz)
+        {
+            infile.getline(line,256);
+            char *ch = line;
+            IT rid = (IT)(atoi(ch));
+            ch = strchr(ch, ' ');
+            ch++;
+            IT cid = (IT)(atoi(ch));
+            ch = strchr(ch, ' ');
+			NT val = 1.0;
+            if (ch != NULL)
+			{
+                ch++;
+                val = (NT)(atoi(ch));
+                ch = strchr(ch, ' ');
+			}
+
+			if (remove_diags && rid == cid)
+			{
+				--nnz;
+				if (isSymmetric)
+					--nnz;
+				continue;
+			}
+
+			rids[cnz] = rid-1;
+			cids[cnz] = cid-1;
+			vals[cnz] = val;
+            if (isSymmetric)
+			{
+                if (rids[cnz] != cids[cnz])
+				{
+					cnz++;
+					rids[cnz] = cids[cnz-1];
+					cids[cnz] = rids[cnz-1];
+					vals[cnz] = vals[cnz-1];
+                }
+                else
+                    nnz--;
+            }
+            ++cnz;
+        }
+        assert(cnz == nnz);
+    }
+    
+    double end = omp_get_wtime( );
+
+	nr	  = m;
+	nc	  = n;
+	nvals = nnz;
+	
     return 1;
 }
 
