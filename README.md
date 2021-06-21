@@ -10,11 +10,23 @@
 This project contains submodule, so use recursive option to download them all.
 
 ```bash
-git clone --recursive https://github.com/PASSIONLab/SpGEMM_blocked.git
+git clone --recursive https://github.com/PASSIONLab/MaskedSpGEMM.git
 ```
 
 ## Compile code
 
+First, compile GraphBLAS:
+Make sure you use the right Intel compiler on cori (need v19.1):
+```bash
+module swap intel/19.0.3.199 intel/19.1.2.254
+```
+Then, to compile it:
+```bash
+cd GraphBLAS && mkdir build && cd build
+CC=icc cmake ..
+make --jobs=16
+```
+Then, compile the masked spgemm codes:
 ```bash
 make clean && make spgemm
 ```
