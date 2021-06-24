@@ -175,7 +175,7 @@ public:
         memset(_storage._states, 0xFF, _maxIndex * sizeof(StateT));
     }
 
-    bool isInitialized() const {
+    [[nodiscard]] bool isInitialized() const {
         StateT initialized;
         memset(&initialized, 0xFF, sizeof(StateT));
 
