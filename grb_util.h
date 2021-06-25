@@ -45,6 +45,14 @@ GrbAlgObj <uint64_t>
 
 
 	auto
+	get_sr_plus_land ()
+	{
+		return GxB_PLUS_LAND_UINT64;
+	}
+
+
+
+	auto
 	get_unary_set_one ()
 	{
 		return GxB_ONE_UINT64;
@@ -77,6 +85,14 @@ GrbAlgObj <int64_t>
 	get_sr_plus_times ()
 	{
 		return GrB_PLUS_TIMES_SEMIRING_INT64;
+	}
+
+
+
+	auto
+	get_sr_plus_land ()
+	{
+		return GxB_PLUS_LAND_INT64;
 	}
 
 
@@ -115,6 +131,14 @@ GrbAlgObj <uint32_t>
 	{
 		return GrB_PLUS_TIMES_SEMIRING_UINT32;
 	}
+
+
+
+	auto
+	get_sr_plus_land ()
+	{
+		return GxB_PLUS_LAND_UINT32;
+	}
 	
 
 
@@ -151,6 +175,14 @@ GrbAlgObj <int32_t>
 	get_sr_plus_times ()
 	{
 		return GrB_PLUS_TIMES_SEMIRING_INT32;
+	}
+
+
+
+	auto
+	get_sr_plus_land ()
+	{
+		return GxB_PLUS_LAND_INT32;
 	}
 
 
@@ -521,7 +553,6 @@ read_grb_mtx
 	ReadASCII_Triples(fpath, m, n, nnz, rids, cids, vals, remove_diags);
 	GrbMatrixBuild<NT>()(A, rids, cids, vals, m, n, nnz);
 	std::cout << m << " " << n << " " << nnz << std::endl;
-	// std::cout << typeid(GrB_UINT64).name() << std::endl;
 
 	if (symmetricize)
 	{

@@ -50,6 +50,7 @@ add_example(heatmap benchmarks/HeatMap.cpp)
 add_example(tricnt-all-grb benchmarks/TriCntAllGrb.cpp)
 # add_example(ktruss-all-grb benchmarks/KTrussAllGrb.cpp)
 target_link_libraries(heatmap otx-cpp)
+add_example(test-grb sample/test_grb.cpp)
 
 
 # add_subdirectory(test)

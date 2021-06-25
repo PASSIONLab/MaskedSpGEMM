@@ -40,6 +40,8 @@ public:
   CSR(const CSR<IT, NT> &rhs); // copy constructor
   CSR(const CSC<IT, NT> &csc, const bool transpose);
   CSR(const GrB_Matrix &A); // construct from GraphBLAS matrix
+  CSR(GrB_Matrix *A, bool dup_mat = false);		// construct from GraphBLAS
+												// matrix pointers
   
   CSR<IT, NT> &operator=(const CSR<IT, NT> &rhs); // assignment operator
   bool operator==(const CSR<IT, NT> &rhs);        // ridefinizione ==
@@ -48,12 +50,15 @@ public:
 
   void make_empty() {
     if (nnz > 0) {
-      my_free<IT>(colids);
-      my_free<NT>(values);
+		if (colids != NULL)
+      		my_free<IT>(colids);
+		if (values != NULL)
+			my_free<NT>(values);
       nnz = 0;
     }
     if (rows > 0) {
-      my_free<IT>(rowptr);
+		if (rowptr != NULL)
+			my_free<IT>(rowptr);
       rows = 0;
     }
     cols = 0;
@@ -95,6 +100,7 @@ public:
   void Sorted();
 
   void get_grb_mat(GrB_Matrix *A);
+  void get_grb_mat_ptr(GrB_Matrix *A); // sets CSR object's pointers to NULL
 
   IT rows;
   IT cols;
@@ -362,6 +368,44 @@ CSR<IT, NT>::CSR (const GrB_Matrix &A) :
 	delete [] rids;
 	delete [] cids;
 }
+
+
+
+template <class IT,
+		  class NT>
+CSR<IT, NT>::CSR (GrB_Matrix *A, bool dup_mat) :
+	zerobased(true)
+{
+	static_assert(std::is_same<IT, GrB_Index>::value,
+				  "CSR matrix index type and GrB_Matrix index type "
+				  "must be the same");
+
+	GrB_Matrix tmp = *A;			// shallow
+	if (dup_mat)
+		GrB_Matrix_dup(&tmp, *A); // deep
+
+	GrB_Type		nz_type;
+	bool			is_uniform, is_jumbled;
+	GrB_Index		ap_size, aj_size, ax_size;
+	GrB_Descriptor	desc = NULL;
+	GrB_Descriptor_new(&desc);
+	GxB_Matrix_type(&nz_type, tmp);	
+	GrB_Matrix_nvals(&this->nnz, tmp);	
+	GxB_Matrix_export_CSR(&tmp, &nz_type, &this->rows, &this->cols,
+						  &this->rowptr, &this->colids, (void **)&this->values,
+						  &ap_size, &aj_size, &ax_size,
+						  &is_uniform, &is_jumbled,
+						  desc); // frees the graphblas matrix
+	assert(!is_jumbled && "GraphBLAS matrix is not sorted\n");
+
+
+	return;						  
+}
+
+
+
+
+
 	
 
 // check if sorted within rows?
@@ -691,6 +735,32 @@ CSR<IT, NT>::get_grb_mat
 	delete [] cinds;
 
 	
+	return;
+}
+
+
+
+template <typename IT,
+		  typename NT>
+void
+CSR<IT, NT>::get_grb_mat_ptr
+(
+    GrB_Matrix *A
+)
+{
+	static_assert(std::is_same<IT, GrB_Index>::value,
+				  "CSR matrix index type and GrB_Matrix index type "
+				  "must be the same");
+	
+	GrbAlgObj<NT> to_grb;
+	GrB_Descriptor desc = NULL;
+	// make sure CSR object is sorted
+	GxB_Matrix_import_CSR(A, to_grb.get_type(), this->rows, this->cols,
+						  &this->rowptr, &this->colids, (void **)&this->values,
+						  sizeof(IT)*(this->rows+1), sizeof(NT)*this->nnz,
+						  sizeof(NT)*this->nnz, false, false, desc);
+
+
 	return;
 }
 
