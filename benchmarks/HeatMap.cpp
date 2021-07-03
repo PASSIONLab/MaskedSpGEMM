@@ -10,6 +10,26 @@
 #include "../inner_mult.h"
 #include "../spgemm-blocks/masked-spgemm-inner.h"
 
+extern "C" {
+#include "../GTgraph/R-MAT/init.h"
+}
+
+template<class IT, class NT>
+void createRMATMatrix(int scale, int degree, CSC<IT, NT> &matrix) {
+    getParams();
+    setGTgraphParams(scale, degree, 0.57, 0.19, 0.19, 0.05);
+    graph G1;
+    graphGen(&G1);
+
+    matrix = CSC<IT, NT>(G1);
+
+    if (STORE_IN_MEMORY) {
+        free(G1.start);
+        free(G1.end);
+        free(G1.w);
+    }
+}
+
 template<class IT, class NT,
         template<class, class> class AT,
         template<class, class> class BT,
@@ -42,11 +62,14 @@ double run(void(*f)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &, const 
     return double(totalTime) / double(niters) / 1e6;
 }
 
+enum class MatrixType {
+    ER,
+    RMAT
+};
+
 template<class IT, class NT>
-void createMatrices(const std::string &name, IT nrows, IT ncols, IT degMin, IT degMax,
+void createMatrices(const std::string &name, IT nrows, IT ncols, IT degMin, IT degMax, MatrixType type,
                     std::vector<std::pair<CSC<IT, NT>, IT>> &csc, std::vector<std::pair<CSR<IT, NT>, IT>> &csr) {
-//    std::cout << "Crating " << name << "s... ";
-//    std::cout.flush();
 
     IT numInputs = 0;
     for (IT deg = degMin; deg <= degMax; deg *= 2) { numInputs++; }
@@ -55,17 +78,28 @@ void createMatrices(const std::string &name, IT nrows, IT ncols, IT degMin, IT d
 
     IT idx = 0;
     for (IT deg = degMin; deg <= degMax; deg *= 2) {
-        Triple<IT, NT> *triples = nullptr;
-        auto nvals = generateRandomTriples(nrows, ncols, nrows * deg, triples);
-        CSC<IT, NT> matrix(triples, nvals, nrows, ncols);
-        delete[] triples;
+        CSC<IT, NT> matrix;
+        switch (type) {
+            case MatrixType::ER: {
+                Triple<IT, NT> *triples = nullptr;
+                auto nvals = generateRandomTriples(nrows, ncols, nrows * deg, triples);
+                matrix = CSC<IT, NT>(triples, nvals, nrows, ncols);
+                delete[] triples;
+                break;
+            }
+
+            case MatrixType::RMAT: {
+                int scale = 0;
+                for (IT dim = 1; dim < nrows; dim *= 2) { ++scale; };
+                createRMATMatrix(scale, deg, matrix);
+                break;
+            }
+        }
 
         csc[idx] = std::make_pair(matrix, deg);
         csr[idx] = std::make_pair(CSR<IT, NT>(matrix), deg);
         ++idx;
     }
-
-//    std::cout << "Done" << std::endl;
 }
 
 template<template<class, class> class AT, class IT, class NT>
@@ -73,12 +107,11 @@ void deleteMatrices(std::vector<std::pair<AT<IT, NT>, IT>> &matrices) {
     for (auto &it : matrices) { it.first.make_empty(); }
 }
 
-
 template<class IT, class NT>
-void createMatrices(const std::string &name, IT nrows, IT ncols, IT degMin, IT degMax,
+void createMatrices(const std::string &name, IT nrows, IT ncols, IT degMin, IT degMax, MatrixType type,
                     std::vector<std::pair<CSR<IT, NT>, IT>> &csr) {
     std::vector<std::pair<CSC<IT, NT>, IT>> csc;
-    createMatrices(name, nrows, ncols, degMin, degMax, csc, csr);
+    createMatrices(name, nrows, ncols, degMin, degMax, type, csc, csr);
     deleteMatrices(csc);
 }
 
@@ -89,6 +122,8 @@ int main(int argc, char *argv[]) {
     auto witer = otx::argTo<size_t>(argc, argv, "--witer", 0);
     auto niter = otx::argTo<size_t>(argc, argv, "--niter", 1);
     auto nthreads = otx::argTo<int>(argc, argv, "--nthreads", 1);
+    auto matrixType = otx::argTo<std::string>(argc, argv, "--matrixType", "ER");
+
 
     auto dimensionMin = otx::argTo<Index_t>(argc, argv, "--dimMin", 128);
     auto dimensionMax = otx::argTo<Index_t>(argc, argv, "--dimMax", 128);
@@ -109,6 +144,7 @@ int main(int argc, char *argv[]) {
     if (verbose) {
         std::cout << "Iterations: " << witer << " + " << niter << std::endl;
         std::cout << "nthreads: " << nthreads << std::endl;
+        std::cout << "Matrix type: " << matrixType << std::endl;
 
         std::cout << "dimension: " << dimensionMin << " - " << dimensionMax << std::endl;
         std::cout << "A degree: " << dAMin << " - " << dAMax << std::endl;
@@ -158,9 +194,15 @@ int main(int argc, char *argv[]) {
     for (Index_t dim = dimensionMin; dim <= dimensionMax; dim *= 2) {
         std::vector<std::pair<CSR<Index_t, Value_t>, Index_t>> AsCSR, BsCSR, MsCSR;
         std::vector<std::pair<CSC<Index_t, Value_t>, Index_t>> BsCSC;
-        createMatrices("A", std::min(maxRowsA, dim), dim, dAMin, dAMax, AsCSR);
-        createMatrices("B", dim, dim, dBMin, dBMax, BsCSC, BsCSR);
-        createMatrices("M", std::min(maxRowsA, dim), dim, dMMin, dMMax, MsCSR);
+        if (matrixType == "RMAT") {
+            createMatrices("A", dim, dim, dAMin, dAMax, MatrixType::RMAT, AsCSR);
+            createMatrices("B", dim, dim, dBMin, dBMax, MatrixType::RMAT, BsCSC, BsCSR);
+            createMatrices("M", dim, dim, dMMin, dMMax, MatrixType::RMAT, MsCSR);
+        } else if (matrixType == "ER"){
+            createMatrices("A", std::min(maxRowsA, dim), dim, dAMin, dAMax, MatrixType::ER, AsCSR);
+            createMatrices("B", dim,                     dim, dBMin, dBMax, MatrixType::ER, BsCSC, BsCSR);
+            createMatrices("M", std::min(maxRowsA, dim), dim, dMMin, dMMax, MatrixType::ER, MsCSR);
+        }
 
         for (int idxA = 0; idxA < AsCSR.size(); idxA++) {
             for (int idxB = 0; idxB < BsCSR.size(); idxB++) {
