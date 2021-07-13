@@ -241,6 +241,15 @@ void preprocessInput(CSC<IT, NT> &A) {
     delete[] triples;
 }
 
+template<class IT, class NT, class MultiplyOperation, class AddOperation>
+void HashIntersect(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, const CSR<IT, NT> &M,
+                   MultiplyOperation multop, AddOperation addop, unsigned numThreads = 0) {
+    CSR<IT, NT> Ct;
+    HashSpGEMM<true>(A, B, Ct, multop, addop, numThreads);
+    C = Intersect(Ct, M, [](NT lhs, NT rhs) { return rhs; });
+    Ct.make_empty();
+}
+
 #define RUN_CSR_IMPL(NAME, FUNC) run(fileName, NAME, FUNC, warmupIters, innerIters, tnums, flop, A_csr, A_csr, A_csr)
 #define RUN_CSR(ALG) RUN_CSR_IMPL(#ALG, ALG)
 #define RUN_CSR_1P(ALG) RUN_CSR_IMPL(#ALG "-1P", MaskedSpGEMM1p<ALG>)
@@ -336,6 +345,10 @@ int main(int argc, char *argv[]) {
             RUN_CSR_2P(MaskedHeap_v2);
             RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
             RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+        }
+
+        if (mode == "intersect" || mode == "all") {
+            RUN_CSR(HashIntersect);
         }
 
         if (mode == "all1p") {
