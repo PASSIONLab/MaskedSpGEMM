@@ -53,6 +53,14 @@ GrbAlgObj <uint64_t>
 
 
 	auto
+	get_sr_plus_pair ()
+	{
+		return GxB_PLUS_PAIR_UINT64;
+	}
+
+
+
+	auto
 	get_unary_set_one ()
 	{
 		return GxB_ONE_UINT64;
@@ -93,6 +101,14 @@ GrbAlgObj <int64_t>
 	get_sr_plus_land ()
 	{
 		return GxB_PLUS_LAND_INT64;
+	}
+
+
+
+	auto
+	get_sr_plus_pair ()
+	{
+		return GxB_PLUS_PAIR_INT64;
 	}
 
 
@@ -540,17 +556,19 @@ template <typename NT>
 void
 read_grb_mtx
 (
-	GrB_Matrix *A,
-	char       *fpath,
-	bool		remove_diags = false,
-	bool		symmetricize = false
+	GrB_Matrix	*A,
+	char		*fpath,
+	bool		 remove_diags = false,
+	bool		 symmetricize = false,
+	bool		 rand_vals	  = false
 )
 {
 	GrB_Index	 m, n, nnz;
 	GrB_Index	*rids;
 	GrB_Index	*cids;
 	NT			*vals;
-	ReadASCII_Triples(fpath, m, n, nnz, rids, cids, vals, remove_diags);
+	ReadASCII_Triples(fpath, m, n, nnz, rids, cids, vals,
+					  remove_diags, rand_vals);
 	GrbMatrixBuild<NT>()(A, rids, cids, vals, m, n, nnz);
 	std::cout << m << " " << n << " " << nnz << std::endl;
 
@@ -592,8 +610,6 @@ get_lowtri
 	GrB_Matrix_new(L, to_grb.get_type(), n, n);
 	GxB_Scalar_setElement_INT64(Thunk, (int64_t) (-1));
 	GxB_Matrix_select(*L, NULL, NULL, GxB_TRIL, A, Thunk, NULL);
-	GrB_Matrix_apply(*L, NULL, NULL, to_grb.get_unary_set_one(), *L, NULL);
-
 
 	return;	
 }

@@ -54,8 +54,7 @@ grb_tri_count_sandia_L
 {
 	GrB_Index		n, nnz;
 	GrbAlgObj<NT>	to_grb;	
-	GrB_Matrix		C	  = NULL;
-	uint64_t 		ntri  = 0;
+	GrB_Matrix		C	  = NULL;	
 
 	GrB_Matrix_nrows(&n, L);
 
@@ -67,7 +66,7 @@ grb_tri_count_sandia_L
 
         for (int i = 0; i < witers; ++i)
 		{
-            GrB_mxm (C, L, NULL, to_grb.get_sr_plus_times(), L, L, desc_mxm);         
+            GrB_mxm (C, L, NULL, to_grb.get_sr_plus_pair(), L, L, desc_mxm);
         }
 
         double ave_msec = 0;
@@ -76,16 +75,16 @@ grb_tri_count_sandia_L
 			GrB_Matrix_clear(C);
             
             double start = omp_get_wtime();
-            GrB_mxm(C, L, NULL, to_grb.get_sr_plus_times(), L, L, desc_mxm);
-            double end = omp_get_wtime();            
+            GrB_mxm(C, L, NULL, to_grb.get_sr_plus_pair(), L, L, desc_mxm);
+			double end = omp_get_wtime();            
 
             double msec = (end - start) * 1000;
             ave_msec += msec;
         }
-
+		
         ave_msec /= double(niters);
         double mflops = (double) nfop / ave_msec / 1000;
-
+		uint64_t ntri = 0;
 		GrB_Matrix_reduce_UINT64(&ntri, NULL,
 								 to_grb.get_monoid_plus(), C, NULL);
 		GrB_Matrix_nvals(&nnz, C);
@@ -118,19 +117,25 @@ msp_tri_count_sandia_L
     const std::string &inputName,
 	const std::string &algorithmName,
 	void(*f)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &,
-			 const MT<IT, NT> &, multiplies<NT>, plus<NT>, unsigned),
+			 const MT<IT, NT> &,
+			 NT(NT, NT),
+			 // multiplies<NT>,
+			 plus<NT>, unsigned),
 	size_t witers,
 	size_t niters,
 	vector<int> &tnums,
 	size_t nflop,
-	GrB_Matrix *L
+	GrB_Matrix L
 )
 {
 	GrB_Index		n, nnz;
 	GrbAlgObj<NT>	to_grb;	
-	GrB_Matrix		C	 = NULL;
-	uint64_t 		ntri = 0;
-	AT<IT, NT>		L_msp(L, true);
+	GrB_Matrix		C	   = NULL;
+	auto			f_one = [] (NT arg1, NT arg2) -> NT {return (NT) 1;};
+	AT<IT, NT>		L_msp(L);
+	
+
+	GrB_Matrix_nrows(&n, L);
 	
     for (int tnum : tnums)
 	{
@@ -140,7 +145,7 @@ msp_tri_count_sandia_L
         
         for (int i = 0; i < witers; ++i)
 		{
-			f(L_msp, L_msp, C_msp, L_msp, multiplies<NT>(), plus<NT>(), tnum);
+			f(L_msp, L_msp, C_msp, L_msp, f_one, plus<NT>(), tnum);
 		}
 
         double ave_msec = 0;
@@ -149,8 +154,8 @@ msp_tri_count_sandia_L
             C_msp.make_empty();
 
             double start = omp_get_wtime();
-            f(L_msp, L_msp, C_msp, L_msp, multiplies<NT>(), plus<NT>(), tnum);
-            double end = omp_get_wtime();			
+            f(L_msp, L_msp, C_msp, L_msp, f_one, plus<NT>(), tnum);
+			double end = omp_get_wtime();			
 
             double msec = (end - start) * 1000;
             ave_msec += msec;
@@ -158,8 +163,10 @@ msp_tri_count_sandia_L
 
         ave_msec /= static_cast<double>(niters);
         double mflops = (double) nflop / ave_msec / 1000;
-
-		C_msp.get_grb_mat_ptr(&C);
+		
+		GrB_Matrix_new(&C, to_grb.get_type(), n, n);
+		C_msp.get_grb_mat(C);
+		uint64_t ntri = 0;
 		GrB_Matrix_reduce_UINT64(&ntri, NULL,
 								 to_grb.get_monoid_plus(), C, NULL);
 		GrB_Matrix_nvals(&nnz, C);
@@ -177,11 +184,14 @@ msp_tri_count_sandia_L
 
 		GrB_Matrix_clear(C);
     }
+
+	
+	L_msp.get_grb_mat(L);		// restore L
 }
 
 
 
-#define RUN_CSR_IMPL(NAME, FUNC) msp_tri_count_sandia_L<Index_t, Value_t, CSR, CSR, CSR, CSR>(fileName, NAME, FUNC, warmupIters, innerIters, tnums, flop, &L)
+#define RUN_CSR_IMPL(NAME, FUNC) msp_tri_count_sandia_L<Index_t, Value_t, CSR, CSR, CSR, CSR>(fileName, NAME, FUNC, warmupIters, innerIters, tnums, flop, L)
 #define RUN_CSR(ALG) RUN_CSR_IMPL(#ALG, ALG)
 #define RUN_CSR_1P(ALG) RUN_CSR_IMPL(#ALG "-1P", MaskedSpGEMM1p<ALG>)
 #define RUN_CSR_2P(ALG) RUN_CSR_IMPL(#ALG "-2P", MaskedSpGEMM2p<ALG>)
@@ -192,7 +202,7 @@ int
 main (int argc,
 	  char **argv)
 {
-	using Value_t = uint64_t;
+	using Value_t = int64_t;
     using Index_t = uint64_t;
 
 	vector<int> tnums;	
@@ -211,17 +221,21 @@ main (int argc,
 		tnums = {1, 2, 4, 8, 16, 32, 64};
     }
 
+	// tnums = {1};
+
 	std::string fileName = getFileName(argv[1]);
 
+	GrB_init(GrB_BLOCKING);
 	GrbAlgObj<Value_t>	to_grb;
 	GrB_Matrix			Ain	  = NULL, L = NULL;
 	GrB_Index			n, nnz;	
 	int nthreads;
-	GrB_init(GrB_BLOCKING);
+
+	GxB_Global_Option_set(GxB_FORMAT, GxB_BY_ROW); // CSR in GraphBLAS
 	GxB_Global_Option_get(GxB_GLOBAL_NTHREADS, &nthreads);
 	std::cout << "nthreads (graphblas) " << nthreads << std::endl;
 		
-	read_grb_mtx<Value_t>(&Ain, argv[1], true, true);
+	read_grb_mtx<Value_t>(&Ain, argv[1], true, true, true);
 
 	// @formatter:off
     size_t outerIters  = std::getenv("OUTER_ITERS")  ?
@@ -250,15 +264,17 @@ main (int argc,
 	std::cout << "L: " << n << " " << n << " " << nnz << std::endl;
 
 	CSR<Index_t, Value_t> tmp(L);
-    std::size_t flop = get_flop(tmp, tmp);
-	tmp.make_empty();
-
+	std::size_t flop = get_flop(tmp, tmp);
+	tmp.get_grb_mat(L);
+	
+	// GxB_Matrix_fprint(L, "L", GxB_SUMMARY, stdout);
 	
 	for (size_t i = 0; i < outerIters; i++)
 	{
 		// GraphBLAS only
 		GrB_Descriptor desc_mxm = NULL;
 		GxB_Desc_set(desc_mxm, GxB_SORT, 1); // want output sorted
+		// GxB_Desc_set(desc_mxm, GrB_MASK, GrB_STRUCTURE);
 		grb_tri_count_sandia_L<Index_t, Value_t>
 			("GxB_AxB_DEFAULT", L, warmupIters, innerIters,
 			 tnums, flop, desc_mxm);
@@ -274,7 +290,7 @@ main (int argc,
 
         if (mode == "msa" || mode == "all")
 		{
-            RUN_CSR(MaskedSPASpGEMM);
+			RUN_CSR(MaskedSPASpGEMM);
 
             RUN_CSR_1P(MSA2A_old);
             RUN_CSR_2P(MSA2A_old);
@@ -289,11 +305,11 @@ main (int argc,
 
         if (mode == "hash" || mode == "all")
 		{
-            RUN_CSR(mxm_hash_mask_wobin);
-            RUN_CSR(mxm_hash_mask);
-            RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>));
-            RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>));
-        }
+             RUN_CSR(mxm_hash_mask_wobin);
+			 RUN_CSR(mxm_hash_mask);
+             RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>));
+             RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>));
+         }
 
         if (mode == "heap" || mode == "all")
 		{
@@ -345,7 +361,7 @@ main (int argc,
 	}
 
 	
-	GrB_Matrix_free(&L);
+	// GrB_Matrix_free(&L);
 	GrB_finalize();
 	
 	return (EXIT_SUCCESS);

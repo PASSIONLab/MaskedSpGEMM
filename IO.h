@@ -154,7 +154,8 @@ int ReadASCII_Triples(string	  filename,
 					  IT		*&rids,
 					  IT		*&cids,
 					  NT        *&vals,
-					  bool		  remove_diags = false)
+					  bool		  remove_diags = false,
+					  bool 		  rand_vals = false)
 {
     bool isSymmetric = false;
     double start = omp_get_wtime( );
@@ -207,13 +208,16 @@ int ReadASCII_Triples(string	  filename,
             IT cid = (IT)(atoi(ch));
             ch = strchr(ch, ' ');
 			NT val = 1.0;
-            if (ch != NULL)
+			if (ch != NULL)
 			{
                 ch++;
                 val = (NT)(atoi(ch));
                 ch = strchr(ch, ' ');
 			}
 
+			if (rand_vals)
+				val = rand()%10 + 7;
+            
 			if (remove_diags && rid == cid)
 			{
 				--nnz;

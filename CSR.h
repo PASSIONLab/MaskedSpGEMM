@@ -39,9 +39,10 @@ public:
   CSR(const CSC<IT, NT> &csc); // CSC -> CSR conversion
   CSR(const CSR<IT, NT> &rhs); // copy constructor
   CSR(const CSC<IT, NT> &csc, const bool transpose);
-  CSR(const GrB_Matrix &A); // construct from GraphBLAS matrix
+  // CSR(const GrB_Matrix &A); // construct from GraphBLAS matrix
   CSR(GrB_Matrix *A, bool dup_mat = false);		// construct from GraphBLAS
 												// matrix pointers
+  CSR(GrB_Matrix A); // construct from GraphBLAS matrix (unpack)
   
   CSR<IT, NT> &operator=(const CSR<IT, NT> &rhs); // assignment operator
   bool operator==(const CSR<IT, NT> &rhs);        // ridefinizione ==
@@ -100,6 +101,7 @@ public:
   void Sorted();
 
   void get_grb_mat(GrB_Matrix *A);
+  void get_grb_mat(GrB_Matrix A);
   void get_grb_mat_ptr(GrB_Matrix *A); // sets CSR object's pointers to NULL
 
   IT rows;
@@ -320,53 +322,96 @@ CSR<IT, NT>::CSR(graph &G) : nnz(G.m), rows(G.n), cols(G.n), zerobased(true) {
 
 
 
+// template <class IT,
+// 		  class NT>
+// CSR<IT, NT>::CSR (const GrB_Matrix &A) :
+// 	zerobased(true)
+// {
+// 	GrB_Index nc, nr, nv;
+// 	GrB_Matrix_nrows(&nr, A);
+// 	GrB_Matrix_ncols(&nc, A);
+// 	GrB_Matrix_nvals(&nv, A);
+
+// 	this->rows = static_cast<IT>(nr);
+// 	this->cols = static_cast<IT>(nc);
+// 	this->nnz  = static_cast<IT>(nv);
+
+// 	// need cast from GrB_Index to IT
+// 	GrB_Index	*rids = new GrB_Index[nv];
+// 	GrB_Index	*cids = new GrB_Index[nv];
+// 	this->rowptr      = my_malloc<IT>(this->rows+1);
+// 	this->colids      = my_malloc<IT>(this->nnz);
+// 	this->values	  = my_malloc<NT>(this->nnz);
+
+// 	GrbMatrixExtractTuples<NT>()(rids, cids, this->values, &nv, A);
+// 	assert(nv == this->nnz);
+
+// 	// assume sorted and check it while forming
+// 	memset(this->rowptr, 0, sizeof(IT) * (this->rows+1));
+// 	GrB_Index last_rid = -1, last_cid = -1;
+// 	for (GrB_Index i = 0; i < nv; ++i)
+// 	{
+// 		assert(rids[i] >= last_rid &&
+// 			   "row ids are not sorted in the GraphBLAS matrix\n");
+// 		if (rids[i] == last_rid)
+// 			assert(cids[i] > last_cid &&
+// 				   "col ids are not sorted in the GraphBLAS matrix\n");
+// 		last_rid = rids[i];
+// 		last_cid = cids[i];
+
+// 		++this->rowptr[rids[i]+1];
+// 		this->colids[i] = static_cast<IT>(cids[i]);
+// 	}
+
+// 	if (this->rows > 0)
+// 		std::inclusive_scan(this->rowptr+1, this->rowptr+this->rows+1,
+// 							this->rowptr+1);
+	
+// 	delete [] rids;
+// 	delete [] cids;
+// }
+
+
+
 template <class IT,
 		  class NT>
-CSR<IT, NT>::CSR (const GrB_Matrix &A) :
+CSR<IT, NT>::CSR (GrB_Matrix A) :
 	zerobased(true)
 {
-	GrB_Index nc, nr, nv;
+	static_assert(std::is_same<IT, GrB_Index>::value,
+				  "CSR matrix index type and GrB_Matrix index type "
+				  "must be the same");
+
+	bool			is_iso, is_jumbled;
+	GrB_Index		ap_size, aj_size, ax_size;
+	GrB_Index		nr, nc, nnz;
+	GrB_Descriptor	desc = NULL;
+
+	GrB_Descriptor_new(&desc);
+	
 	GrB_Matrix_nrows(&nr, A);
 	GrB_Matrix_ncols(&nc, A);
-	GrB_Matrix_nvals(&nv, A);
-
-	this->rows = static_cast<IT>(nr);
-	this->cols = static_cast<IT>(nc);
-	this->nnz  = static_cast<IT>(nv);
-
-	// need cast from GrB_Index to IT
-	GrB_Index	*rids = new GrB_Index[nv];
-	GrB_Index	*cids = new GrB_Index[nv];
-	this->rowptr      = my_malloc<IT>(this->rows+1);
-	this->colids      = my_malloc<IT>(this->nnz);
-	this->values	  = my_malloc<NT>(this->nnz);
-
-	GrbMatrixExtractTuples<NT>()(rids, cids, this->values, &nv, A);
-	assert(nv == this->nnz);
-
-	// assume sorted and check it while forming
-	memset(this->rowptr, 0, sizeof(IT) * (this->rows+1));
-	GrB_Index last_rid = -1, last_cid = -1;
-	for (GrB_Index i = 0; i < nv; ++i)
-	{
-		assert(rids[i] >= last_rid &&
-			   "row ids are not sorted in the GraphBLAS matrix\n");
-		if (rids[i] == last_rid)
-			assert(cids[i] > last_cid &&
-				   "col ids are not sorted in the GraphBLAS matrix\n");
-		last_rid = rids[i];
-		last_cid = cids[i];
-
-		++this->rowptr[rids[i]+1];
-		this->colids[i] = static_cast<IT>(cids[i]);
-	}
-
-	if (this->rows > 0)
-		std::inclusive_scan(this->rowptr+1, this->rowptr+this->rows+1,
-							this->rowptr+1);
+	GrB_Matrix_nvals(&nnz, A);
+	this->rows = nr;
+	this->cols = nc;
+	this->nnz  = nnz;
 	
-	delete [] rids;
-	delete [] cids;
+	// does not free the matrix, but the matrix has no entries after this
+	GxB_Matrix_unpack_CSR(A,
+						  &this->rowptr,
+						  &this->colids,
+						  (void **)&this->values,
+						  &ap_size,
+						  &aj_size,
+						  &ax_size,
+						  &is_iso,
+						  &is_jumbled,
+						  desc);
+	assert(!is_iso && "GraphBLAS matrix is iso-valued.");
+	assert(!is_jumbled && "GraphBLAS matrix is not sorted\n");
+
+
+	return;						  
 }
 
 
@@ -737,6 +782,51 @@ CSR<IT, NT>::get_grb_mat
 	
 	return;
 }
+
+
+
+template <typename IT,
+		  typename NT>
+void
+CSR<IT, NT>::get_grb_mat
+(
+    GrB_Matrix A
+)
+{
+	assert(A != NULL && "GraphBLAS matrix to be packed is NULL!");
+	
+	GrB_Index nr, nc;
+	GrB_Matrix_nrows(&nr, A);
+	GrB_Matrix_ncols(&nc, A);
+
+	assert(nr == this->rows && nc == this->cols &&
+		   "Dimension mismatch in converting CSR matrix to GraphBLAS matrix.");
+
+	bool is_iso = false, is_jumbled = false;
+	GrB_Index ap_size = sizeof(IT) * (this->rows+1),
+		aj_size = sizeof(IT) * this->nnz,
+		ax_size = sizeof(NT) * this->nnz;
+
+	GrB_Descriptor desc = NULL;
+	GrB_Descriptor_new(&desc);
+	
+	GxB_Matrix_pack_CSR(A,
+						&this->rowptr,
+						&this->colids,
+						(void **)&this->values,
+						ap_size,
+						aj_size,
+						ax_size,
+						is_iso,
+						is_jumbled,
+						desc);
+	assert(this->rowptr == NULL && this->colids == NULL &&
+		   this->values == NULL);
+	
+						
+	return;					
+}
+
 
 
 
