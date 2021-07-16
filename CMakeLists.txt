@@ -6,22 +6,22 @@ project(MaskedSpGEMM
 macro(add_example _name _src)
     message(${CMAKE_CURRENT_SOURCE_DIR})
     add_executable(${_name} ${_src}
-            ../GTgraph/R-MAT/graph.o
-            ../GTgraph/R-MAT/utils.o
-            ../GTgraph/R-MAT/init.o
-            ../GTgraph/R-MAT/globals.o
-            ../PaRMAT/Release/src/GraphGen_notSorted.o
-            ../PaRMAT/Release/src/utils.o
-            ../PaRMAT/Release/src/Edge.o
-            ../PaRMAT/Release/src/Square.o
-            ../PaRMAT/Release/src/GraphGen_sorted.o)
+            ${PROJECT_SOURCE_DIR}/GTgraph/R-MAT/graph.o
+            ${PROJECT_SOURCE_DIR}/GTgraph/R-MAT/utils.o
+            ${PROJECT_SOURCE_DIR}/GTgraph/R-MAT/init.o
+            ${PROJECT_SOURCE_DIR}/GTgraph/R-MAT/globals.o
+            ${PROJECT_SOURCE_DIR}/PaRMAT/Release/src/GraphGen_notSorted.o
+            ${PROJECT_SOURCE_DIR}/PaRMAT/Release/src/utils.o
+            ${PROJECT_SOURCE_DIR}/PaRMAT/Release/src/Edge.o
+            ${PROJECT_SOURCE_DIR}/PaRMAT/Release/src/Square.o
+            ${PROJECT_SOURCE_DIR}/PaRMAT/Release/src/GraphGen_sorted.o)
 
-    target_include_directories(${_name} PRIVATE GTgraph/sprng2.0-lite/include)
-    target_link_directories(${_name} PRIVATE GTgraph/sprng2.0-lite/lib)
+    target_include_directories(${_name} PRIVATE ${PROJECT_SOURCE_DIR}/GTgraph/sprng2.0-lite/include)
+    target_link_directories(${_name} PRIVATE ${PROJECT_SOURCE_DIR}/GTgraph/sprng2.0-lite/lib)
     target_link_libraries(${_name} libsprng.a)
 
-	target_include_directories(${_name} PRIVATE GraphBLAS/Include)
-	target_link_directories(${_name} PRIVATE GraphBLAS/build)
+	target_include_directories(${_name} PRIVATE ${PROJECT_SOURCE_DIR}/GraphBLAS/Include)
+	target_link_directories(${_name} PRIVATE ${PROJECT_SOURCE_DIR}/GraphBLAS/build)
 	target_link_libraries(${_name} libgraphblas.so)
 
     find_package(OpenMP REQUIRED)
@@ -52,8 +52,9 @@ add_example(tricnt-all-grb benchmarks/TriCntAllGrb.cpp)
 target_link_libraries(heatmap otx-cpp)
 #add_example(test-grb sample/test_grb.cpp)
 
-
-# add_subdirectory(test)
+if (BUILD_TESTS)
+add_subdirectory(test)
+endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "C compiler flags: ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_DEBUG}")

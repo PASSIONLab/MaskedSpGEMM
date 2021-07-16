@@ -1,5 +1,5 @@
 macro(add_test_exe _name)
-    add_executable(test-${_name} ${_name}-test.cpp)
+    add_example(test-${_name} ${_name}-test.cpp)
     target_compile_definitions(test-${_name} PRIVATE CPP)
     target_compile_features(test-${_name} PUBLIC cxx_std_17)
 
@@ -15,3 +15,4 @@ add_test_exe(spgemm)
 add_test_exe(split-mem)
 add_test_exe(memalign)
 add_test_exe(triple-util)
+add_test_exe(same-in-out)

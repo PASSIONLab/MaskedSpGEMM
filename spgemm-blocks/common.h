@@ -3,7 +3,7 @@
 
 void setNumThreads(unsigned &numThreads) {
     if (numThreads == 0) {
-#pragma omp parallel
+#pragma omp parallel default(none) shared(numThreads)
 #pragma omp single
         numThreads = omp_get_num_threads();
     }
@@ -14,12 +14,10 @@ template<class IT, class NT,
         template<class, class> class BT,
         template<class, class> class CT,
         template<class, class> class MT>
-void verifyInputs(const AT<IT, NT> &A, const BT<IT, NT> &B, CT<IT, NT> &C, const MT<IT, NT> &M) {
+void verifyInputs(const AT<IT, NT> &A, const BT<IT, NT> &B, const CT<IT, NT> &C, const MT<IT, NT> &M) {
     assert(A.cols == B.rows);
     assert(M.rows == A.rows);
     assert(M.cols == B.cols);
-
-    if (!C.isEmpty()) { C.make_empty(); }
 }
 
 template<typename IT, typename NT>
@@ -130,8 +128,14 @@ template<class IT, class NT,
         template<class, class> class BT,
         template<class, class> class CT>
 void initC(const AT<IT, NT> &A, const BT<IT, NT> &B, CT<IT, NT> &C, IT *threadsNvals, int numThreads) {
-    C.rows = A.rows;
-    C.cols = B.cols;
+    // If C == A || C == B || C == M
+    auto nrows = A.rows;
+    auto ncols = B.cols;
+
+    if (!C.isEmpty()) { C.make_empty(); }
+
+    C.rows = nrows;
+    C.cols = ncols;
     C.rowptr = my_malloc<IT>(C.rows + 1);
 
     C.nnz = std::accumulate(threadsNvals, threadsNvals + numThreads, IT(0));
