@@ -690,7 +690,8 @@ CSR<IT,NT> Intersect(const CSR<IT,NT> & A, const CSR<IT,NT> & B, AddOperation ad
 {
     CSR<IT,NT> C;
     if (A.rows != B.rows || A.cols != B.cols) {
-      printf("Can not intersect due to dimension mismatch... %d:%d, %d:%d\n", A.rows, B.rows, A.cols, B.cols);
+        std::cout << "Can not intersect due to dimension mismatch... "
+        << A.rows << ":" << B.rows << ", " << A.cols << ":" << B.cols << std::endl;
       return C;
     }
     C.rows = A.rows;

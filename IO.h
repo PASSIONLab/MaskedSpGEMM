@@ -4,6 +4,7 @@
 #include "Triple.h"
 #include "CSC.h"
 #include <fstream>
+#include <sstream>
 
 #define READBUFFER (512 * 1024 * 1024)  // in MB
 
@@ -77,15 +78,8 @@ int ReadASCII(string filename, CSC<IT,NT> & csc)
 
     infile.getline(line,256);
     IT m,n,nnz;
-    if (typeid(IT) == typeid(int)) {
-        sscanf(line, "%d %d %d", &m, &n, &nnz);
-    }
-    else if (typeid(IT) == typeid(long long int)) {
-        sscanf(line, "%ld %ld %ld", &m, &n, &nnz);
-    }
-    else {
-        sscanf(line, "%ld %ld %ld", &m, &n, &nnz);
-    }
+    std::stringstream ss{line};
+    ss >> m >> n >> nnz;
     
     if (isSymmetric) {
         nnz *= 2;
@@ -135,8 +129,8 @@ int ReadASCII(string filename, CSC<IT,NT> & csc)
     double end = omp_get_wtime( );
     // printf("start = %.16g\nend = %.16g\ndiff = %.16g\n", start, end, end - start);
     printf("Converting matrix data from ASCII to COO format: %.16g seconds\n", end - start);
-    printf("Input Matrix: Rows = %d, Columns= %d, nnz = %d\n", m, n, nnz);
-	
+    std::cout << "Input Matrix: Rows = " << m << ", Columns= " << n << ", nnz = " << nnz << std::endl;
+
     cout << "Converting to csc ... " << endl << endl;
     csc= *(new CSC<IT,NT>(triples, nnz, m, n));
     csc.totalcols = n;
@@ -177,16 +171,8 @@ int ReadASCII_Triples(string	  filename,
 		cout << "will remove diagonals from the matrix" << endl;
 
 	IT m,n,nnz;
-    infile.getline(line,256);
-    if (typeid(IT) == typeid(int)) {
-        sscanf(line, "%d %d %d", &m, &n, &nnz);
-    }
-    else if (typeid(IT) == typeid(long long int)) {
-        sscanf(line, "%ld %ld %ld", &m, &n, &nnz);
-    }
-    else {
-        sscanf(line, "%ld %ld %ld", &m, &n, &nnz);
-    }
+    std::stringstream ss{line};
+    ss >> m >> n >> nnz;
     
     if (isSymmetric) {
         nnz *= 2;
