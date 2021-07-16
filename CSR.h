@@ -608,9 +608,9 @@ CSR<IT, NT>::CSR(const string filename) : zerobased(true) {
   nnz = tmp_nz;
 
   /* Allocation of rpt, col, val */
-  rowptr = (IT *)malloc(sizeof(IT) * (rows + 1));
-  colids = (IT *)malloc(sizeof(IT) * (nnz));
-  values = (NT *)malloc(sizeof(NT) * (nnz));
+  rowptr = my_malloc<IT>(sizeof(IT) * (rows + 1));
+  colids = my_malloc<IT>(sizeof(IT) * (nnz));
+  values = my_malloc<NT>(sizeof(NT) * (nnz));
 
   offset = 0;
   for (i = 0; i < rows; i++) {
