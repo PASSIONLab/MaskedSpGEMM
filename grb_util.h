@@ -62,6 +62,14 @@ GrbAlgObj <uint64_t>
 
 
 	auto
+	get_sr_plus_second ()
+	{
+		return GxB_PLUS_SECOND_UINT64;
+	}
+
+
+
+	auto
 	get_unary_set_one ()
 	{
 		return GxB_ONE_UINT64;
@@ -73,6 +81,14 @@ GrbAlgObj <uint64_t>
 	get_monoid_plus ()
 	{
 		return GrB_PLUS_MONOID_UINT64;
+	}
+
+
+
+	auto
+	get_binary_plus ()
+	{
+		return GrB_PLUS_UINT64;
 	}
 };
 
@@ -115,6 +131,14 @@ GrbAlgObj <int64_t>
 
 
 	auto
+	get_sr_plus_second ()
+	{
+		return GxB_PLUS_SECOND_INT64;
+	}
+
+
+
+	auto
 	get_unary_set_one ()
 	{
 		return GxB_ONE_INT64;
@@ -126,6 +150,14 @@ GrbAlgObj <int64_t>
 	get_monoid_plus ()
 	{
 		return GrB_PLUS_MONOID_INT64;
+	}
+
+
+
+	auto
+	get_binary_plus ()
+	{
+		return GrB_PLUS_INT64;
 	}
 };
 
@@ -156,6 +188,14 @@ GrbAlgObj <uint32_t>
 	{
 		return GxB_PLUS_LAND_UINT32;
 	}
+
+
+
+	auto
+	get_sr_plus_second ()
+	{
+		return GxB_PLUS_SECOND_UINT32;
+	}
 	
 
 
@@ -171,6 +211,14 @@ GrbAlgObj <uint32_t>
 	get_monoid_plus ()
 	{
 		return GrB_PLUS_MONOID_UINT32;
+	}
+
+
+
+	auto
+	get_binary_plus ()
+	{
+		return GrB_PLUS_UINT32;
 	}
 };
 
@@ -205,6 +253,14 @@ GrbAlgObj <int32_t>
 
 
 	auto
+	get_sr_plus_second ()
+	{
+		return GxB_PLUS_SECOND_INT32;
+	}
+
+
+
+	auto
 	get_unary_set_one ()
 	{
 		return GxB_ONE_INT32;
@@ -215,6 +271,14 @@ GrbAlgObj <int32_t>
 	get_monoid_plus ()
 	{
 		return GrB_PLUS_MONOID_INT32;
+	}
+
+
+
+	auto
+	get_binary_plus ()
+	{
+		return GrB_PLUS_INT32;
 	}
 };
 
@@ -241,9 +305,33 @@ GrbAlgObj <float>
 
 
 	auto
+	get_sr_plus_second ()
+	{
+		return GxB_PLUS_SECOND_FP32;
+	}
+
+
+
+	auto
 	get_monoid_plus ()
 	{
 		return GrB_PLUS_MONOID_FP32;
+	}
+
+
+
+	auto
+	get_binary_plus ()
+	{
+		return GrB_PLUS_FP32;
+	}
+
+
+
+	auto
+	get_binary_times ()
+	{
+		return GrB_TIMES_FP32;
 	}
 };
 
@@ -270,9 +358,34 @@ GrbAlgObj <double>
 
 
 	auto
+	get_sr_plus_second ()
+	{
+		return GxB_PLUS_SECOND_FP64;
+	}
+
+
+
+
+	auto
 	get_monoid_plus ()
 	{
 		return GrB_PLUS_MONOID_FP64;
+	}
+
+
+
+	auto
+	get_binary_plus ()
+	{
+		return GrB_PLUS_FP64;
+	}
+
+
+
+	auto
+	get_binary_times ()
+	{
+		return GrB_TIMES_FP64;
 	}
 };
 

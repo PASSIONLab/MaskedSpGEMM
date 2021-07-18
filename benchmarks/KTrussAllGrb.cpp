@@ -56,6 +56,7 @@ grb_ktruss
 	GxB_Scalar		s = NULL;
 
 	GrB_Descriptor desc_mxm = NULL;
+	GrB_Descriptor_new(&desc_mxm);
 	GxB_Desc_set(desc_mxm, GxB_SORT, 1);
 
 	GxB_Scalar_new(&s, GrB_UINT64);

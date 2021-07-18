@@ -273,6 +273,7 @@ main (int argc,
 	{
 		// GraphBLAS only
 		GrB_Descriptor desc_mxm = NULL;
+		GrB_Descriptor_new(&desc_mxm);
 		GxB_Desc_set(desc_mxm, GxB_SORT, 1); // want output sorted
 		// GxB_Desc_set(desc_mxm, GrB_MASK, GrB_STRUCTURE);
 		grb_tri_count_sandia_L<Index_t, Value_t>

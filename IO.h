@@ -171,9 +171,10 @@ int ReadASCII_Triples(string	  filename,
 		cout << "will remove diagonals from the matrix" << endl;
 
 	IT m,n,nnz;
+	infile.getline(line,256);
     std::stringstream ss{line};
     ss >> m >> n >> nnz;
-    
+	    
     if (isSymmetric) {
         nnz *= 2;
     }
