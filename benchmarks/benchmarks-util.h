@@ -89,6 +89,8 @@ std::string processAlgorithmName(std::string name) {
 
     if (numPhases == 1) { name += "-1P"; } else if (numPhases == 2) { name += "-2P"; }
 
+    name.erase(std::remove(name.begin(), name.end(), ' '), name.end());
+
     return name;
 }
 
