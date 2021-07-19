@@ -74,10 +74,10 @@ grb_tri_count_sandia_L
         for (int i = 0; i < niters; ++i)
 		{
 			GrB_Matrix_clear(C);
-            
+
             double start = omp_get_wtime();
             GrB_mxm(C, L, NULL, to_grb.get_sr_plus_pair(), L, L, desc_mxm);
-			double end = omp_get_wtime();            
+			double end = omp_get_wtime();
 
             double msec = (end - start) * 1000;
             ave_msec += msec;
@@ -287,6 +287,8 @@ main (int argc,
 		// GraphBLAS only
 		GrB_Descriptor desc_mxm = NULL;
 		GrB_Descriptor_new(&desc_mxm);
+        GxB_Desc_set(desc_mxm, GrB_MASK, GrB_STRUCTURE);
+
         grb_tri_count_sandia_L<Index_t, Value_t>
                 (fileName, "GxB_AxB_DEFAULT", L, warmupIters, innerIters,
                  tnums, flop, desc_mxm);
@@ -294,17 +296,6 @@ main (int argc,
 		GxB_Desc_set(desc_mxm, GxB_SORT, 1); // want output sorted
         grb_tri_count_sandia_L<Index_t, Value_t>
                 (fileName, "GxB_AxB_DEFAULT-Sorted", L, warmupIters, innerIters,
-                 tnums, flop, desc_mxm);
-
-        GxB_Desc_set(desc_mxm, GxB_SORT, 0); // want output sorted
-        GxB_Desc_set(desc_mxm, GrB_MASK, GrB_STRUCTURE);
-		grb_tri_count_sandia_L<Index_t, Value_t>
-			(fileName, "GxB_AxB_DEFAULT-Structure", L, warmupIters, innerIters,
-			 tnums, flop, desc_mxm);
-
-        GxB_Desc_set(desc_mxm, GxB_SORT, 1); // want output sorted
-        grb_tri_count_sandia_L<Index_t, Value_t>
-                (fileName, "GxB_AxB_DEFAULT-Structure-Sorted", L, warmupIters, innerIters,
                  tnums, flop, desc_mxm);
 
 //		 if (mode == "inner" || mode == "dot" || mode == "all")

@@ -42,7 +42,7 @@ void inclusiveScan(const T *src, size_t size, T *dst, int numThreads) {
         return;
     }
 
-    T *partialSums = my_malloc<T>(numThreads);
+    T *partialSums = my_malloc<T>(numThreads, false);
 
 #pragma omp parallel num_threads(numThreads) default(none) shared(src, size, dst, numThreads, partialSums)
     {
@@ -88,7 +88,7 @@ void exclusiveScan(const T *src, size_t size, T *dst, int numThreads) {
         return;
     }
 
-    T *partialSums = my_malloc<T>(numThreads);
+    T *partialSums = my_malloc<T>(numThreads, false);
 
 #pragma omp parallel num_threads(numThreads) default(none) shared(src, size, dst, numThreads, partialSums)
     {

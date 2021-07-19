@@ -18,20 +18,20 @@ void MaskedSpGEMM1pInnerProduct(const CSR<IT, NT> &A, const CSC<IT, NT> &B, CSR<
     verifyInputs(A, B, C, M);
 
     // Estimate work
-    IT *workPerRow = my_malloc<IT>(M.rows);
+    IT *workPerRow = my_malloc<IT>(M.rows, false);
     IT work = calculateWork(A, B, M, workPerRow, numThreads);
 
     // Calculate cumulative work
-    IT *cumulativeWork = my_malloc<IT>(M.rows);
+    IT *cumulativeWork = my_malloc<IT>(M.rows, false);
     exclusiveScan(workPerRow, M.rows, cumulativeWork, numThreads);
 
     // Allocate memory for row sizes
-    IT *rowNvals = my_malloc<IT>(M.rows);
-    IT *threadsNvals = my_malloc<IT>(numThreads);
+    IT *rowNvals = my_malloc<IT>(M.rows, false);
+    IT *threadsNvals = my_malloc<IT>(numThreads, false);
 
     // Allocate temporary memory for C's column IDs and values
-    IT *colIds = my_malloc<IT>(M.nnz);
-    NT *values = my_malloc<NT>(M.nnz);
+    IT *colIds = my_malloc<IT>(M.nnz, false);
+    NT *values = my_malloc<NT>(M.nnz, false);
 
 #pragma omp parallel num_threads(numThreads)
     {
@@ -114,16 +114,16 @@ void MaskedSpGEMM2pInnerProduct(const CSR<IT, NT> &A, const CSC<IT, NT> &B, CSR<
     verifyInputs(A, B, C, M);
 
     // Estimate work
-    IT *workPerRow = my_malloc<IT>(M.rows);
+    IT *workPerRow = my_malloc<IT>(M.rows, false);
     IT work = calculateWork(A, B, M, workPerRow, numThreads);
 
     // Calculate cumulative work
-    IT *cumulativeWork = my_malloc<IT>(M.rows);
+    IT *cumulativeWork = my_malloc<IT>(M.rows, false);
     exclusiveScan(workPerRow, M.rows, cumulativeWork, numThreads);
 
     // Allocate memory for row sizes
-    IT *rowNvals = my_malloc<IT>(M.rows);
-    IT *threadsNvals = my_malloc<IT>(numThreads);
+    IT *rowNvals = my_malloc<IT>(M.rows, false);
+    IT *threadsNvals = my_malloc<IT>(numThreads, false);
 
 #pragma omp parallel num_threads(numThreads)
     {

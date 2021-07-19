@@ -136,11 +136,11 @@ void initC(const AT<IT, NT> &A, const BT<IT, NT> &B, CT<IT, NT> &C, IT *threadsN
 
     C.rows = nrows;
     C.cols = ncols;
-    C.rowptr = my_malloc<IT>(C.rows + 1);
+    C.rowptr = my_malloc<IT>(C.rows + 1, false);
 
     C.nnz = std::accumulate(threadsNvals, threadsNvals + numThreads, IT(0));
-    C.colids = my_malloc<IT>(C.nnz);
-    C.values = my_malloc<NT>(C.nnz);
+    C.colids = my_malloc<IT>(C.nnz, false);
+    C.values = my_malloc<NT>(C.nnz, false);
 }
 
 template<class IT, class NT>

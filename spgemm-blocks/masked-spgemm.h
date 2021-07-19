@@ -25,17 +25,17 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
     verifyInputs(A, B, C, M);
 
     // Estimate work
-    IT *flopsPerRow = my_malloc<IT>(A.rows);
+    IT *flopsPerRow = my_malloc<IT>(A.rows, false);
     IT flops = Complemented ? calculateFlops(A, B, flopsPerRow, numThreads)
                             : calculateFlops(A, B, M, flopsPerRow, numThreads);
 
     // Calculate cumulative work
-    IT *cumulativeWork = my_malloc<IT>(A.rows);
+    IT *cumulativeWork = my_malloc<IT>(A.rows, false);
     exclusiveScan(flopsPerRow, A.rows, cumulativeWork, numThreads);
 
     // Allocate memory for row sizes
-    IT *rowNvals = my_malloc<IT>(A.rows);
-    IT *threadsNvals = my_malloc<IT>(numThreads);
+    IT *rowNvals = my_malloc<IT>(A.rows, false);
+    IT *threadsNvals = my_malloc<IT>(numThreads, false);
 
 #pragma omp parallel num_threads(numThreads)
     {
@@ -59,8 +59,8 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         size_t dirty = bufferSize;
 
         // Allocate temporary memory for C's column IDs and Values
-        IT *colIdsLocal = my_malloc<IT>(upperBoundSizeC);
-        NT *valuesLocal = my_malloc<NT>(upperBoundSizeC);
+        IT *colIdsLocal = my_malloc<IT>(upperBoundSizeC, false);
+        NT *valuesLocal = my_malloc<NT>(upperBoundSizeC, false);
         IT *currColId = colIdsLocal;
         NT *currValue = valuesLocal;
 
@@ -105,17 +105,17 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
     verifyInputs(A, B, C, M);
 
     // Estimate work
-    IT *flopsPerRow = my_malloc<IT>(A.rows);
+    IT *flopsPerRow = my_malloc<IT>(A.rows, false);
     IT flops = Complemented ? calculateFlops(A, B, flopsPerRow, numThreads)
                             : calculateFlops(A, B, M, flopsPerRow, numThreads);
 
     // Calculate cumulative work
-    IT *cumulativeWork = my_malloc<IT>(A.rows);
+    IT *cumulativeWork = my_malloc<IT>(A.rows, false);
     exclusiveScan(flopsPerRow, A.rows, cumulativeWork, numThreads);
 
     // Allocate memory for row sizes
-    IT *rowNvals = my_malloc<IT>(A.rows);
-    IT *threadsNvals = my_malloc<IT>(numThreads);
+    IT *rowNvals = my_malloc<IT>(A.rows, false);
+    IT *threadsNvals = my_malloc<IT>(numThreads, false);
 
 #pragma omp parallel num_threads(numThreads)
     {
