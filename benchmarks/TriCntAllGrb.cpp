@@ -55,7 +55,7 @@ grb_tri_count_sandia_L
 {
 	GrB_Index		n, nnz;
 	GrbAlgObj<NT>	to_grb;	
-	GrB_Matrix		C	  = NULL;	
+	GrB_Matrix		C	  = NULL;
 
 	GrB_Matrix_nrows(&n, L);
 
@@ -119,7 +119,7 @@ msp_tri_count_sandia_L
 	const std::string &algorithmName,
 	void(*f)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &,
 			 const MT<IT, NT> &,
-			 NT(NT, NT),
+			 NT(NT&, NT&),
 			 // multiplies<NT>,
 			 plus<NT>, unsigned),
 	size_t witers,
@@ -132,7 +132,7 @@ msp_tri_count_sandia_L
 	GrB_Index		n, nnz;
 	GrbAlgObj<NT>	to_grb;	
 	GrB_Matrix		C	   = NULL;
-	auto			f_one = [] (NT arg1, NT arg2) -> NT {return (NT) 1;};
+	auto			f_one = [] (NT &arg1, NT &arg2) -> NT {return (NT) 1;};
 	AT<IT, NT>		L_msp(L);
 	
 
