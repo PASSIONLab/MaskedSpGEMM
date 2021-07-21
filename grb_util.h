@@ -666,6 +666,81 @@ GrbMatrixReduce <uint64_t>
 
 
 
+/////////////////////////////// matrix reduction ///////////////////////////////
+// C++ does not support _Generic
+template <typename T>
+struct GrbMatrixSetElement;
+
+
+template <>
+struct
+GrbMatrixSetElement <uint64_t>
+{
+	void
+	operator() (GrB_Matrix	A,
+				uint64_t	x,
+				GrB_Index	i,
+				GrB_Index	j
+				)
+	{
+		GrB_Matrix_setElement_UINT64(A, x, i, j);
+	}
+};
+
+
+
+
+template <>
+struct
+GrbMatrixSetElement <int64_t>
+{
+	void
+	operator() (GrB_Matrix	A,
+				int64_t		x,
+				GrB_Index	i,
+				GrB_Index	j
+				)
+	{
+		GrB_Matrix_setElement_INT64(A, x, i, j);
+	}
+};
+
+
+
+template <>
+struct
+GrbMatrixSetElement <float>
+{
+	void
+	operator() (GrB_Matrix	A,
+				float		x,
+				GrB_Index	i,
+				GrB_Index	j
+				)
+	{
+		GrB_Matrix_setElement_FP32(A, x, i, j);
+	}
+};
+
+
+
+template <>
+struct
+GrbMatrixSetElement <double>
+{
+	void
+	operator() (GrB_Matrix	A,
+				double		x,
+				GrB_Index	i,
+				GrB_Index	j
+				)
+	{
+		GrB_Matrix_setElement_FP64(A, x, i, j);
+	}
+};
+
+
+
 template <typename NT>
 void
 read_grb_mtx
@@ -726,4 +801,21 @@ get_lowtri
 	GxB_Matrix_select(*L, NULL, NULL, GxB_TRIL, A, Thunk, NULL);
 
 	return;	
+}
+
+
+
+
+template <typename NT>
+void
+avoid_iso
+(
+    GrB_Matrix	A,
+ 	NT			x,
+ 	GrB_Index	i,
+ 	GrB_Index	j
+)
+{
+	GrbMatrixSetElement<NT>()(A, static_cast<NT>(0), i, j);
+	GrbMatrixSetElement<NT>()(A, x, i, j);
 }
