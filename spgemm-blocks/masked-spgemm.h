@@ -100,6 +100,8 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
     using RowAlg = RowAlgorithm<IT, NT>;
     const bool Complemented = RowAlg::COMPLEMENTED;
 
+    CSR<IT, NT> R;
+
     // Calculate number of threads and init C
     setNumThreads(numThreads);
     verifyInputs(A, B, C, M);
@@ -156,15 +158,15 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
 #pragma omp barrier
 #pragma omp master
         {
-            initC(A, B, C, threadsNvals, numThreads);
+            initC(A, B, R, threadsNvals, numThreads);
         }
 #pragma omp barrier
-        setRowOffsets(C, threadsNvals, rowBeginIdx, rowEndIdx, rowNvals, numThreads, thisThread);
+        setRowOffsets(R, threadsNvals, rowBeginIdx, rowEndIdx, rowNvals, numThreads, thisThread);
 
         // Numeric phase
         alg.getNumericAccumulator().setBuffer(buffer, bufferSize, dirty);
-        IT *currColId = &C.colids[C.rowptr[rowBeginIdx]];
-        NT *currValue = &C.values[C.rowptr[rowBeginIdx]];
+        IT *currColId = &R.colids[R.rowptr[rowBeginIdx]];
+        NT *currValue = &R.values[R.rowptr[rowBeginIdx]];
         for (IT row = rowBeginIdx; row < rowEndIdx; ++row) {
             if (rowNvals[row] == 0) { continue; }
             alg.numericRow(A, B, M, multop, addop, row, currColId, currValue);
@@ -175,6 +177,19 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
     }
 
     my_free(flopsPerRow, cumulativeWork, rowNvals, threadsNvals);
+
+    // TODO: use move ctr
+    C.make_empty();
+    C.rows = R.rows;
+    C.cols = R.cols;
+    C.nnz = R.nnz;
+    C.rowptr = R.rowptr;
+    C.colids = R.colids;
+    C.values = R.values;
+
+    R.rows = 0;
+    R.cols = 0;
+    R.nnz = 0;
 }
 
 #endif //SPGEMM_GENERIC_H
