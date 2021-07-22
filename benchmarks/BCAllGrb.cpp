@@ -37,20 +37,58 @@ using namespace std;
 
 
 
+struct
+stats_bc
+{
+	double t_tot;
+	double t_sigma;
+	double t_delta;
+	double t_sigma_mxm;
+	double t_delta_mxm;
+
+
+
+	stats_bc &
+	operator+= (const stats_bc &arg)
+	{
+		t_tot		+= arg.t_tot;
+		t_sigma		+= arg.t_sigma;
+		t_delta		+= arg.t_delta;
+		t_sigma_mxm += arg.t_sigma_mxm;
+		t_delta_mxm += arg.t_delta_mxm;
+	}
+	
+
+
+	void
+	scale (double coeff)
+	{
+		t_tot		*= coeff;
+		t_sigma		*= coeff;
+		t_delta		*= coeff;
+		t_sigma_mxm *= coeff;
+		t_delta_mxm *= coeff;
+	}
+};
+
+
+
+
 template <class IT,
 		  class NT>
 void
-grb_bc
+grb_bc_internal
 (
-  	const std::string	&inputName,
-	size_t				 witers,
-	size_t				 niters,
-	vector<int>			&tnums,
-	GrB_Vector			*delta,
+    GrB_Vector			*delta,
 	GrB_Matrix			 A,
-	vector<GrB_Index>	&srcs
+	vector<GrB_Index>	&srcs,
+	stats_bc			&stats
 )
 {
+	stats = {0};
+	double t_beg[5];
+	t_beg[0] = omp_get_wtime();
+	
 	GrB_Index			n, s, nnz;
 	GrbAlgObj<NT>		to_grb;
 	GrB_Matrix			F  = NULL, N = NULL, Atr = NULL;
@@ -61,14 +99,17 @@ grb_bc
 	GxB_Desc_set(desc_mxm_01, GxB_SORT, 1);
 	GxB_Desc_set(desc_mxm_01, GrB_OUTP, GrB_REPLACE);
 	GxB_Desc_set(desc_mxm_01, GrB_MASK, GrB_COMP);
+	GxB_Desc_set(desc_mxm_01, GrB_MASK, GrB_STRUCTURE);
 	GrB_Descriptor_new(&desc_mxm_02);
 	GxB_Desc_set(desc_mxm_02, GxB_SORT, 1);
 	GxB_Desc_set(desc_mxm_02, GrB_OUTP, GrB_REPLACE);
-	// GxB_Desc_set(desc_mxm, GrB_MASK, GrB_STRUCTURE);
+	GxB_Desc_set(desc_mxm_02, GrB_MASK, GrB_STRUCTURE);
 
 	s = srcs.size();
 	assert(s > 0);
 	GrB_Matrix_nrows(&n, A);
+	if (delta != NULL)
+		GrB_Vector_free(delta);
 	GrB_Vector_new(delta, to_grb.get_type(), n);
 
 	vector<GrB_Index> cids(s);
@@ -82,12 +123,16 @@ grb_bc
 	GrB_Matrix_new(&Atr, to_grb.get_type(), n, n);
 	GrB_transpose(Atr, NULL, NULL, A, NULL);
 
+	t_beg[1] = omp_get_wtime();
+
 	// sigma
 	GrB_Index	nvals = s;
 	int32_t		depth = 0;
 	while (nvals > 0)
 	{
+		t_beg[2] = omp_get_wtime();		
 		GrB_mxm(F, N, NULL, to_grb.get_sr_plus_second(), Atr, F, desc_mxm_01);
+		stats.t_sigma_mxm += omp_get_wtime()-t_beg[2];
 
 		GrB_Matrix_nvals(&nvals, F);
 
@@ -99,9 +144,12 @@ grb_bc
 									 N, F, NULL);
 
 		++depth;
+		// std::cout << __FUNCTION__ << " sigma depth " << depth << std::endl;
 	}
 
-	// cout << "##sigma phase over" << std::endl;
+	stats.t_sigma = omp_get_wtime()-t_beg[1];
+
+	// std::cout << __FUNCTION__ << " ##sigma phase over" << std::endl;
 
 	GrB_Matrix Ninv = NULL;
 	GrB_Matrix_new(&Ninv, to_grb.get_type(), n, s);
@@ -121,6 +169,8 @@ grb_bc
 	GrB_Matrix W;
 	GrB_Matrix_new(&W, to_grb.get_type(), n, s);
 
+	t_beg[3] = omp_get_wtime();
+
 	// delta
 	for (int32_t d = depth-1; d > 0; --d)
 	{
@@ -128,15 +178,21 @@ grb_bc
 			(W, preds[d], NULL, to_grb.get_binary_times(),
 			 Ninv, BCu, GrB_DESC_R);
 
+		t_beg[4] = omp_get_wtime();
 		GrB_mxm(W, preds[d-1], NULL, to_grb.get_sr_plus_second(),
 				A, W, desc_mxm_02);
+		stats.t_delta_mxm += omp_get_wtime()-t_beg[4];
 
 		GrB_Matrix_eWiseMult_BinaryOp
 			(BCu, NULL, to_grb.get_binary_plus(),
 			 to_grb.get_binary_times(), W, N, NULL);
+
+		// std::cout << __FUNCTION__ << " delta depth " << d << std::endl;
 	}
 
-	// cout << "##delta phase over" << std::endl;
+	stats.t_delta = omp_get_wtime()-t_beg[3];
+
+	// cout << __FUNCTION__ << " ##delta phase over" << std::endl;
 
 
 	GrB_Matrix_reduce_BinaryOp(*delta, NULL, NULL,
@@ -150,8 +206,62 @@ grb_bc
 										  to_grb.get_binary_plus(), *delta,
 										  static_cast<NT>(-1.0*s), NULL);
 
-	GxB_Vector_fprint(*delta, "delta", GxB_COMPLETE, stdout);
+	stats.t_tot = omp_get_wtime()-t_beg[0];
 
+	// GxB_Vector_fprint(*delta, "delta", GxB_COMPLETE, stdout);
+}
+
+
+
+
+template <class IT,
+		  class NT>
+void
+grb_bc
+(
+  	const std::string	&inputName,
+	const std::string   &algorithmName,
+	size_t				 witers,
+	size_t				 niters,
+	vector<int>			&tnums,
+	GrB_Vector			*delta,
+	GrB_Matrix			 A,
+	vector<GrB_Index>	&srcs
+)
+{
+	stats_bc stats_tmp, stats;
+
+	for (int tnum : tnums)
+	{
+		GxB_Global_Option_set(GxB_GLOBAL_NTHREADS, tnum);
+		for (int i = 0; i < witers; ++i)
+		{
+            grb_bc_internal<IT, NT>(delta, A, srcs, stats_tmp);
+        }
+
+		stats = {0};
+		for (int i = 0; i < niters; ++i)
+		{
+            grb_bc_internal<IT, NT>(delta, A, srcs, stats_tmp);
+			stats += stats_tmp;
+        }
+
+
+		stats.scale(1e3/niters);
+		std::cout << std::setw(12) << "LOG;"
+		  << std::setw(20) << getFileName(inputName) << ";"
+		  << std::setw(50) << processAlgorithmName(algorithmName) << ";"
+		  << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ";"
+		  << std::setw(12) << tnum << ";"
+		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_tot << ";"
+		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_sigma<< ";"
+		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_delta << ";"
+		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_sigma_mxm << ";"
+		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_delta_mxm << ";"
+		  << std::endl;
+
+	}
+	
 
 	return;
 }
@@ -165,11 +275,9 @@ template <class IT,
 		  template<class, class> class CT = AT,
 		  template<class, class> class MT>
 void
-msp_bc
+msp_bc_internal
 (
-  	const std::string	&inputName,
-	const std::string 	&algorithmName,
-	void(*f_plain)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &,
+  	void(*f_plain)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &,
 				   const MT<IT, NT> &,
 				   NT(NT&, NT&),
 				   // multiplies<NT>,
@@ -179,17 +287,20 @@ msp_bc
 				  NT(NT&, NT&),
 				  // multiplies<NT>,
 				  plus<NT>, unsigned),
-	size_t				 witers,
-	size_t				 niters,
-	vector<int>			&tnums,
 	GrB_Vector			*delta,
 	GrB_Matrix			 A,
-	vector<GrB_Index>	&srcs
+	vector<GrB_Index>	&srcs,
+	stats_bc			&stats
 )
 {
 	static_assert(std::is_same<NT, float>::value ||
 				  std::is_same<NT, double>::value,
 				  "Matrix must be real type for betweenness centrality");
+
+	stats = {0};
+	double t_beg[5];
+	t_beg[0] = omp_get_wtime();
+	
 	GrB_Index			n, s, nnz;
 	GrbAlgObj<NT>		to_grb;
 	GrB_Matrix			F  = NULL, N = NULL, Atr = NULL;
@@ -217,15 +328,19 @@ msp_bc
 
 	AT<IT, NT> Atr_msp(Atr);
 
+	t_beg[1] = omp_get_wtime();
+
 	// sigma
 	GrB_Index	nvals = s;
 	int32_t		depth = 0;
 	while (nvals > 0)
 	{
 		BT<IT, NT> F_msp(F); MT<IT, NT> N_msp(N);
+		t_beg[2] = omp_get_wtime();
 		f_cmpl(Atr_msp, F_msp, F_msp, N_msp, f_second, plus<NT>(), tnum);
+		stats.t_sigma_mxm += omp_get_wtime()-t_beg[2];
 		F_msp.get_grb_mat(F); N_msp.get_grb_mat(N);
-
+		
 		GrB_Matrix_nvals(&nvals, F);
 
 		GrB_Matrix Ftmp = NULL;
@@ -236,9 +351,11 @@ msp_bc
 									 N, F, NULL);
 
 		++depth;
+		// std::cout << __FUNCTION__ << " sigma depth " << depth << std::endl;
 	}
 
-	// cout << "##sigma phase over" << std::endl;
+	stats.t_sigma = omp_get_wtime()-t_beg[1];
+	// cout << __FUNCTION__ << " ##sigma phase over" << std::endl;
 
 	GrB_Matrix Ninv = NULL;
 	GrB_Matrix_new(&Ninv, to_grb.get_type(), n, s);
@@ -260,6 +377,8 @@ msp_bc
 	
 	AT<IT, NT> A_msp(A);
 
+	t_beg[3] = omp_get_wtime();
+
 	// delta
 	for (int32_t d = depth-1; d > 0; --d)
 	{
@@ -267,16 +386,23 @@ msp_bc
 			(W, preds[d], NULL, to_grb.get_binary_times(),
 			 Ninv, BCu, GrB_DESC_R);
 
+		
 		BT<IT, NT> W_msp(W); MT<IT, NT> Pred_msp(preds[d-1]);
+		t_beg[4] = omp_get_wtime();
 		f_plain(A_msp, W_msp, W_msp, Pred_msp, f_second, plus<NT>(), tnum);		
+		stats.t_delta_mxm += omp_get_wtime()-t_beg[4];
 		W_msp.get_grb_mat(W); Pred_msp.get_grb_mat(preds[d-1]);
-
+		
 		GrB_Matrix_eWiseMult_BinaryOp
 			(BCu, NULL, to_grb.get_binary_plus(),
 			 to_grb.get_binary_times(), W, N, NULL);
+
+		// std::cout << __FUNCTION__ << " delta depth " << d << std::endl;
 	}
 
-	// cout << "##delta phase over" << std::endl;
+	stats.t_delta = omp_get_wtime()-t_beg[3];
+
+	// cout << __FUNCTION__ << " ##delta phase over" << std::endl;
 
 
 	GrB_Matrix_reduce_BinaryOp(*delta, NULL, NULL,
@@ -290,10 +416,83 @@ msp_bc
 										  to_grb.get_binary_plus(), *delta,
 										  static_cast<NT>(-1.0*s), NULL);
 
-	GxB_Vector_fprint(*delta, "delta", GxB_COMPLETE, stdout);
+	// GxB_Vector_fprint(*delta, "delta", GxB_COMPLETE, stdout);
 
+	stats.t_tot = omp_get_wtime()-t_beg[0];
 
 	A_msp.get_grb_mat(A);
+
+	return;
+}
+
+
+
+template <class IT,
+		  class NT,
+		  template<class, class> class AT,
+		  template<class, class> class BT,
+		  template<class, class> class CT = AT,
+		  template<class, class> class MT>
+void
+msp_bc
+(
+ 	const std::string &inputName,
+	const std::string &algorithmName,
+  	void(*f_plain)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &,
+				   const MT<IT, NT> &,
+				   NT(NT&, NT&),
+				   // multiplies<NT>,
+				   plus<NT>, unsigned),
+	void(*f_cmpl)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &,
+				  const MT<IT, NT> &,
+				  NT(NT&, NT&),
+				  // multiplies<NT>,
+				  plus<NT>, unsigned),
+	size_t				 witers,
+	size_t				 niters,
+	vector<int>			&tnums,
+	GrB_Vector			*delta,
+	GrB_Matrix			 A,
+	vector<GrB_Index>	&srcs
+	
+)
+{
+	stats_bc stats_tmp, stats;
+
+	for (int tnum : tnums)
+	{
+		GxB_Global_Option_set(GxB_GLOBAL_NTHREADS, tnum);
+		omp_set_num_threads(tnum);
+		for (int i = 0; i < witers; ++i)
+		{
+            msp_bc_internal<IT, NT, AT, BT, CT, MT>(f_plain, f_cmpl, delta,
+													A, srcs, stats_tmp);
+        }
+
+		stats = {0};
+		for (int i = 0; i < niters; ++i)
+		{
+            msp_bc_internal<IT, NT, AT, BT, CT, MT>(f_plain, f_cmpl, delta,
+													A, srcs, stats_tmp);
+			stats += stats_tmp;
+        }
+
+
+		stats.scale(1e3/niters);
+		std::cout << std::setw(12) << "LOG;"
+		  << std::setw(20) << getFileName(inputName) << ";"
+		  << std::setw(50) << processAlgorithmName(algorithmName) << ";"
+		  << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ";"
+		  << std::setw(12) << tnum << ";"
+		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_tot << ";"
+		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_sigma<< ";"
+		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_delta << ";"
+		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_sigma_mxm << ";"
+		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_delta_mxm << ";"
+		  << std::endl;
+
+	}
+	
 
 	return;
 }
@@ -381,26 +580,27 @@ main
 		srcs.push_back(i);
 	random_shuffle(srcs.begin(), srcs.end());
 	srcs.resize(s);
-	// srcs = {0,1,2,3,4,5,6,7};
+	std::cout << "#source vertices " << srcs.size() << std::endl;
 	GrB_Vector delta = NULL;
 
 	for (size_t i = 0; i < outerIters; i++)
 	{
-		grb_bc<Index_t, Value_t>("GxB_AxB_DEFAULT", warmupIters, innerIters,
+		grb_bc<Index_t, Value_t>(fileName, "GxB_AxB_DEFAULT",
+								 warmupIters, innerIters,
 								 tnums, &delta, Ain, srcs);
 
 		if (mode == "heap" || mode == "all") {
-            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 0>::Impl>),
-					(MaskedSpGEMM1p<MaskedHeap<true, true, 0>::Impl>));
-            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 0>::Impl>),
-					(MaskedSpGEMM2p<MaskedHeap<true, true, 0>::Impl>));
+            // RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 0>::Impl>),
+			// 		(MaskedSpGEMM1p<MaskedHeap<true, true, 0>::Impl>));
+            // RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 0>::Impl>),
+			// 		(MaskedSpGEMM2p<MaskedHeap<true, true, 0>::Impl>));
         }
 
         if (mode == "hash" || mode == "all") {
-            RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>),
-					(MaskedSpGEMM1p<MaskedHash<true, false>::Impl>));
-            RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>),
-					(MaskedSpGEMM2p<MaskedHash<true, false>::Impl>));
+            // RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>),
+			// 		(MaskedSpGEMM1p<MaskedHash<true, false>::Impl>));
+            // RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>),
+			// 		(MaskedSpGEMM2p<MaskedHash<true, false>::Impl>));
 
             // RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, true>::Impl>),
 			// 		(MaskedSpGEMM1p<MaskedHash<true, true>::Impl>));
@@ -411,18 +611,18 @@ main
         if (mode == "msa" || mode == "all") {
             RUN_CSR((MaskedSpGEMM1p<MSA1A<false, false>::Impl>),
 					(MaskedSpGEMM1p<MSA1A<true, false>::Impl>));
-            RUN_CSR((MaskedSpGEMM2p<MSA1A<false, false>::Impl>),
-					(MaskedSpGEMM2p<MSA1A<true, false>::Impl>));
+            // RUN_CSR((MaskedSpGEMM2p<MSA1A<false, false>::Impl>),
+			// 		(MaskedSpGEMM2p<MSA1A<true, false>::Impl>));
 
             // RUN_CSR((MaskedSpGEMM1p<MSA1A<false, true>::Impl>),
 			// 		(MaskedSpGEMM1p<MSA1A<true, true>::Impl>));
             // RUN_CSR((MaskedSpGEMM2p<MSA1A<false, true>::Impl>),
 			// 		(MaskedSpGEMM2p<MSA1A<true, true>::Impl>));
 
-            RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>),
-					(MaskedSpGEMM1p<MSA2A<true, false>::Impl>));
-            RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>),
-					(MaskedSpGEMM2p<MSA2A<true, false>::Impl>));
+            // RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>),
+			// 		(MaskedSpGEMM1p<MSA2A<true, false>::Impl>));
+            // RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>),
+			// 		(MaskedSpGEMM2p<MSA2A<true, false>::Impl>));
 
             // RUN_CSR((MaskedSpGEMM1p<MSA2A<false, true>::Impl>),
 			// 		(MaskedSpGEMM1p<MSA2A<true, true>::Impl>));

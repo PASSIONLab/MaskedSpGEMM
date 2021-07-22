@@ -100,6 +100,7 @@ public:
   }
   void Sorted();
 
+
   void get_grb_mat(GrB_Matrix *A);
   void get_grb_mat(GrB_Matrix A);
   void get_grb_mat_ptr(GrB_Matrix *A); // sets CSR object's pointers to NULL

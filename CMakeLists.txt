@@ -43,11 +43,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(otx)
 
-# add_example(masked-all benchmarks/MaskedAllSpGEMM.cpp)
-# add_example(complement-masked-all benchmarks/ComplementMaskedSpGEMM.cpp)
-# add_example(tricnt-all benchmarks/TriCntAll.cpp)
-# add_example(tricnt-all-grb benchmarks/TriCntAllGrb.cpp)
-# add_example(ktruss-all-grb benchmarks/KTrussAllGrb.cpp)
+add_example(masked-all benchmarks/MaskedAllSpGEMM.cpp)
+add_example(complement-masked-all benchmarks/ComplementMaskedSpGEMM.cpp)
+add_example(tricnt-all benchmarks/TriCntAll.cpp)
+add_example(tricnt-all-grb benchmarks/TriCntAllGrb.cpp)
+add_example(ktruss-all-grb benchmarks/KTrussAllGrb.cpp)
 add_example(bc-all-grb benchmarks/BCAllGrb.cpp)
 # add_example(test-grb sample/test_grb.cpp)
 
