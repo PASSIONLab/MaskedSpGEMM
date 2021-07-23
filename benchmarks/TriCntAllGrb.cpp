@@ -401,7 +401,7 @@ main (int argc,
             RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
         }
 
-         if (mode == "all1p" || mode == "benchmark")
+         if (mode == "all1p")
 		 {
              RUN_CSR_CSC(MaskedSpGEMM1p<MaskedInner>);
              RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 1>::Impl>));
@@ -412,7 +412,7 @@ main (int argc,
              RUN_CSR((MaskedSpGEMM1p<MCA<false, false>::Impl>));
          }
 
-         if (mode == "all2p" || mode == "benchmark")
+         if (mode == "all2p")
 		 {
              RUN_CSR_CSC(MaskedSpGEMM2p<MaskedInner>);
              RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 1>::Impl>));
