@@ -780,7 +780,55 @@ read_grb_mtx
 	return;
 }
 
+template <typename NT>
+void
+sort_by_degree
+        (
+                GrB_Matrix *A
+        )
+{
+    GrB_Index nnz;
+    GrB_Index nrows;
+    GrB_Index ncols;
+    GrB_Matrix_nvals(&nnz, *A);
+    GrB_Matrix_nrows(&nrows, *A);
+    GrB_Matrix_ncols(&ncols, *A);
 
+    auto rids = new GrB_Index[nnz];
+    auto cids = new GrB_Index[nnz];
+    auto vals = new NT[nnz];
+    GrbMatrixExtractTuples<NT>{}(rids, cids, vals, &nnz, *A);
+
+    auto cnts = new std::pair<GrB_Index, GrB_Index>[nrows];
+    for (GrB_Index i = 0; i < nrows; ++i) {
+        cnts[i].first = 0;
+        cnts[i].second = i;
+    }
+
+    for (GrB_Index i = 0; i < nnz; ++i) {
+        ++cnts[rids[i]].first;
+    }
+    std::sort(cnts, cnts + nrows, std::greater<>{});
+
+    auto mapping = new GrB_Index[nrows];
+    for (GrB_Index i = 0; i < nrows; i++) {
+        mapping[cnts[i].second] = i;
+    }
+
+    for (GrB_Index i = 0; i < nnz; ++i) {
+        rids[i] = mapping[rids[i]];
+        cids[i] = mapping[cids[i]];
+    }
+
+    delete[] mapping;
+    delete[] cnts;
+
+    GrbMatrixBuild<NT>()(A, rids, cids, vals, nrows, ncols, nnz);
+
+    delete[] rids;
+    delete[] cids;
+    delete[] vals;
+}
 
 template <typename NT>
 void
@@ -803,6 +851,38 @@ get_lowtri
 	return;	
 }
 
+template <typename NT>
+void
+convert_to_csc
+(
+        GrB_Matrix A,
+        GrB_Matrix *A_csc
+) {
+    GrB_Index nnz;
+    GrB_Index nrows;
+    GrB_Index ncols;
+    GrB_Matrix_nvals(&nnz, A);
+    GrB_Matrix_nrows(&nrows, A);
+    GrB_Matrix_ncols(&ncols, A);
+
+    auto rids = new GrB_Index[nnz];
+    auto cids = new GrB_Index[nnz];
+    auto vals = new NT[nnz];
+    GrbMatrixExtractTuples<NT>{}(rids, cids, vals, &nnz, A);
+
+    GxB_Format_Value old;
+    GxB_Global_Option_get(GxB_FORMAT, &old);
+    GxB_Global_Option_set(GxB_FORMAT, GxB_BY_COL);
+
+    GrB_Matrix_new(A_csc, GrbAlgObj<NT>{}.get_type(), nrows, ncols);
+    GrbMatrixBuild<NT>{}(A_csc, rids, cids, vals, nrows, ncols, nnz);
+
+    GxB_Global_Option_set(GxB_FORMAT, old);
+
+    delete[] rids;
+    delete[] cids;
+    delete[] vals;
+}
 
 
 

@@ -14,6 +14,10 @@
 #include "BitMap.h"
 #include "utility.h"
 #include <numeric>
+extern "C"
+{
+#include "GraphBLAS.h"
+}
 
 #include "Triple.h"
 extern "C" {
@@ -65,6 +69,7 @@ public:
   CSC(graph &G);
   CSC(IT *ri, IT *ci, NT *val, IT mynnz, IT m, IT n);
   CSC(const CSC<IT, NT> &rhs);                    // copy constructor
+  CSC (GrB_Matrix A);
   CSC<IT, NT> &operator=(const CSC<IT, NT> &rhs); // assignment operator
   bool operator==(const CSC<IT, NT> &rhs);        // ridefinizione ==
 
@@ -83,6 +88,7 @@ public:
   void intersect(const IT *rowids_in, const NT *values_in, const IT len_in,
                  const IT *ri, const IT len_ri, IT *rowids_out, NT *values_out,
                  IT *len_out);
+    void get_grb_mat(GrB_Matrix A);
 
   IT rows;
   IT cols;
@@ -312,6 +318,47 @@ CSC<IT,NT>::CSC(std::vector<std::pair<int64_t, int64_t>> edges, IT mynnz, IT m, 
     }
     my_free<IT>(work);
 }
+
+template <class IT,
+        class NT>
+CSC<IT, NT>::CSC (GrB_Matrix A)
+{
+    static_assert(std::is_same<IT, GrB_Index>::value,
+                  "CSR matrix index type and GrB_Matrix index type "
+                  "must be the same");
+
+    bool			is_iso, is_jumbled;
+    GrB_Index		ap_size, aj_size, ax_size;
+    GrB_Index		nr, nc, nnz;
+    GrB_Descriptor	desc = NULL;
+
+    GrB_Descriptor_new(&desc);
+
+    GrB_Matrix_nrows(&nr, A);
+    GrB_Matrix_ncols(&nc, A);
+    GrB_Matrix_nvals(&nnz, A);
+    this->rows = nr;
+    this->cols = nc;
+    this->nnz  = nnz;
+
+    // does not free the matrix, but the matrix has no entries after this
+    GxB_Matrix_unpack_CSC(A,
+                          &this->colptr,
+                          &this->rowids,
+                          (void **)&this->values,
+                          &ap_size,
+                          &aj_size,
+                          &ax_size,
+                          &is_iso,
+                          &is_jumbled,
+                          desc);
+    assert(!is_iso && "GraphBLAS matrix is iso-valued.");
+    assert(!is_jumbled && "GraphBLAS matrix is not sorted\n");
+
+
+    return;
+}
+
 
 template <class IT, class NT>
 template <typename AddOperation>
@@ -549,6 +596,48 @@ void CSC<IT, NT>::intersect(const IT *rowids_in, const NT *values_in,
   }
   // else // use finger search
   {}
+}
+
+template <typename IT,
+        typename NT>
+void
+CSC<IT, NT>::get_grb_mat
+        (
+                GrB_Matrix A
+        )
+{
+    assert(A != NULL && "GraphBLAS matrix to be packed is NULL!");
+
+    GrB_Index nr, nc;
+    GrB_Matrix_nrows(&nr, A);
+    GrB_Matrix_ncols(&nc, A);
+
+    assert(nr == this->rows && nc == this->cols &&
+           "Dimension mismatch in converting CSR matrix to GraphBLAS matrix.");
+
+    bool is_iso = false, is_jumbled = false;
+    GrB_Index ap_size = sizeof(IT) * (this->rows+1),
+            aj_size = sizeof(IT) * this->nnz,
+            ax_size = sizeof(NT) * this->nnz;
+
+    GrB_Descriptor desc = NULL;
+    GrB_Descriptor_new(&desc);
+
+    GxB_Matrix_pack_CSC(A,
+                        &this->colptr,
+                        &this->rowids,
+                        (void **)&this->values,
+                        ap_size,
+                        aj_size,
+                        ax_size,
+                        is_iso,
+                        is_jumbled,
+                        desc);
+    assert(this->rowptr == NULL && this->colids == NULL &&
+           this->values == NULL);
+
+
+    return;
 }
 
 template <class IT, class NT>
