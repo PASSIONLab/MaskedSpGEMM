@@ -633,7 +633,7 @@ CSC<IT, NT>::get_grb_mat
                         is_iso,
                         is_jumbled,
                         desc);
-    assert(this->rowptr == NULL && this->colids == NULL &&
+    assert(this->colptr == NULL && this->rowids == NULL &&
            this->values == NULL);
 
 
