@@ -331,10 +331,10 @@ main (int argc,
                      })) {
                 std::string name = "GxB_AxB_" + std::get<1>(method);
                 GxB_Desc_set(desc_mxm, GxB_AxB_METHOD, std::get<0>(method));
-                GxB_Desc_set(desc_mxm, GxB_SORT, 0);
-                grb_tri_count_sandia_L<Index_t, Value_t>
-                        (fileName, name, std::get<2>(method), std::get<3>(method),
-                         warmupIters, innerIters, tnums, flop, desc_mxm);
+//                GxB_Desc_set(desc_mxm, GxB_SORT, 0);
+//                grb_tri_count_sandia_L<Index_t, Value_t>
+//                        (fileName, name, std::get<2>(method), std::get<3>(method),
+//                         warmupIters, innerIters, tnums, flop, desc_mxm);
 
                 name += "-sorted";
                 GxB_Desc_set(desc_mxm, GxB_SORT, 1); // want output sorted
@@ -429,16 +429,14 @@ main (int argc,
              RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>));
              RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>));
              RUN_CSR((MaskedSpGEMM1p<MCA<false, false>::Impl>));
+             RUN_CSR_CSC(MaskedSpGEMM1p<MaskedInner>);
 
              RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 1>::Impl>));
              RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
              RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>));
              RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>));
              RUN_CSR((MaskedSpGEMM2p<MCA<false, false>::Impl>));
-
-             RUN_CSR_CSC(MaskedSpGEMM1p<MaskedInner>);
              RUN_CSR_CSC(MaskedSpGEMM2p<MaskedInner>);
-
          }
 	}
 
