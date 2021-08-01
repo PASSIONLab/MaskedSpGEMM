@@ -44,24 +44,22 @@ void
 grb_ktruss
 (
   	const std::string   &inputName,
+  	const std::string   &algorithmName,
     const GrB_Matrix	 A,
 	size_t				 witers,
 	size_t				 niters,
 	vector<int>			&tnums,
-	int 				 k
+	int 				 k,
+	GrB_Descriptor desc_mxm
 )
 {
 	GrB_Index		n, nnz;
 	GrbAlgObj<NT>	to_grb;
 	GxB_Scalar		s = NULL;
 
-	GrB_Descriptor desc_mxm = NULL;
-	GrB_Descriptor_new(&desc_mxm);
-	GxB_Desc_set(desc_mxm, GxB_SORT, 1);
-
 	GxB_Scalar_new(&s, GrB_UINT64);
 	GxB_Scalar_setElement_UINT64(s, (uint64_t)k-2);
-	GrB_Matrix_nrows(&n, A);	
+	GrB_Matrix_nrows(&n, A);
 
 	for (int tnum : tnums)
 	{
@@ -70,41 +68,11 @@ grb_ktruss
 		GrB_Index nnz_cur, nnz_last;
 		int64_t nsteps;
 
-		// Warmup
-		for (int i = 0; i < witers; ++i)
-		{
-			GrB_Matrix T = NULL;
-			GrB_Matrix_nvals(&nnz_last, A);
-			nsteps = 1;
-			for ( ; ; ++nsteps)
-			{
-				if (nsteps == 1)
-					T = A;
-
-				GrB_Matrix C = NULL;
-				GrB_Matrix_new(&C, to_grb.get_type(), n, n);
-
-				GrB_mxm(C, T, NULL, to_grb.get_sr_plus_pair(), T, T, desc_mxm);
-				GxB_Matrix_select(C, NULL, NULL, GxB_GE_THUNK, C, s, NULL);
-
-				if (nsteps > 1)	// don't clear A
-					GrB_Matrix_clear(T);
-				T = C;
-
-				GrB_Matrix_nvals(&nnz_cur, C);
-				if (nnz_last == nnz_cur)
-					break;
-				nnz_last = nnz_cur;
-			}
-		}
-
-
 		double t_tot = 0, t_mxm = 0;
-		t_tot = omp_get_wtime();
 
-		
-		for (int i = 0; i < niters; ++i)
+		for (int i = 0; i < witers + niters; ++i)
 		{
+		    double start_iter = omp_get_wtime();
 			GrB_Matrix T = NULL;
 			GrB_Matrix_nvals(&nnz_last, A);
 			nsteps = 1;
@@ -119,21 +87,28 @@ grb_ktruss
 				double start = omp_get_wtime();
 				GrB_mxm(C, T, NULL, to_grb.get_sr_plus_pair(), T, T, desc_mxm);
 				double end = omp_get_wtime();
-				t_mxm += (end-start) * 1e3;
+				if (i >= witers) { t_mxm += (end-start); }
 				
 				GxB_Matrix_select(C, NULL, NULL, GxB_GE_THUNK, C, s, NULL);
 
 				if (nsteps > 1)	// don't clear A
-					GrB_Matrix_clear(T);
+					GrB_Matrix_free(&T);
 				T = C;
 
 				GrB_Matrix_nvals(&nnz_cur, C);
+
 				// if (i == 0)
 				// 	std::cout << "step " << nsteps
 				// 			  << " nnz " << nnz_cur << std::endl;
 				if (nnz_last == nnz_cur)
 					break;
 				nnz_last = nnz_cur;
+			}
+			GrB_Matrix_free(&T);
+
+			double end_iter = omp_get_wtime();
+			if (i >= witers) {
+			    t_tot += end_iter - start_iter;
 			}
 
 			// if (i == 0)
@@ -143,18 +118,19 @@ grb_ktruss
 		}
 
 
-		t_tot = omp_get_wtime() - t_tot;
+		t_mxm *= 1e3;
 		t_tot *= 1e3;
 		t_tot /= (double)niters;
 		t_mxm /= (double)niters;
 
 		std::cout << "LOG,"
                   << std::setw(20) << getFileName(inputName) << ","
-			// << std::setw(50) << processAlgorithmName(algorithmName) << ","
+			      << std::setw(50) << processAlgorithmName(algorithmName) << ","
                   << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ","
                   << std::setw(5) << tnum << ","
                   << std::setw(15) << std::setprecision(4) << std::fixed << t_tot << ","
-			<< std::setw(15) << std::setprecision(4) << std::fixed << t_mxm << ","
+                  << std::setw(15) << std::setprecision(4) << std::fixed << t_mxm << ","
+                  << std::setw(15) << std::setprecision(4) << std::fixed << 0.0 << ","
 			// << std::setw(15) << std::setprecision(4) << std::fixed << mflops << ","
                   << std::setw(10) << nnz_last << ","
                   << std::setw(10) << nsteps << ","
@@ -179,7 +155,7 @@ msp_ktruss
     const std::string &inputName,
 	const std::string &algorithmName,
 	void(*f)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &,
-			 const MT<IT, NT> &, NT(NT, NT), plus<NT>, unsigned),
+			 const MT<IT, NT> &, NT(NT&, NT&), plus<NT>, unsigned),
 	size_t		 witers,
 	size_t		 niters,
 	vector<int> &tnums,
@@ -190,7 +166,7 @@ msp_ktruss
 	GrB_Index		n, nnz;
 	GrbAlgObj<NT>	to_grb;
 	GxB_Scalar		s = NULL;
-	auto			f_one = [] (NT arg1, NT arg2) -> NT {return (NT) 1;};
+	auto			f_one = [] (NT& arg1, NT& arg2) -> NT {return (NT) 1;};
 
 	GxB_Scalar_new(&s, GrB_UINT64);
 	GxB_Scalar_setElement_UINT64(s, (uint64_t)k-2);
@@ -203,10 +179,13 @@ msp_ktruss
 		GrB_Index nnz_cur, nnz_last;
 		int64_t nsteps;
 
-		// Warmup
-		for (int i = 0; i < witers; ++i)
+		double t_tot = 0, t_mxm = 0, t_tran = 0;
+
+		for (int i = 0; i < witers + niters; ++i)
 		{
-			GrB_Matrix T = NULL;
+		    double start_iter = omp_get_wtime();
+
+		    GrB_Matrix T = NULL;
 			GrB_Matrix_nvals(&nnz_last, A);
 			nsteps = 1;
 			for ( ; ; ++nsteps)
@@ -217,54 +196,39 @@ msp_ktruss
 				GrB_Matrix C = NULL;
 				GrB_Matrix_new(&C, to_grb.get_type(), n, n);
 
-				AT<IT, NT> T_msp(T); CT<IT, NT> C_msp(C);
-				f(T_msp, T_msp, C_msp, T_msp, f_one, plus<NT>(), tnum);
-				C_msp.get_grb_mat(C); T_msp.get_grb_mat(T);
-								
-				GxB_Matrix_select(C, NULL, NULL, GxB_GE_THUNK, C, s, NULL);
+				GrB_Matrix T2;
+				if constexpr(!std::is_same_v<AT<IT, NT>, BT<IT, NT>>) {
+				    double start_tran = omp_get_wtime();
+				    GxB_Format_Value old;
+				    GxB_Global_Option_get(GxB_FORMAT, &old);
+				    GxB_Global_Option_set(GxB_FORMAT, GxB_BY_COL);
+				    GrB_Matrix_new(&T2, to_grb.get_type(), n, n);
+				    GrB_transpose(T2, GrB_NULL, GrB_NULL, T, GrB_DESC_T0);
+				    GxB_Global_Option_set(GxB_FORMAT, old);
+                    double end_tran = omp_get_wtime();
+                    if (i >= witers) { t_tran += (end_tran - start_tran); }
+				}
 
-				if (nsteps > 1)	// don't clear A
-					GrB_Matrix_clear(T);
-				T = C;
+				AT<IT, NT> T1_msp(T); CT<IT, NT> C_msp(C);
 
-				GrB_Matrix_nvals(&nnz_cur, C);
-				if (nnz_last == nnz_cur)
-					break;
-				nnz_last = nnz_cur;
-			}
-		}
-
-
-		double t_tot = 0, t_mxm = 0;
-		t_tot = omp_get_wtime();
-
-		
-		for (int i = 0; i < niters; ++i)
-		{
-			GrB_Matrix T = NULL;
-			GrB_Matrix_nvals(&nnz_last, A);
-			nsteps = 1;
-			for ( ; ; ++nsteps)
-			{
-				if (nsteps == 1)
-					T = A;
-
-				GrB_Matrix C = NULL;
-				GrB_Matrix_new(&C, to_grb.get_type(), n, n);
-
-				AT<IT, NT> T_msp(T); CT<IT, NT> C_msp(C);
-				
 				double start = omp_get_wtime();
-				f(T_msp, T_msp, C_msp, T_msp, f_one, plus<NT>(), tnum);
+				if constexpr(std::is_same_v<AT<IT, NT>, BT<IT, NT>>) {
+				    f(T1_msp, T1_msp, C_msp, T1_msp, f_one, plus<NT>(), tnum);
+				} else {
+                    BT<IT, NT> T2_msp = BT<IT, NT>(T2);
+                    f(T1_msp, T2_msp, C_msp, T1_msp, f_one, plus<NT>(), tnum);
+                    T2_msp.get_grb_mat(T2);
+                    GrB_Matrix_free(&T2);
+				}
 				double end = omp_get_wtime();
-				t_mxm += (end-start) * 1e3;
+				if (i >= witers) { t_mxm += (end-start); }
 
-				C_msp.get_grb_mat(C); T_msp.get_grb_mat(T);
+				C_msp.get_grb_mat(C); T1_msp.get_grb_mat(T);
 				
 				GxB_Matrix_select(C, NULL, NULL, GxB_GE_THUNK, C, s, NULL);
 
 				if (nsteps > 1)	// don't clear A
-					GrB_Matrix_clear(T);
+					GrB_Matrix_free(&T);
 				T = C;
 
 				GrB_Matrix_nvals(&nnz_cur, C);
@@ -276,6 +240,12 @@ msp_ktruss
 					break;
 				nnz_last = nnz_cur;
 			}
+			GrB_Matrix_free(&T);
+
+			double end_iter = omp_get_wtime();
+			if (i >= witers) {
+			    t_tot += end_iter - start_iter;
+			}
 
 			// if (i == 0)
 			// 	std::cout << "[" << tnum << "] number of edges in "
@@ -284,10 +254,12 @@ msp_ktruss
 		}
 
 
-		t_tot = omp_get_wtime() - t_tot;
+		t_mxm *= 1e3;
 		t_tot *= 1e3;
+		t_tran *= 1e3;
 		t_tot /= (double)niters;
 		t_mxm /= (double)niters;
+		t_tran /= (double)niters;
 
 		std::cout << "LOG,"
                   << std::setw(20) << getFileName(inputName) << ","
@@ -295,7 +267,8 @@ msp_ktruss
                   << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ","
                   << std::setw(5) << tnum << ","
                   << std::setw(15) << std::setprecision(4) << std::fixed << t_tot << ","
-			<< std::setw(15) << std::setprecision(4) << std::fixed << t_mxm << ","
+                  << std::setw(15) << std::setprecision(4) << std::fixed << t_mxm << ","
+                  << std::setw(15) << std::setprecision(4) << std::fixed << t_tran << ","
 			// << std::setw(15) << std::setprecision(4) << std::fixed << mflops << ","
                   << std::setw(10) << nnz_last << ","
                   << std::setw(10) << nsteps << ","
@@ -314,6 +287,8 @@ msp_ktruss
 #define RUN_CSR_1P(ALG) RUN_CSR_IMPL(#ALG "-1P", MaskedSpGEMM1p<ALG>)
 #define RUN_CSR_2P(ALG) RUN_CSR_IMPL(#ALG "-2P", MaskedSpGEMM2p<ALG>)
 
+#define RUN_CSR_CSC_IMPL(NAME, FUNC) msp_ktruss<Index_t, Value_t, CSR, CSC, CSR, CSR>(fileName, NAME, FUNC, warmupIters, innerIters, tnums, Ain, k)
+#define RUN_CSR_CSC(ALG) RUN_CSR_CSC_IMPL(#ALG, ALG)
 
 
 int
@@ -339,7 +314,9 @@ main
 	{
         // cout << "Running on " << argv[2] << " processors" << endl << endl;
         // tnums = {atoi(argv[2])};
-		tnums = {1, 2, 4, 8, 16, 32, 64};
+        for (int i = 3; i < argc; i++) {
+            tnums.emplace_back(atoi(argv[i]));
+        }
     }
 
 
@@ -352,12 +329,17 @@ main
 	GrB_Matrix			Ain	  = NULL;
 	GrB_Index			n, nnz;	
 	int nthreads;
-	
+
+	double bswitch [GxB_NBITMAP_SWITCH];
+	std::fill(bswitch, bswitch + GxB_BITMAP_SWITCH, 1.0);
+	GxB_Global_Option_set(GxB_BITMAP_SWITCH, bswitch);
+	GxB_Global_Option_set(GxB_HYPER_SWITCH, GxB_NEVER_HYPER);
 	GxB_Global_Option_set(GxB_FORMAT, GxB_BY_ROW); // CSR in GraphBLAS
 	GxB_Global_Option_get(GxB_GLOBAL_NTHREADS, &nthreads);
 	std::cout << "nthreads (graphblas) " << nthreads << std::endl;
 
 	read_grb_mtx<Value_t>(&Ain, argv[1], true, true, true);
+
 
 	// @formatter:off
     size_t outerIters  = std::getenv("OUTER_ITERS")  ?
@@ -383,8 +365,34 @@ main
 
 	for (size_t i = 0; i < outerIters; i++)
 	{
-		grb_ktruss<Index_t, Value_t>("GxB_AxB_DEFAULT", Ain,
-									 warmupIters, innerIters, tnums, k);
+	    if (mode == "grb" || mode == "all" || mode == "benchmark") {
+	        GrB_Descriptor desc_mxm = NULL;
+	        GrB_Descriptor_new(&desc_mxm);
+	        GxB_Desc_set(desc_mxm, GrB_MASK, GrB_STRUCTURE);
+
+	        for (const auto &method : std::vector<std::tuple<
+	        GrB_Desc_Value, std::string, GrB_Matrix>>
+	        ({
+	            {GxB_DEFAULT,       "DEFAULT",       Ain},
+	            {GxB_AxB_DOT,       "DOT-TRANSPOSE", Ain},
+	            {GxB_AxB_SAXPY,     "SAXPY",         Ain},
+	            {GxB_AxB_GUSTAVSON, "GUSTAVSON",     Ain},
+	            {GxB_AxB_HASH,      "HASH",          Ain},
+	            })) {
+	            std::string name = "GxB_AxB_" + std::get<1>(method);
+	            GxB_Desc_set(desc_mxm, GxB_AxB_METHOD, std::get<0>(method));
+	            //                GxB_Desc_set(desc_mxm, GxB_SORT, 0);
+	            //                grb_tri_count_sandia_L<Index_t, Value_t>
+	            //                        (fileName, name, std::get<2>(method), std::get<3>(method),
+	            //                         warmupIters, innerIters, tnums, flop, desc_mxm);
+
+	            name += "-sorted";
+	            GxB_Desc_set(desc_mxm, GxB_SORT, 1); // want output sorted
+	            grb_ktruss<Index_t, Value_t>
+	            (fileName, name, std::get<2>(method),
+                 warmupIters, innerIters, tnums, k, desc_mxm);
+	        }
+	    }
 
         if (mode == "msa" || mode == "all")
 		{
@@ -434,28 +442,44 @@ main
             RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
         }
 		
-        // if (mode == "all1p")
-		// {
-        //     RUN_CSR_CSC(MaskedSpGEMM1p<MaskedInner>);
-        //     RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 1>::Impl>));
-        //     RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
-        //     RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>));
-        //     RUN_CSR((MaskedSpGEMM1p<MSA1A<false, false>::Impl>));
-        //     RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>));
-        //     RUN_CSR((MaskedSpGEMM1p<MCA<false, false>::Impl>));
-        //     RUN_CSR(MaskedSpGEMM1p);
-        // }
+         if (mode == "all1p")
+		 {
+             RUN_CSR_CSC(MaskedSpGEMM1p<MaskedInner>);
+             RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 1>::Impl>));
+             RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+             RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>));
+             RUN_CSR((MaskedSpGEMM1p<MSA1A<false, false>::Impl>));
+             RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>));
+             RUN_CSR((MaskedSpGEMM1p<MCA<false, false>::Impl>));
+             RUN_CSR(MaskedSpGEMM1p);
+         }
 
-        // if (mode == "all2p")
-		// {
-        //     RUN_CSR_CSC(MaskedSpGEMM2p<MaskedInner>);
-        //     RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 1>::Impl>));
-        //     RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
-        //     RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>));
-        //     RUN_CSR((MaskedSpGEMM2p<MSA1A<false, false>::Impl>));
-        //     RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>));
-        //     RUN_CSR((MaskedSpGEMM2p<MCA<false, false>::Impl>));
-        // }
+         if (mode == "all2p")
+		 {
+             RUN_CSR_CSC(MaskedSpGEMM2p<MaskedInner>);
+             RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 1>::Impl>));
+             RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+             RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>));
+             RUN_CSR((MaskedSpGEMM2p<MSA1A<false, false>::Impl>));
+             RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>));
+             RUN_CSR((MaskedSpGEMM2p<MCA<false, false>::Impl>));
+         }
+
+        if (mode == "benchmark") {
+            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 1>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MCA<false, false>::Impl>));
+            RUN_CSR_CSC(MaskedSpGEMM1p<MaskedInner>);
+
+            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 1>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MCA<false, false>::Impl>));
+            RUN_CSR_CSC(MaskedSpGEMM2p<MaskedInner>);
+        }
 	}
 	
 	

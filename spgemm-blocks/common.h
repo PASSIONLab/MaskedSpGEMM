@@ -132,7 +132,7 @@ void initC(const AT<IT, NT> &A, const BT<IT, NT> &B, CT<IT, NT> &C, IT *threadsN
     auto nrows = A.rows;
     auto ncols = B.cols;
 
-    if (!C.isEmpty()) { C.make_empty(); }
+    C.make_empty();
 
     C.rows = nrows;
     C.cols = ncols;

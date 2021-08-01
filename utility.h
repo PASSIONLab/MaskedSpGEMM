@@ -119,7 +119,11 @@ template <typename T> inline T *my_malloc(size_t array_size, bool init = true) {
 // #ifdef CPP
 // global_blockers[blocker_id] = static_cast<TripleNode*>(::operator new(SIZE * flops_by_row_blockers[blocker_id]));
   // T *a = static_cast<T*>(::operator new(array_size * sizeof(T)));
-   T * a = new T[array_size];
+
+  // GraphBLAS Compatibility
+//   T * a = new T[array_size];
+   auto a = static_cast<T*>(malloc(sizeof(T) * array_size));
+
   // T *a;
   // a = (T*) aligned_alloc(4096, array_size * sizeof(T));
 // #pragma omp parallel
@@ -145,7 +149,9 @@ if (init) {
 // Memory deallocation
 template <typename T> inline void my_free(T *a) {
 #ifdef CPP
-  delete[] a;
+  // GraphBLAS Compatibility
+//  delete[] a;
+    free(a);
 #elif defined IMM
   _mm_free(a);
 #elif defined TBB

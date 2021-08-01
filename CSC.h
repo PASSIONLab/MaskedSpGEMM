@@ -342,6 +342,20 @@ CSC<IT, NT>::CSC (GrB_Matrix A)
     this->nnz  = nnz;
 
     // does not free the matrix, but the matrix has no entries after this
+//    GxB_Matrix_unpack_CSC(A,
+//                          &this->colptr,
+//                          &this->rowids,
+//                          (void **)&this->values,
+//                          &ap_size,
+//                          &aj_size,
+//                          &ax_size,
+//                          &is_iso,
+//                          &is_jumbled,
+//                          desc);
+//    assert(!is_iso && "GraphBLAS matrix is iso-valued.");
+//    assert(!is_jumbled && "GraphBLAS matrix is not sorted\n");
+
+    // force sorted output
     GxB_Matrix_unpack_CSC(A,
                           &this->colptr,
                           &this->rowids,
@@ -349,12 +363,9 @@ CSC<IT, NT>::CSC (GrB_Matrix A)
                           &ap_size,
                           &aj_size,
                           &ax_size,
-                          &is_iso,
-                          &is_jumbled,
+                          nullptr,
+                          nullptr,
                           desc);
-    assert(!is_iso && "GraphBLAS matrix is iso-valued.");
-    assert(!is_jumbled && "GraphBLAS matrix is not sorted\n");
-
 
     return;
 }
@@ -636,6 +647,7 @@ CSC<IT, NT>::get_grb_mat
     assert(this->colptr == NULL && this->rowids == NULL &&
            this->values == NULL);
 
+    GrB_Descriptor_free(&desc);
 
     return;
 }

@@ -411,6 +411,7 @@ CSR<IT, NT>::CSR (GrB_Matrix A) :
 	assert(!is_iso && "GraphBLAS matrix is iso-valued.");
 	assert(!is_jumbled && "GraphBLAS matrix is not sorted\n");
 
+    GrB_Descriptor_free(&desc);
 
 	return;						  
 }
@@ -824,7 +825,8 @@ CSR<IT, NT>::get_grb_mat
 						desc);
 	assert(this->rowptr == NULL && this->colids == NULL &&
 		   this->values == NULL);
-	
+
+    GrB_Descriptor_free(&desc);
 						
 	return;					
 }

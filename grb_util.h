@@ -759,6 +759,9 @@ read_grb_mtx
 	ReadASCII_Triples(fpath, m, n, nnz, rids, cids, vals,
 					  remove_diags, rand_vals);
 	GrbMatrixBuild<NT>()(A, rids, cids, vals, m, n, nnz);
+	delete[] rids;
+	delete[] cids;
+	delete[] vals;
 	std::cout << m << " " << n << " " << nnz << std::endl;
 
 	if (symmetricize)
