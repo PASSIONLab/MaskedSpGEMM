@@ -123,7 +123,7 @@ inline void BIN<IT, NT>::set_rows_offset(const IT rows)
     {
         int tid = omp_get_thread_num();
         long long int end_itr = (lower_bound(ps_row_nz, ps_row_nz + rows + 1, average_intprod * (tid + 1))) - ps_row_nz;
-        rows_offset[tid + 1] = end_itr;
+        rows_offset[tid + 1] = end_itr > rows ? rows : end_itr;
         // if (tid == thread_num - 1) rows_offset[tid + 1] = rows;
     }
     rows_offset[thread_num] = rows;
