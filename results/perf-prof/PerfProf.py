@@ -26,15 +26,15 @@ def parseVals (fname):
             print 'scheme names:', ' '.join(schemes)
             line = f.readline()
             continue
-        
+
         mat = tmp[0]
         tmp = tmp[1:]
-        assert len(tmp) == len(schemes)        
+        assert len(tmp) == len(schemes)
         for (rt,sch) in zip(tmp,schemes):
             rtvals.append((sch, float(rt), mat, 1.0/float(rt)))
 
         line = f.readline()
-    
+
     f.close()
 
     return schemes, rtvals
@@ -64,17 +64,20 @@ def perfProfVals (schemes, rtvals, args):
             x = list(v[i])
             x[1] = float(x[1])/float(best)
             instNew[k].append(tuple(x))
-    
+
     inst = instNew
     ninst = len(inst)
     sys.stdout.write('Number of instances: %d\n' % (ninst))
     # pp.pprint(inst)
-    
-    xticks = [round(x,3) for x in np.arange(1.00, args.xmax, args.xstep)]
+
+    xmax = max([x[3] for x in rtvals])
+    xticks = [round(x,3) for x in np.arange(1.00, xmax, args.xstep)]
+    # xticks = [round(x,3) for x in np.arange(1.00, args.xmax, args.xstep)]
+    # xticks.extend(np.linspace(args.xmax, xmax, 10000))
     perfvals = {}
     for sch in schemes:
         perfvals[sch] = [0 for x in range(len(xticks))]
-        
+
     for k,v in inst.iteritems():
         for x in v:
             sch = x[0]
@@ -87,7 +90,7 @@ def perfProfVals (schemes, rtvals, args):
     for k,v in perfvals.iteritems():
         for i in range(len(v)):
             v[i] = round(float(v[i])/float(ninst), 3)
-    
+
     return perfvals, xticks
 
 
@@ -165,7 +168,7 @@ def genPlot (schemes, perfvals, xticks, title_str, args):
     outgpfile.write('set bmargin 14\n')
 
     # outgpfile.write("set key inside right bottom spacing 1.40 font \", 20\"\n")
-    outgpfile.write("set key horizontal outside center bottom spacing 1.40 font \", 24\"\n")
+    # outgpfile.write("set key horizontal outside center bottom spacing 1.40 font \", 24\"\n")
 
     # pointIds = [0, 1, 2, 3, 4, 6, 8, 10, 12, 14, 5, 7] # count = 12
     # pointIds = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # count = 12
@@ -176,8 +179,29 @@ def genPlot (schemes, perfvals, xticks, title_str, args):
     lineTypes = [1, 1, 1, 1,
                  1, 1, 1, 1,
                  1, 1, 1, 1]
-                 
-                
+
+    outgpfile.write("set key horizontal outside center bottom\n")
+
+    colorIds = ['#DC143C', '#FF7F50', '#DA70D6', '#3CB371', '#808080', '#0000FF']
+    pointIds = [-1, 0, 1, 2, 3, -1, 4, 6, 8, 10, 12, 4, 5, 7, 9, 11, 13, 5]
+
+
+    oldLen = len(colorIds)
+    while len(colorIds) < len(schemes):
+        colorIds.append(colorIds[len(colorIds) % oldLen])
+
+    oldLen = len(lineTypes)
+    while len(lineTypes) < len(schemes):
+        lineTypes.append(lineTypes[len(lineTypes) % oldLen])
+
+    oldLen = len(pointIds)
+    while len(pointIds) < len(schemes):
+        pointIds.append(pointIds[len(pointIds) % oldLen])
+
+    oldLen = len(pointSizes)
+    while len(pointSizes) < len(schemes):
+        pointSizes.append(pointSizes[len(pointSizes) % oldLen])
+
     for i in range(len(schemes)):
         outgpfile.write('set style line %d lc rgb \'%s\' '
                         'lt %d lw 2 pt %d ps %.2f\n' %
@@ -188,13 +212,13 @@ def genPlot (schemes, perfvals, xticks, title_str, args):
     for i in range(len(schemes)):
         if (i < len(schemes)-1):
             outgpfile.write('\"' +
-                            args.result_file + '-perf-prof.dat' + 
+                            args.result_file + '-perf-prof.dat' +
                             '\" u 1:%d t \'%s\' '
                             'w linespoints ls %d, \\\n\t' %
                             (i+2, '%s' % (schemes[i]), i+1))
         else:
             outgpfile.write('\"' +
-                            args.result_file + '-perf-prof.dat' + 
+                            args.result_file + '-perf-prof.dat' +
                             '\" u 1:%d t \'%s\' '
                             'w linespoints ls %d\n' %
                             (i+2, '%s' % (schemes[i]), i+1))
