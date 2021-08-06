@@ -50,7 +50,8 @@ grb_ktruss
 	size_t				 niters,
 	vector<int>			&tnums,
 	int 				 k,
-	GrB_Descriptor desc_mxm
+	GrB_Descriptor desc_mxm,
+	size_t flops
 )
 {
 	GrB_Index		n, nnz;
@@ -123,17 +124,19 @@ grb_ktruss
 		t_tot /= (double)niters;
 		t_mxm /= (double)niters;
 
-		std::cout << "LOG,"
-                  << std::setw(20) << getFileName(inputName) << ","
-			      << std::setw(50) << processAlgorithmName(algorithmName) << ","
-                  << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ","
-                  << std::setw(5) << tnum << ","
-                  << std::setw(15) << std::setprecision(4) << std::fixed << t_tot << ","
-                  << std::setw(15) << std::setprecision(4) << std::fixed << t_mxm << ","
-                  << std::setw(15) << std::setprecision(4) << std::fixed << 0.0 << ","
-			// << std::setw(15) << std::setprecision(4) << std::fixed << mflops << ","
-                  << std::setw(10) << nnz_last << ","
-                  << std::setw(10) << nsteps << ","
+		double mflops = flops / t_mxm / 1e3;
+
+		std::cout << std::setw(12) << "LOG;"
+                  << std::setw(20) << getFileName(inputName) << ";"
+			      << std::setw(50) << processAlgorithmName(algorithmName) << ";"
+                  << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ";"
+                  << std::setw(12) << tnum << ";"
+                  << std::setw(25) << std::setprecision(4) << std::fixed << t_tot << ";"
+                  << std::setw(30) << std::setprecision(4) << std::fixed << t_mxm << ";"
+                  << std::setw(30) << std::setprecision(4) << std::fixed << 0.0 << ";"
+                  << std::setw(15) << std::setprecision(4) << std::fixed << mflops << ";"
+                  << std::setw(10) << nnz_last << ";"
+                  << std::setw(10) << nsteps << ";"
 				  << std::endl;
 		
 	}
@@ -160,7 +163,8 @@ msp_ktruss
 	size_t		 niters,
 	vector<int> &tnums,
 	GrB_Matrix	 A,
-	int			 k
+	int			 k,
+	size_t flops
 )
 {
 	GrB_Index		n, nnz;
@@ -261,15 +265,17 @@ msp_ktruss
 		t_mxm /= (double)niters;
 		t_tran /= (double)niters;
 
-		std::cout << "LOG,"
+		double mflops = flops / (t_mxm + t_tran) / 1e3;
+
+		std::cout << std::setw(12) << "LOG;"
                   << std::setw(20) << getFileName(inputName) << ","
 			      << std::setw(50) << processAlgorithmName(algorithmName) << ","
                   << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ","
-                  << std::setw(5) << tnum << ","
-                  << std::setw(15) << std::setprecision(4) << std::fixed << t_tot << ","
-                  << std::setw(15) << std::setprecision(4) << std::fixed << t_mxm << ","
-                  << std::setw(15) << std::setprecision(4) << std::fixed << t_tran << ","
-			// << std::setw(15) << std::setprecision(4) << std::fixed << mflops << ","
+                  << std::setw(12) << tnum << ","
+                  << std::setw(25) << std::setprecision(4) << std::fixed << t_tot << ","
+                  << std::setw(30) << std::setprecision(4) << std::fixed << t_mxm << ","
+                  << std::setw(30) << std::setprecision(4) << std::fixed << t_tran << ","
+                  << std::setw(15) << std::setprecision(4) << std::fixed << mflops << ","
                   << std::setw(10) << nnz_last << ","
                   << std::setw(10) << nsteps << ","
 				  << std::endl;
@@ -280,14 +286,82 @@ msp_ktruss
 	return;
 }
 
+template <class IT, class NT,
+		  template<class, class> class AT,
+		  template<class, class> class BT,
+		  template<class, class> class CT = AT,
+		  template<class, class> class MT>
+size_t
+ktruss_mult_ops
+(
+	void(*f)(const AT<IT, NT> &, const BT<IT, NT> &, CT<IT, NT> &,
+			 const MT<IT, NT> &, NT(NT&, NT&), plus<NT>, unsigned),
+	GrB_Matrix	 A,
+	int			 k
+)
+{
+	GrB_Index		n, nnz;
+	GrbAlgObj<NT>	to_grb;
+	GxB_Scalar		s = NULL;
+	auto			f_one = [] (NT& arg1, NT& arg2) -> NT {return (NT) 1;};
+    size_t          multOps = 0;
+    int             numThreads = omp_get_max_threads();
 
 
-#define RUN_CSR_IMPL(NAME, FUNC) msp_ktruss<Index_t, Value_t, CSR, CSR, CSR, CSR>(fileName, NAME, FUNC, warmupIters, innerIters, tnums, Ain, k)
+	GxB_Scalar_new(&s, GrB_UINT64);
+	GxB_Scalar_setElement_UINT64(s, (uint64_t)k-2);
+	GrB_Matrix_nrows(&n, A);
+
+    GxB_Global_Option_set(GxB_GLOBAL_NTHREADS, numThreads);
+
+    GrB_Index nnz_cur, nnz_last;
+    int64_t nsteps;
+    double start_iter = omp_get_wtime();
+
+    GrB_Matrix T = NULL;
+    GrB_Matrix_nvals(&nnz_last, A);
+    nsteps = 1;
+    for ( ; ; ++nsteps)
+    {
+        if (nsteps == 1)
+            T = A;
+
+        GrB_Matrix C = NULL;
+        GrB_Matrix_new(&C, to_grb.get_type(), n, n);
+
+        AT<IT, NT> T1_msp(T); CT<IT, NT> C_msp(C);
+
+        auto nops = calculateMultOps(T1_msp, T1_msp, numThreads);
+        multOps += nops;
+        f(T1_msp, T1_msp, C_msp, T1_msp, f_one, plus<NT>(), numThreads);
+
+        C_msp.get_grb_mat(C); T1_msp.get_grb_mat(T);
+
+        GxB_Matrix_select(C, NULL, NULL, GxB_GE_THUNK, C, s, NULL);
+
+        if (nsteps > 1)	// don't clear A
+            GrB_Matrix_free(&T);
+        T = C;
+
+        GrB_Matrix_nvals(&nnz_cur, C);
+
+        if (nnz_last == nnz_cur)
+            break;
+        nnz_last = nnz_cur;
+    }
+    GrB_Matrix_free(&T);
+
+	return multOps;
+}
+
+
+
+#define RUN_CSR_IMPL(NAME, FUNC) msp_ktruss<Index_t, Value_t, CSR, CSR, CSR, CSR>(fileName, NAME, FUNC, warmupIters, innerIters, tnums, Ain, k, flop)
 #define RUN_CSR(ALG) RUN_CSR_IMPL(#ALG, ALG)
 #define RUN_CSR_1P(ALG) RUN_CSR_IMPL(#ALG "-1P", MaskedSpGEMM1p<ALG>)
 #define RUN_CSR_2P(ALG) RUN_CSR_IMPL(#ALG "-2P", MaskedSpGEMM2p<ALG>)
 
-#define RUN_CSR_CSC_IMPL(NAME, FUNC) msp_ktruss<Index_t, Value_t, CSR, CSC, CSR, CSR>(fileName, NAME, FUNC, warmupIters, innerIters, tnums, Ain, k)
+#define RUN_CSR_CSC_IMPL(NAME, FUNC) msp_ktruss<Index_t, Value_t, CSR, CSC, CSR, CSR>(fileName, NAME, FUNC, warmupIters, innerIters, tnums, Ain, k, flop)
 #define RUN_CSR_CSC(ALG) RUN_CSR_CSC_IMPL(#ALG, ALG)
 
 
@@ -350,6 +424,7 @@ main
 		std::stoul(std::getenv("WARMUP_ITERS")) : (innerIters == 1 ? 0 : 1);
     string mode        = std::getenv("MODE")         ?
 		std::getenv("MODE")                         : "";
+    bool disableHeap   = std::getenv("DISABLE_HEAP") ? true : false;
     // @formatter:on
 
 	if (mode.empty()) { std::cerr << "Mode unspecified!" << std::endl; }
@@ -362,6 +437,21 @@ main
 
 	GrB_Matrix_nrows(&n, Ain); GrB_Matrix_nvals(&nnz, Ain);
 	std::cout << "A: " << n << " " << n << " " << nnz << std::endl;
+
+	auto flop = ktruss_mult_ops<Index_t, Value_t, CSR, CSR, CSR, CSR>
+	        (MaskedSpGEMM1p<MSA2A<false, false>::Impl>, Ain, k) * 2;
+
+	std::cout << std::setw(12) << "LOG-header;"
+	<< std::setw(20) << "FileName" << ";"
+	<< std::setw(50) << "Algorithm" << ";"
+	<< std::setw(5) << "Type" << ";"
+	<< std::setw(12) << "NumThreads" << ";"
+	<< std::setw(25) << "AverageTime-total(ms)" << ";"
+	<< std::setw(30) << "AverageTime-mxm(ms)" << ";"
+	<< std::setw(30) << "AverageTime-Transpose(ms)" << ";"
+	<< std::setw(15) << "MFLOPS" << ";"
+	<< std::setw(10) << "nnz-last" << ";"
+	<< std::setw(10) << "nsteps" << std::endl;
 
 	for (size_t i = 0; i < outerIters; i++)
 	{
@@ -390,7 +480,7 @@ main
 	            GxB_Desc_set(desc_mxm, GxB_SORT, 1); // want output sorted
 	            grb_ktruss<Index_t, Value_t>
 	            (fileName, name, std::get<2>(method),
-                 warmupIters, innerIters, tnums, k, desc_mxm);
+                 warmupIters, innerIters, tnums, k, desc_mxm, flop);
 	        }
 	    }
 
@@ -415,7 +505,7 @@ main
 			 RUN_CSR(mxm_hash_mask);
              RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>));
              RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>));
-         }
+        }
 
         if (mode == "heap" || mode == "all")
 		{
@@ -466,15 +556,20 @@ main
          }
 
         if (mode == "benchmark") {
-            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 1>::Impl>));
-            RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+            if (!disableHeap) {
+                RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 1>::Impl>));
+                RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+            }
+
             RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>));
             RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>));
             RUN_CSR((MaskedSpGEMM1p<MCA<false, false>::Impl>));
             RUN_CSR_CSC(MaskedSpGEMM1p<MaskedInner>);
 
-            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 1>::Impl>));
-            RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+            if (!disableHeap) {
+                RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 1>::Impl>));
+                RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, MaskedHeapDot>::Impl>));
+            }
             RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>));
             RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>));
             RUN_CSR((MaskedSpGEMM2p<MCA<false, false>::Impl>));
