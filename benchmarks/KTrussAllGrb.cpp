@@ -441,6 +441,10 @@ main
 	auto flop = ktruss_mult_ops<Index_t, Value_t, CSR, CSR, CSR, CSR>
 	        (MaskedSpGEMM1p<MSA2A<false, false>::Impl>, Ain, k) * 2;
 
+	if (mode == "flops") {
+	    std::cout << "LOG;" <<fileName << ";" << flop << std::endl;
+	}
+
 	std::cout << std::setw(12) << "LOG-header;"
 	<< std::setw(20) << "FileName" << ";"
 	<< std::setw(50) << "Algorithm" << ";"
