@@ -136,7 +136,7 @@ grb_ktruss
                   << std::setw(30) << std::setprecision(4) << std::fixed << 0.0 << ";"
                   << std::setw(15) << std::setprecision(4) << std::fixed << mflops << ";"
                   << std::setw(10) << nnz_last << ";"
-                  << std::setw(10) << nsteps << ";"
+                  << std::setw(10) << nsteps
 				  << std::endl;
 		
 	}
@@ -268,16 +268,16 @@ msp_ktruss
 		double mflops = flops / (t_mxm + t_tran) / 1e3;
 
 		std::cout << std::setw(12) << "LOG;"
-                  << std::setw(20) << getFileName(inputName) << ","
-			      << std::setw(50) << processAlgorithmName(algorithmName) << ","
-                  << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ","
-                  << std::setw(12) << tnum << ","
-                  << std::setw(25) << std::setprecision(4) << std::fixed << t_tot << ","
-                  << std::setw(30) << std::setprecision(4) << std::fixed << t_mxm << ","
-                  << std::setw(30) << std::setprecision(4) << std::fixed << t_tran << ","
-                  << std::setw(15) << std::setprecision(4) << std::fixed << mflops << ","
-                  << std::setw(10) << nnz_last << ","
-                  << std::setw(10) << nsteps << ","
+                  << std::setw(20) << getFileName(inputName) << ";"
+			      << std::setw(50) << processAlgorithmName(algorithmName) << ";"
+                  << std::setw(5) << (std::string(typeid(IT).name()) + "|" + std::string(typeid(NT).name())) << ";"
+                  << std::setw(12) << tnum << ";"
+                  << std::setw(25) << std::setprecision(4) << std::fixed << t_tot << ";"
+                  << std::setw(30) << std::setprecision(4) << std::fixed << t_mxm << ";"
+                  << std::setw(30) << std::setprecision(4) << std::fixed << t_tran << ";"
+                  << std::setw(15) << std::setprecision(4) << std::fixed << mflops << ";"
+                  << std::setw(10) << nnz_last << ";"
+                  << std::setw(10) << nsteps
 				  << std::endl;
 		
 	}
@@ -433,7 +433,7 @@ main
 	std::cout << "mode:  " << mode << std::endl;
 
     std::cout << "Iters: " << outerIters << " x (" << warmupIters
-			  << "," << innerIters << ")" << std::endl << std::endl;
+			  << ";" << innerIters << ")" << std::endl << std::endl;
 
 	GrB_Matrix_nrows(&n, Ain); GrB_Matrix_nvals(&nnz, Ain);
 	std::cout << "A: " << n << " " << n << " " << nnz << std::endl;
