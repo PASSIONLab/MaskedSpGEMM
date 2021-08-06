@@ -21,6 +21,28 @@ void verifyInputs(const AT<IT, NT> &A, const BT<IT, NT> &B, const CT<IT, NT> &C,
 }
 
 template<typename IT, typename NT>
+IT calculateMultOps(const CSR<IT, NT> &A, const CSR<IT, NT> &B, int numThreads = 0) {
+    IT nops = 0; // total multiplications needed to generate C
+
+    if (numThreads == 0) {
+        numThreads = omp_get_max_threads();
+    }
+
+    #pragma omp parallel for reduction(+:nops) num_threads(numThreads)
+    for (IT i = 0; i < A.rows; ++i) {
+        IT nopsRow = 0;
+        for (IT j = A.rowptr[i]; j < A.rowptr[i + 1]; ++j) {
+            IT inner = A.colids[j];
+            IT npins = B.rowptr[inner + 1] - B.rowptr[inner];
+            nopsRow += npins;
+        }
+        nops += nopsRow;
+    }
+
+    return nops;
+}
+
+template<typename IT, typename NT>
 IT calculateFlops(const CSR<IT, NT> &A, const CSR<IT, NT> &B, IT *flopsPerRow, int numThreads) {
     IT flops = 0; // total flop (multiplication) needed to generate C
 

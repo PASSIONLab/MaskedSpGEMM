@@ -297,16 +297,15 @@ main (int argc,
     GxB_Matrix_fprint(L_csc, "L_csc", GxB_SUMMARY, stdout);
 
     CSR<Index_t, Value_t> tmp(L);
-    std::size_t flop = get_flop(tmp, tmp);
+    auto flop = calculateMultOps(tmp, tmp) * 2;
     tmp.get_grb_mat(L);
 
-
     std::cout << std::setw(12) << "LOG-header;"
-              << std::setw(20) << "File name" << ";"
+              << std::setw(20) << "FileName" << ";"
               << std::setw(50) << "Algorithm" << ";"
               << std::setw(5) << "Type" << ";"
               << std::setw(12) << "NumThreads" << ";"
-              << std::setw(20) << "Average time (s)" << ";"
+              << std::setw(20) << "AverageTime(ms)" << ";"
               << std::setw(15) << "MFLOPS" << ";"
               << std::setw(10) << "C-nvals" << ";"
               << std::setw(10) << "C-sum" << std::endl;
