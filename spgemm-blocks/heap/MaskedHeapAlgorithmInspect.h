@@ -26,7 +26,8 @@ public:
     [[nodiscard]] Heap<IT> &getNumericAccumulator() { return _heap; }
 
     [[gnu::always_inline]]
-    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
+    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
+                     IT row, IT *rowNvals, IT &flops) {
         IT maskIdx = M.rowptr[row];
         const IT maskEnd = M.rowptr[row + 1];
         assert(maskIdx != maskEnd);
@@ -60,7 +61,7 @@ public:
     template<typename MultiplyOperation, typename AddOperation>
     [[gnu::always_inline]]
     void numericRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
-                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue) {
+                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue, IT &flops) {
         IT maskIdx = M.rowptr[row];
         IT maskEnd = M.rowptr[row + 1];
         assert(maskIdx != maskEnd);
@@ -293,7 +294,8 @@ public:
     [[nodiscard]] Heap<IT> &getNumericAccumulator() { return _heap; }
 
     [[gnu::always_inline]]
-    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
+    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
+                     IT row, IT *rowNvals, IT &flops) {
         IT maskIdx = M.rowptr[row];
         const IT maskEnd = M.rowptr[row + 1];
         assert(maskIdx != maskEnd);
@@ -337,7 +339,7 @@ public:
     template<typename MultiplyOperation, typename AddOperation>
     [[gnu::always_inline]]
     void numericRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
-                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue) {
+                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue, IT &flops) {
         IT maskIdx = M.rowptr[row];
         const IT maskEnd = M.rowptr[row + 1];
         assert(maskIdx != maskEnd);

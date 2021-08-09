@@ -56,6 +56,7 @@ stats_bc
 		t_delta		+= arg.t_delta;
 		t_sigma_mxm += arg.t_sigma_mxm;
 		t_delta_mxm += arg.t_delta_mxm;
+        return *this;
 	}
 	
 
@@ -82,7 +83,8 @@ grb_bc_internal
     GrB_Vector			*delta,
 	GrB_Matrix			 A,
 	vector<GrB_Index>	&srcs,
-	stats_bc			&stats
+	stats_bc			&stats,
+	GrB_Desc_Value method
 )
 {
 	stats = {0};
@@ -100,10 +102,12 @@ grb_bc_internal
 	GxB_Desc_set(desc_mxm_01, GrB_OUTP, GrB_REPLACE);
 	GxB_Desc_set(desc_mxm_01, GrB_MASK, GrB_COMP);
 	GxB_Desc_set(desc_mxm_01, GrB_MASK, GrB_STRUCTURE);
+	GxB_Desc_set(desc_mxm_01, GxB_AxB_METHOD, method);
 	GrB_Descriptor_new(&desc_mxm_02);
 	GxB_Desc_set(desc_mxm_02, GxB_SORT, 1);
 	GxB_Desc_set(desc_mxm_02, GrB_OUTP, GrB_REPLACE);
 	GxB_Desc_set(desc_mxm_02, GrB_MASK, GrB_STRUCTURE);
+	GxB_Desc_set(desc_mxm_02, GxB_AxB_METHOD, method);
 
 	s = srcs.size();
 	assert(s > 0);
@@ -130,7 +134,7 @@ grb_bc_internal
 	int32_t		depth = 0;
 	while (nvals > 0)
 	{
-		t_beg[2] = omp_get_wtime();		
+		t_beg[2] = omp_get_wtime();
 		GrB_mxm(F, N, NULL, to_grb.get_sr_plus_second(), Atr, F, desc_mxm_01);
 		stats.t_sigma_mxm += omp_get_wtime()-t_beg[2];
 
@@ -226,7 +230,8 @@ grb_bc
 	vector<int>			&tnums,
 	GrB_Vector			*delta,
 	GrB_Matrix			 A,
-	vector<GrB_Index>	&srcs
+	vector<GrB_Index>	&srcs,
+	GrB_Desc_Value method
 )
 {
 	stats_bc stats_tmp, stats;
@@ -236,15 +241,24 @@ grb_bc
 		GxB_Global_Option_set(GxB_GLOBAL_NTHREADS, tnum);
 		for (int i = 0; i < witers; ++i)
 		{
-            grb_bc_internal<IT, NT>(delta, A, srcs, stats_tmp);
+            grb_bc_internal<IT, NT>(delta, A, srcs, stats_tmp, method);
         }
 
 		stats = {0};
 		for (int i = 0; i < niters; ++i)
 		{
-            grb_bc_internal<IT, NT>(delta, A, srcs, stats_tmp);
+            grb_bc_internal<IT, NT>(delta, A, srcs, stats_tmp, method);
 			stats += stats_tmp;
         }
+
+		double sol = -1.0;
+		if (std::is_same_v<NT, double>) {
+		    float t = 0;
+		    GrB_Vector_reduce_FP32(&t, GrB_NULL, GrB_PLUS_MONOID_FP64, *delta, GrB_NULL);
+		    sol = t;
+		} else if (std::is_same_v<NT, float>) {
+		    GrB_Vector_reduce_FP64(&sol, GrB_NULL, GrB_PLUS_MONOID_FP64, *delta, GrB_NULL);
+		}
 
 
 		stats.scale(1e3/niters);
@@ -258,6 +272,7 @@ grb_bc
 		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_delta << ";"
 		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_sigma_mxm << ";"
 		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_delta_mxm << ";"
+		  << std::setw(20) << sol
 		  << std::endl;
 
 	}
@@ -477,6 +492,15 @@ msp_bc
 			stats += stats_tmp;
         }
 
+		double sol = -1.0;
+		if (std::is_same_v<NT, double>) {
+		    float t = 0;
+		    GrB_Vector_reduce_FP32(&t, GrB_NULL, GrB_PLUS_MONOID_FP64, *delta, GrB_NULL);
+		    sol = t;
+		} else if (std::is_same_v<NT, float>) {
+		    GrB_Vector_reduce_FP64(&sol, GrB_NULL, GrB_PLUS_MONOID_FP64, *delta, GrB_NULL);
+		}
+
 
 		stats.scale(1e3/niters);
 		std::cout << std::setw(12) << "LOG;"
@@ -489,6 +513,7 @@ msp_bc
 		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_delta << ";"
 		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_sigma_mxm << ";"
 		  << std::setw(20) << std::setprecision(4) << std::fixed << stats.t_delta_mxm << ";"
+		  << std::setw(20) << sol
 		  << std::endl;
 
 	}
@@ -529,20 +554,26 @@ main
 	{
         // cout << "Running on " << argv[2] << " processors" << endl << endl;
         // tnums = {atoi(argv[2])};
-		tnums = {1, 2, 4, 8, 16, 32, 64};
+        for (int i = 3; i < argc; i++) {
+            tnums.emplace_back(atoi(argv[i]));
+        }
     }
 
 	
 	std::string fileName = getFileName(argv[1]);
-	float x = atof(argv[2]);
-	assert(x >= 0.0 && x <= 1.0);
-	
+	double x = atof(argv[2]);
+
 
 	GrB_init(GrB_BLOCKING);
 	GrbAlgObj<Value_t>	to_grb;
 	GrB_Matrix			Ain	  = NULL;
 	GrB_Index			n, nnz;	
-	int nthreads;	
+	int nthreads;
+
+	double bswitch [GxB_NBITMAP_SWITCH];
+	std::fill(bswitch, bswitch + GxB_BITMAP_SWITCH, 1.0);
+	GxB_Global_Option_set(GxB_BITMAP_SWITCH, bswitch);
+	GxB_Global_Option_set(GxB_HYPER_SWITCH, GxB_NEVER_HYPER);
 	GxB_Global_Option_set(GxB_FORMAT, GxB_BY_ROW); // CSR in GraphBLAS
 	GxB_Global_Option_get(GxB_GLOBAL_NTHREADS, &nthreads);
 	std::cout << "nthreads (graphblas) " << nthreads << std::endl;
@@ -560,6 +591,7 @@ main
 		std::stoul(std::getenv("WARMUP_ITERS")) : (innerIters == 1 ? 0 : 1);
     string mode        = std::getenv("MODE")         ?
 		std::getenv("MODE")                         : "";
+    bool disableHeap   = std::getenv("DISABLE_HEAP") ? true : false;
     // @formatter:on
 
 	if (mode.empty()) { std::cerr << "Mode unspecified!" << std::endl; }
@@ -573,7 +605,7 @@ main
 	GrB_Matrix_nrows(&n, Ain); GrB_Matrix_nvals(&nnz, Ain);
 	std::cout << "A: " << n << " " << n << " " << nnz << std::endl;
 
-	int s = round(static_cast<float>(n)*x);
+	int s = x < 1.0 ? round(static_cast<float>(n)*x) : x;
  	assert(s > 0 && s <= n);
 	vector<GrB_Index> srcs;
 	for (GrB_Index i = 0; i < n; ++i)
@@ -585,50 +617,70 @@ main
 
 	for (size_t i = 0; i < outerIters; i++)
 	{
-		grb_bc<Index_t, Value_t>(fileName, "GxB_AxB_DEFAULT",
-								 warmupIters, innerIters,
-								 tnums, &delta, Ain, srcs);
+	    if (mode == "grb" || mode == "all" || mode == "benchmark") {
+	        for (const auto &method : std::vector<std::tuple<
+	        GrB_Desc_Value, std::string, GrB_Matrix>>
+	        ({
+	            {GxB_DEFAULT,       "DEFAULT",       Ain},
+	            {GxB_AxB_DOT,       "DOT-TRANSPOSE", Ain},
+	            {GxB_AxB_SAXPY,     "SAXPY",         Ain},
+	            {GxB_AxB_GUSTAVSON, "GUSTAVSON",     Ain},
+	            {GxB_AxB_HASH,      "HASH",          Ain},
+	            })) {
+	            std::string name = "GxB_AxB_" + std::get<1>(method);
+	            grb_bc<Index_t, Value_t>(fileName, name,
+                                         warmupIters, innerIters,
+                                         tnums, &delta, Ain, srcs,
+                                         std::get<0>(method));
+	        }
+	    }
 
 		if (mode == "heap" || mode == "all") {
-            // RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 0>::Impl>),
-			// 		(MaskedSpGEMM1p<MaskedHeap<true, true, 0>::Impl>));
-            // RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 0>::Impl>),
-			// 		(MaskedSpGEMM2p<MaskedHeap<true, true, 0>::Impl>));
+             RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 0>::Impl>),
+			 		(MaskedSpGEMM1p<MaskedHeap<true, true, 0>::Impl>));
+             RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 0>::Impl>),
+			 		(MaskedSpGEMM2p<MaskedHeap<true, true, 0>::Impl>));
         }
 
         if (mode == "hash" || mode == "all") {
-            // RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>),
-			// 		(MaskedSpGEMM1p<MaskedHash<true, false>::Impl>));
-            // RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>),
-			// 		(MaskedSpGEMM2p<MaskedHash<true, false>::Impl>));
-
-            // RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, true>::Impl>),
-			// 		(MaskedSpGEMM1p<MaskedHash<true, true>::Impl>));
-            // RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, true>::Impl>),
-			// 		(MaskedSpGEMM2p<MaskedHash<true, true>::Impl>));
+             RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>),
+                     (MaskedSpGEMM1p<MaskedHash<true, true>::Impl>));
+             RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>),
+                     (MaskedSpGEMM2p<MaskedHash<true, true>::Impl>));
         }
 
         if (mode == "msa" || mode == "all") {
             RUN_CSR((MaskedSpGEMM1p<MSA1A<false, false>::Impl>),
-					(MaskedSpGEMM1p<MSA1A<true, false>::Impl>));
-            // RUN_CSR((MaskedSpGEMM2p<MSA1A<false, false>::Impl>),
-			// 		(MaskedSpGEMM2p<MSA1A<true, false>::Impl>));
+					(MaskedSpGEMM1p<MSA1A<true, true>::Impl>));
+             RUN_CSR((MaskedSpGEMM2p<MSA1A<false, false>::Impl>),
+                     (MaskedSpGEMM2p<MSA1A<true, true>::Impl>));
 
-            // RUN_CSR((MaskedSpGEMM1p<MSA1A<false, true>::Impl>),
-			// 		(MaskedSpGEMM1p<MSA1A<true, true>::Impl>));
-            // RUN_CSR((MaskedSpGEMM2p<MSA1A<false, true>::Impl>),
-			// 		(MaskedSpGEMM2p<MSA1A<true, true>::Impl>));
+             RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>),
+                     (MaskedSpGEMM1p<MSA2A<true, true>::Impl>));
+             RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>),
+                     (MaskedSpGEMM2p<MSA2A<true, true>::Impl>));
+        }
 
-            // RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>),
-			// 		(MaskedSpGEMM1p<MSA2A<true, false>::Impl>));
-            // RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>),
-			// 		(MaskedSpGEMM2p<MSA2A<true, false>::Impl>));
+        if (mode == "benchmark") {
+            if (!disableHeap) {
+                RUN_CSR((MaskedSpGEMM1p<MaskedHeap<false, true, 0>::Impl>),
+                        (MaskedSpGEMM1p<MaskedHeap<true, true, 0>::Impl>));
+            }
 
-            // RUN_CSR((MaskedSpGEMM1p<MSA2A<false, true>::Impl>),
-			// 		(MaskedSpGEMM1p<MSA2A<true, true>::Impl>));
-            // RUN_CSR((MaskedSpGEMM2p<MSA2A<true, true>::Impl>),
-			// 		(MaskedSpGEMM2p<MSA2A<false, true>::Impl>));
-        }		
+            RUN_CSR((MaskedSpGEMM1p<MaskedHash<false, false>::Impl>),
+                    (MaskedSpGEMM1p<MaskedHash<true, true>::Impl>));
+            RUN_CSR((MaskedSpGEMM1p<MSA2A<false, false>::Impl>),
+                    (MaskedSpGEMM1p<MSA2A<true, true>::Impl>));
+
+            if (!disableHeap) {
+                RUN_CSR((MaskedSpGEMM2p<MaskedHeap<false, true, 0>::Impl>),
+                        (MaskedSpGEMM2p<MaskedHeap<true, true, 0>::Impl>));
+            }
+            RUN_CSR((MaskedSpGEMM2p<MaskedHash<false, false>::Impl>),
+                    (MaskedSpGEMM2p<MaskedHash<true, true>::Impl>));
+            RUN_CSR((MaskedSpGEMM2p<MSA2A<false, false>::Impl>),
+                    (MaskedSpGEMM2p<MSA2A<true, true>::Impl>));
+        }
 	}
 	
 	

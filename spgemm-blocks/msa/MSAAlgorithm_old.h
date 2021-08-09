@@ -34,7 +34,8 @@ public:
     [[nodiscard]] NumericAccumulatorT &getNumericAccumulator() { return _numericAccumulator; }
 
     [[gnu::always_inline]]
-    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
+    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
+                     IT row, IT *rowNvals, IT &flops) {
 //        assert(_symbolicAccumulator.isInitialized());
 
         const auto maskBegin = &M.colids[M.rowptr[row]];
@@ -69,7 +70,7 @@ public:
     template<typename MultiplyOperation, typename AddOperation>
     [[gnu::always_inline]]
     void numericRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
-                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue) {
+                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue, IT &flops) {
         const auto maskBegin = &M.colids[M.rowptr[row]];
         const auto maskEnd = &M.colids[M.rowptr[row + 1]];
 
@@ -136,7 +137,8 @@ public:
     [[nodiscard]] NumericAccumulatorT &getNumericAccumulator() { return _numericAccumulator; }
 
     [[gnu::always_inline]]
-    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
+    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
+                     IT row, IT *rowNvals, IT &flops) {
 //        assert(_symbolicAccumulator.isInitialized());
 
         const auto maskBegin = &M.colids[M.rowptr[row]];
@@ -171,7 +173,8 @@ public:
     template<typename MultiplyOperation, typename AddOperation>
     [[gnu::always_inline]]
     void numericRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
-                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue) {
+                    MultiplyOperation multop, AddOperation addop,
+                    IT row, IT *&currColId, NT *&currValue, IT &flops) {
         const auto maskBegin = &M.colids[M.rowptr[row]];
         const auto maskEnd = &M.colids[M.rowptr[row + 1]];
 

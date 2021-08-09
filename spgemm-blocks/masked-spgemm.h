@@ -69,7 +69,7 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         for (IT row = rowBeginIdx; row < rowEndIdx; ++row) {
             if (flopsPerRow[row]) {
                 auto rowColIdBegin = currColId;
-                alg.numericRow(A, B, M, multop, addop, row, currColId, currValue);
+                alg.numericRow(A, B, M, multop, addop, row, currColId, currValue, flopsPerRow[row]);
                 rowNvals[row] = currColId - rowColIdBegin;
             } else {
                 rowNvals[row] = 0;
@@ -145,7 +145,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         IT nvals = 0;
         for (IT row = rowBeginIdx; row < rowEndIdx; row++) {
             if (flopsPerRow[row]) {
-                alg.symbolicRow(A, B, M, row, rowNvals);
+                alg.symbolicRow(A, B, M, row, rowNvals, flopsPerRow[row]);
             } else {
                 rowNvals[row] = 0;
             }
@@ -169,7 +169,7 @@ void MaskedSpGEMM2p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         NT *currValue = &R.values[R.rowptr[rowBeginIdx]];
         for (IT row = rowBeginIdx; row < rowEndIdx; ++row) {
             if (rowNvals[row] == 0) { continue; }
-            alg.numericRow(A, B, M, multop, addop, row, currColId, currValue);
+            alg.numericRow(A, B, M, multop, addop, row, currColId, currValue, rowNvals[row]);
         }
         dirty = alg.getNumericAccumulator().releaseBuffer();
 

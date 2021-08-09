@@ -37,7 +37,8 @@ public:
     [[nodiscard]] NumericAccumulatorT &getNumericAccumulator() { return _numericAccumulator; }
 
     [[gnu::always_inline]]
-    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
+    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
+                     IT row, IT *rowNvals, IT &flops) {
         const auto maskBegin = &M.colids[M.rowptr[row]];
         const auto maskEnd = &M.colids[M.rowptr[row + 1]];
 
@@ -63,7 +64,7 @@ public:
     template<typename MultiplyOperation, typename AddOperation>
     [[gnu::always_inline]]
     void numericRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
-                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue) {
+                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue, IT &flops) {
         const auto maskBegin = &M.colids[M.rowptr[row]];
         const auto maskEnd = &M.colids[M.rowptr[row + 1]];
 
@@ -113,7 +114,7 @@ private:
 
 public:
     MaskedHashComplemented(IT maxIndex, IT maxRowSizeA, IT maxRowSizeM, IT maxRowFlops) :
-            _symbolicAccumulator(maxRowFlops), _numericAccumulator(maxRowFlops) {
+    _symbolicAccumulator(maxRowSizeM + maxRowFlops), _numericAccumulator(maxRowSizeM + maxRowFlops) {
         _symbolicAccumulator.resize(maxRowFlops);
         _numericAccumulator.resize(maxRowFlops);
     };
@@ -130,11 +131,11 @@ public:
     [[nodiscard]] NumericAccumulatorT &getNumericAccumulator() { return _numericAccumulator; }
 
     [[gnu::always_inline]]
-    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals) {
+    void symbolicRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M, IT row, IT *rowNvals, IT &flops) {
         const auto maskBegin = &M.colids[M.rowptr[row]];
         const auto maskEnd = &M.colids[M.rowptr[row + 1]];
 
-//        _symbolicAccumulator.resize((maskEnd - maskBegin) * 1000);
+        _symbolicAccumulator.resize((maskEnd - maskBegin) + flops);
 
         IT currRowNvals = 0;
         for (IT j = A.rowptr[row]; j < A.rowptr[row + 1]; j++) {
@@ -158,12 +159,12 @@ public:
     template<typename MultiplyOperation, typename AddOperation>
     [[gnu::always_inline]]
     void numericRow(const CSR<IT, NT> &A, const CSR<IT, NT> &B, const CSR<IT, NT> &M,
-                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue) {
+                    MultiplyOperation multop, AddOperation addop, IT row, IT *&currColId, NT *&currValue, IT &flops) {
         const auto maskBegin = &M.colids[M.rowptr[row]];
         const auto maskEnd = &M.colids[M.rowptr[row + 1]];
 
         // Mark all elements from the mask as NOT ALLOWED (set bool field to false)
-//        _numericAccumulator.resize((maskEnd - maskBegin) * 1000);
+        _numericAccumulator.resize((maskEnd - maskBegin) + flops);
         for (auto maskIt = maskBegin; maskIt != maskEnd; maskIt++) {
             _numericAccumulator.insert(*maskIt);
         }

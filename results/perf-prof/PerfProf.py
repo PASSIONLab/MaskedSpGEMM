@@ -147,7 +147,7 @@ def genPlot (schemes, perfvals, xticks, title_str, args):
                     (0.98, args.xmax))
     outgpfile.write("set yrange [0:1.0]\n")
     xstr = "set xtics ("
-    for x in np.arange(1.00, 2.55, 0.10):
+    for x in np.arange(1.00, args.xmax, 0.10):
         xstr += "\"" + str(round(x,2)) + "\"" + " " + str(round(x,2)) + ", "
     xstr = xstr[0:len(xstr)-2]
     xstr += ") font \", 18\""
@@ -235,7 +235,7 @@ def genPlot (schemes, perfvals, xticks, title_str, args):
 parser = argparse.ArgumentParser()
 parser.add_argument('result_file')
 parser.add_argument('--xstep', type=float, default=0.010)
-parser.add_argument('--xmax', type=float, default=1.50)
+parser.add_argument('--xmax', type=float, default=5)
 parser.add_argument('--ystep', type=float, default=0.025)
 
 args = parser.parse_args()

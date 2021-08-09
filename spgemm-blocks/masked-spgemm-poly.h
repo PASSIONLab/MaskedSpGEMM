@@ -73,9 +73,9 @@ void MaskedSpGEMM1p(const CSR<IT, NT> &A, const CSR<IT, NT> &B, CSR<IT, NT> &C, 
         for (IT row = rowBeginIdx; row < rowEndIdx; ++row) {
             if (flopsPerRow[row] != 0) {
                 if ((M.rowptr[row + 1] - M.rowptr[row]) * (A.rowptr[row + 1] - A.rowptr[row]) < flopsPerRow[row]) {
-                    mca.numericRow(A, B, M, multop, addop, row, currColId, currValue);
+                    mca.numericRow(A, B, M, multop, addop, row, currColId, currValue, flopsPerRow[row]);
                 } else {
-                    spa.numericRow(A, B, M, multop, addop, row, currColId, currValue);
+                    spa.numericRow(A, B, M, multop, addop, row, currColId, currValue, flopsPerRow[row]);
                 }
             } else {
                 rowNvals[row] = 0;
