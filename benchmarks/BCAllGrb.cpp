@@ -606,6 +606,10 @@ main
 	std::cout << "A: " << n << " " << n << " " << nnz << std::endl;
 
 	int s = x < 1.0 ? round(static_cast<float>(n)*x) : x;
+	if (s > n)
+	{
+	    s = n;
+	}
  	assert(s > 0 && s <= n);
 	vector<GrB_Index> srcs;
 	for (GrB_Index i = 0; i < n; ++i)
