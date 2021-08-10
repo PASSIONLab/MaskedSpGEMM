@@ -201,6 +201,8 @@ grb_bc_internal
 
 	GrB_Matrix_reduce_BinaryOp(*delta, NULL, NULL,
 							 to_grb.get_binary_plus(), BCu, NULL);
+
+
 	if (sizeof(NT) == 4)
 		GrB_Vector_apply_BinaryOp2nd_FP32(*delta, NULL, NULL,
 										  to_grb.get_binary_plus(), *delta,
@@ -212,6 +214,12 @@ grb_bc_internal
 
 	stats.t_tot = omp_get_wtime()-t_beg[0];
 
+    GrB_Descriptor_free(&desc_mxm_01);
+    GrB_Descriptor_free(&desc_mxm_02);
+	for (auto &pred : preds) { GrB_Matrix_free(&pred); }
+    GrB_Matrix_free(&Atr);
+	GrB_Matrix_free(&BCu);
+    GrB_Matrix_free(&F);
 	// GxB_Vector_fprint(*delta, "delta", GxB_COMPLETE, stdout);
 }
 
@@ -260,6 +268,7 @@ grb_bc
 		    GrB_Vector_reduce_FP64(&sol, GrB_NULL, GrB_PLUS_MONOID_FP64, *delta, GrB_NULL);
 		}
 
+        GrB_Vector_free(delta);
 
 		stats.scale(1e3/niters);
 		std::cout << std::setw(12) << "LOG;"
@@ -436,6 +445,10 @@ msp_bc_internal
 
 	A_msp.get_grb_mat(A);
 
+	for (auto &pred : preds) { GrB_Matrix_free(&pred); }
+	GrB_Matrix_free(&Atr);
+    GrB_Matrix_free(&F);
+	GrB_Matrix_free(&BCu);
 	return;
 }
 
@@ -500,6 +513,7 @@ msp_bc
 		    GrB_Vector_reduce_FP64(&sol, GrB_NULL, GrB_PLUS_MONOID_FP64, *delta, GrB_NULL);
 		}
 
+		GrB_Vector_free(delta);
 
 		stats.scale(1e3/niters);
 		std::cout << std::setw(12) << "LOG;"
