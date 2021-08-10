@@ -305,7 +305,8 @@ msp_bc_internal
 	GrB_Vector			*delta,
 	GrB_Matrix			 A,
 	vector<GrB_Index>	&srcs,
-	stats_bc			&stats
+	stats_bc			&stats,
+	int tnum
 )
 {
 	static_assert(std::is_same<NT, float>::value ||
@@ -338,8 +339,6 @@ msp_bc_internal
 	GrB_Matrix_dup(&N, F);
 	GrB_Matrix_new(&Atr, to_grb.get_type(), n, n);
 	GrB_transpose(Atr, NULL, NULL, A, NULL);
-
-	int tnum = 1;
 
 	AT<IT, NT> Atr_msp(Atr);
 
@@ -481,14 +480,14 @@ msp_bc
 		for (int i = 0; i < witers; ++i)
 		{
             msp_bc_internal<IT, NT, AT, BT, CT, MT>(f_plain, f_cmpl, delta,
-													A, srcs, stats_tmp);
+													A, srcs, stats_tmp, tnum);
         }
 
 		stats = {0};
 		for (int i = 0; i < niters; ++i)
 		{
             msp_bc_internal<IT, NT, AT, BT, CT, MT>(f_plain, f_cmpl, delta,
-													A, srcs, stats_tmp);
+													A, srcs, stats_tmp, tnum);
 			stats += stats_tmp;
         }
 
@@ -567,11 +566,11 @@ main
 	GrB_init(GrB_BLOCKING);
 	GrbAlgObj<Value_t>	to_grb;
 	GrB_Matrix			Ain	  = NULL;
-	GrB_Index			n, nnz;	
+	GrB_Index			n, nnz;
 	int nthreads;
 
 	double bswitch [GxB_NBITMAP_SWITCH];
-	std::fill(bswitch, bswitch + GxB_BITMAP_SWITCH, 1.0);
+	std::fill(bswitch, bswitch + GxB_NBITMAP_SWITCH, 1.0);
 	GxB_Global_Option_set(GxB_BITMAP_SWITCH, bswitch);
 	GxB_Global_Option_set(GxB_HYPER_SWITCH, GxB_NEVER_HYPER);
 	GxB_Global_Option_set(GxB_FORMAT, GxB_BY_ROW); // CSR in GraphBLAS
@@ -686,8 +685,8 @@ main
                     (MaskedSpGEMM2p<MSA2A<true, true>::Impl>));
         }
 	}
-	
-	
+
+
 	GrB_Matrix_free(&Ain);
 	GrB_finalize();
 

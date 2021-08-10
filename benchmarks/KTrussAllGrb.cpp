@@ -405,7 +405,7 @@ main
 	int nthreads;
 
 	double bswitch [GxB_NBITMAP_SWITCH];
-	std::fill(bswitch, bswitch + GxB_BITMAP_SWITCH, 1.0);
+	std::fill(bswitch, bswitch + GxB_NBITMAP_SWITCH, 1.0);
 	GxB_Global_Option_set(GxB_BITMAP_SWITCH, bswitch);
 	GxB_Global_Option_set(GxB_HYPER_SWITCH, GxB_NEVER_HYPER);
 	GxB_Global_Option_set(GxB_FORMAT, GxB_BY_ROW); // CSR in GraphBLAS
