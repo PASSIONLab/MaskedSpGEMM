@@ -1,0 +1,59 @@
+set term postscript eps enhanced color
+set output 'ktruss-knl26-1p2p-perf-prof.eps'
+set size 1.0,0.5
+unset log
+unset label
+set xrange [0.980000:1.900000]
+set yrange [0:1.0]
+set xtics ("1.0" 1.0, "1.2" 1.2, "1.4" 1.4, "1.6" 1.6, "1.8" 1.8) font ", 18"
+set ytics ("0.0" 0.0, "0.1" 0.1, "0.2" 0.2, "0.3" 0.3, "0.4" 0.4, "0.5" 0.5, "0.6" 0.6, "0.7" 0.7, "0.8" 0.8, "0.9" 0.9, "1.0" 1.0) font ", 18"
+set xlabel "Parallel runtime relative to the best" font ", 18"
+set ylabel "fraction of test cases" font ", 18"
+#set bmargin 16
+unset key
+set style line 1 lc rgb '#DC143C' lt 1 lw 2 pt 5 ps 0.750
+set style line 2 lc rgb '#DC143C' lt 1 lw 2 pt 4 ps 0.750
+set style line 3 lc rgb '#0000FF' lt 1 lw 2 pt 7 ps 0.750
+set style line 4 lc rgb '#0000FF' lt 1 lw 2 pt 6 ps 0.750
+set style line 5 lc rgb '#FF7F50' lt 1 lw 2 pt 13 ps 0.750
+set style line 6 lc rgb '#FF7F50' lt 1 lw 2 pt 12 ps 0.750
+set style line 7 lc rgb '#DA70D6' lt 1 lw 2 pt 9 ps 0.750
+set style line 8 lc rgb '#DA70D6' lt 1 lw 2 pt 8 ps 0.750
+set style line 9 lc rgb '#3CB371' lt 1 lw 2 pt 11 ps 0.750
+set style line 10 lc rgb '#3CB371' lt 1 lw 2 pt 10 ps 0.750
+set style line 11 lc rgb '#808080' lt 1 lw 2 pt 15 ps 0.750
+set style line 12 lc rgb '#808080' lt 1 lw 2 pt 14 ps 0.750
+
+set multiplot layout 1,2
+set size 0.5, 0.5
+set label "Haswell" at graph  0.03, graph 0.92 font ",20" textcolor rgb "#FF0000"
+plot "ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:10 t 'MSA-1P' w linespoints ls 1, \
+	"ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:16 t 'MSA-2P' w linespoints ls 2, \
+	"ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:9 t 'Hash-1P' w linespoints ls 3, \
+	"ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:15 t 'Hash-2P' w linespoints ls 4, \
+	"ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:11 t 'MCA-1P' w linespoints ls 5, \
+	"ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:17 t 'MCA-2P' w linespoints ls 6, \
+	"ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:7 t 'Heap-1P' w linespoints ls 7, \
+	"ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:13 t 'Heap-2P' w linespoints ls 8, \
+	"ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:8 t 'HeapDot-1P' w linespoints ls 9, \
+	"ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:14 t 'HeapDot-2P' w linespoints ls 10, \
+	"ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:12 t 'Inner-1P' w linespoints ls 11, \
+	"ktruss-knl26-haswell-1p2p-perf-prof.dat" u 1:18 t 'Inner-2P' w linespoints ls 12
+unset label
+
+set size 0.5, 0.5
+set label "KNL" at graph  0.03, graph 0.92 font ",20" textcolor rgb "#FF0000"
+plot "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:10 t 'MSA-1P' w linespoints ls 1, \
+    "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:16 t 'MSA-2P' w linespoints ls 2, \
+    "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:9 t 'Hash-1P' w linespoints ls 3, \
+    "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:15 t 'Hash-2P' w linespoints ls 4, \
+    "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:11 t 'MCA-1P' w linespoints ls 5, \
+    "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:17 t 'MCA-2P' w linespoints ls 6, \
+    "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:7 t 'Heap-1P' w linespoints ls 7, \
+    "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:13 t 'Heap-2P' w linespoints ls 8, \
+    "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:8 t 'HeapDot-1P' w linespoints ls 9, \
+    "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:14 t 'HeapDot-2P' w linespoints ls 10, \
+    "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:12 t 'Inner-1P' w linespoints ls 11, \
+    "ktruss-knl26-knl-1p2p-perf-prof.dat" u 1:18 t 'Inner-2P' w linespoints ls 12
+unset multiplot
+set output

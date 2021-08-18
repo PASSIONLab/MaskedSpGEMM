@@ -299,6 +299,7 @@ main (int argc,
     CSR<Index_t, Value_t> tmp(L);
     auto flop = calculateMultOps(tmp, tmp) * 2;
     tmp.get_grb_mat(L);
+    std::cout << "FLOP " << flop << std::endl;
 
     std::cout << std::setw(12) << "LOG-header;"
               << std::setw(20) << "FileName" << ";"

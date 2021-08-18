@@ -1,8 +1,9 @@
 import argparse
+import sys
 from subprocess import call
 
 
-def parse_input(file_name, series):
+def parse_input(file_name):
     schemas = []
     x_values = []
     y_values = []
@@ -23,6 +24,190 @@ def parse_input(file_name, series):
 
 
 def gnu_plot(schemas, x_values, y_values, args):
+    label_upper_left_haswell = 'set label "Haswell" at graph  0.03, graph 0.9 font ",32" textcolor rgb "#FF0000"'
+    label_upper_left_knl = 'set label "KNL" at graph  0.03, graph 0.9 font ",32" textcolor rgb "#FF0000"'
+
+    label_upper_right_haswell = 'set label "Haswell" at graph  0.72, graph 0.9 font ",32" textcolor rgb "#FF0000"'
+    label_upper_right_knl = 'set label "KNL" at graph  0.89, graph 0.9 font ",32" textcolor rgb "#FF0000"'
+
+    label_bottom_right_haswell = 'set label "Haswell" at graph  0.8, graph 0.1 font ",32" textcolor rgb "#FF0000"'
+    label_bottom_right_knl = 'set label "KNL" at graph  0.89, graph 0.1 font ",32" textcolor rgb "#FF0000"'
+
+    margin = ''
+    label = ''
+    scale = ''
+    if args.name == 'tricnt-rmat-haswell-scaling-flops':
+        title = "Triangle counting - scaling - Haswell"
+        xlabel = "Number of Threads"
+        ylabel = "GFLOPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [3, 2, 4, 1, 0]
+        point_ids = [5, 7, 13, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside right center maxcolumns 1 font ",24'
+        label = label_upper_left_haswell
+        # scale = 'set logscale xy'
+    elif args.name == 'tricnt-rmat-haswell-scaling-teps':
+        title = "Triangle counting - scaling - Haswell"
+        xlabel = "Number of Threads"
+        ylabel = "MTEPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [3, 2, 4, 1, 0]
+        point_ids = [5, 7, 13, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside right center maxcolumns 1 font ",24'
+        # scale = 'set logscale xy'
+    elif args.name == 'tricnt-rmat-knl-scaling-flops':
+        title = "Triangle counting - scaling - KNL"
+        xlabel = "Number of Threads"
+        ylabel = "GFLOPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [3, 2, 4, 1, 0]
+        point_ids = [5, 7, 13, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside right center maxcolumns 1 font ",24'
+        label = label_upper_left_knl
+        # scale = 'set logscale xy'
+    elif args.name == 'tricnt-rmat-knl-scaling-teps':
+        title = "Triangle counting - scaling - KNL"
+        xlabel = "Number of Threads"
+        ylabel = "TEPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [3, 2, 4, 1, 0]
+        point_ids = [5, 7, 13, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside right center maxcolumns 1 font ",24'
+        # scale = 'set logscale xy'
+    elif args.name == 'tricnt-rmat-haswell-flops':
+        title = "Triangle counting - Haswell"
+        xlabel = "Scale"
+        ylabel = "GFLOPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [9, 8, 10, 3, 2]
+        point_ids = [5, 7, 13, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside center right maxcolumns 1 font ",24'
+        label = label_upper_left_haswell
+    elif args.name == 'tricnt-rmat-haswell-teps':
+        title = "Triangle counting - Haswell"
+        xlabel = "Scale"
+        ylabel = "MTEPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [9, 8, 10, 3, 2]
+        point_ids = [5, 7, 13, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside center right maxcolumns 1 font ",24'
+        label = label_upper_left_haswell
+    elif args.name == 'tricnt-rmat-knl-flops':
+        title = "Triangle counting - KNL"
+        xlabel = "Scale"
+        ylabel = "GFLOPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [9, 8, 10, 3, 2]
+        point_ids = [5, 7, 13, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside center right maxcolumns 1 font ",24'
+        label = label_upper_left_knl
+    elif args.name == 'tricnt-rmat-knl-teps':
+        title = "Triangle counting - KNL"
+        xlabel = "Scale"
+        ylabel = "TEPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [9, 8, 10, 3, 2]
+        point_ids = [5, 7, 13, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside center right maxcolumns 1 font ",24'
+        label = label_upper_left_knl
+    elif args.name == 'ktruss-5-rmat-haswell-flops':
+        title = "K-Truss - Haswell"
+        xlabel = "Scale"
+        ylabel = "GFLOPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [8, 7, 9, 10, 2, 1]
+        point_ids = [5, 7, 13, 15, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#808080', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside center right maxcolumns 1 font ",24'
+        label = label_upper_left_haswell
+    elif args.name == 'ktruss-5-rmat-haswell-teps':
+        title = "K-Truss - Haswell"
+        xlabel = "Scale"
+        ylabel = "MTEPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [8, 7, 9, 10, 2, 1]
+        point_ids = [5, 7, 13, 15, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#808080', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside center right maxcolumns 1 font ",24'
+        label = label_upper_right_haswell
+    elif args.name == 'ktruss-5-rmat-knl-flops':
+        title = "K-Truss - KNL"
+        xlabel = "Scale"
+        ylabel = "GFLOPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [8, 7, 9, 10, 2, 1]
+        point_ids = [5, 7, 13, 15, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#808080', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside center right maxcolumns 1 font ",24'
+        label = label_upper_left_knl
+    elif args.name == 'ktruss-5-rmat-knl-teps':
+        title = "K-Truss - KNL"
+        xlabel = "Scale"
+        ylabel = "MTEPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [8, 7, 9, 10, 2, 1]
+        point_ids = [5, 7, 13, 15, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#FF7F50', '#808080', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside center right maxcolumns 1 font ",24'
+        label = label_upper_left_knl
+    elif args.name == 'bc-rmat-haswell-512':
+        title = "Betweenness centrality - Haswell"
+        xlabel = "Scale"
+        ylabel = "TEPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [6, 5, 2, 1]
+        point_ids = [5, 7, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside right center maxcolumns 1 font ",24'
+        label = label_upper_left_haswell
+    elif args.name == 'bc-rmat-knl-512':
+        title = "Betweenness centrality - KNL"
+        xlabel = "Scale"
+        ylabel = "TEPS"
+        size_x = 1.0
+        size_y = 0.5
+        series = [6, 5, 2, 1]
+        point_ids = [5, 7, 1, 2, 3]
+        colors = ['#DC143C', '#0000FF', '#DA70D6', '#3CB371']
+        legend = 'set key horizontal outside right center maxcolumns 1 font ",24'
+        label = label_upper_left_knl
+    else:
+        title = "Title"
+        xlabel = "xlabel"
+        ylabel = "ylable"
+        size_x = 1.0
+        size_y = 0.5
+        series = [1] * len(schemas)
+        point_ids = [1] * len(schemas)
+        colors =["#000000"] * len(schemas)
+        legend = ''
+        margin = ''
+        sys.stderr.write('name not supported')
+
+    point_sizes = [1.5] * len(schemas)
+    line_types = [1] * len(schemas)
+
     with open(args.output + '.dat', 'w') as f:
         f.write("#")
         for schema in schemas:
@@ -37,66 +222,72 @@ def gnu_plot(schemas, x_values, y_values, args):
                 f.write(y + '\t')
             f.write('\n')
 
+    # Generate gpi file
     with open(args.output + '.gpi', 'w') as f:
         f.write('set term postscript eps enhanced color\n')
         f.write('set output \'' + args.output + '.eps' + '\'\n')
-        f.write("set size 1.00,1.5\n")
+        f.write("set size %f,%f\n" % (size_x, size_y))
         f.write("unset log\n")
-        f.write("unset label\n")
+        if label:
+            f.write(label + '\n')
+
         f.write("set xrange [%f:%f]\n" % (min(x_values), max(x_values)))
 
-        f.write('set xtics(' +
-                ', '.join(['"' + str(round(x, 2)) + '"' + " " + str(round(x, 2)) for x in x_values])
-                + ') font ", 18"\n')
+        if x_values.count(68) == 0:
+            f.write('set xtics(' +
+                    ', '.join(['"' + str(round(x, 2)) + '"' + " " + str(round(x, 2)) for x in x_values])
+                    + ') font ", 18"\n')
+        else:
+            f.write('set xtics(' +
+                    ', '.join(['"' + (str(round(x, 2)) if x != 2 else '') + '"' + " " + str(round(x, 2))
+                               for x in x_values])
+                    + ') font ", 18"\n')
         # Set yrange,  x and y ticks
 
-        f.write('set title \"' + args.title + '\" font \", 24\"\n')
-        f.write('set xlabel \"' + args.xlabel + '\" font \", 24\"\n')
-        f.write('set ylabel \"' + args.ylabel + '\" font \", 24\"\n')
+        # if title:
+        #     f.write('set title \"' + title + '\" font \", 24\"\n')
+        f.write('set xlabel \"' + xlabel + '\" font \", 24\"\n')
+        f.write('set ylabel \"' + ylabel + '\" font \", 24\"\n')
 
-        if args.style == 1:
-            point_ids = [5, 7, 13, 1, 2, 3]
-            point_sizes = [1.5] * 6
-            line_types = [1] * 6
-            color_ids = ['#DC143C', '#0000FF', '#FF7F50', '#DA70D6', '#3CB371', '#808080']
-            f.write("set key horizontal opaque inside left top maxcolumns 2 font \",24\n")
-        elif args.style == 2:
-            point_ids = [5, 7, 1, 2, 3]
-            point_sizes = [1.5] * 5
-            line_types = [1] * 5
-            color_ids = ['#DC143C', '#0000FF', '#DA70D6', '#3CB371', '#808080']
-            f.write("set key horizontal opaque inside left top maxcolumns 2 font \",24\n")
-        else:
-            point_ids = [i for i in range(0, 18)]
-            point_sizes = [1.5] * 18
-            line_types = [1] * 18
-            color_ids = ['#DC143C', '#FF7F50', '#DA70D6', '#3CB371', '#808080', '#0000FF'] * 3
-            f.write('set bmargin 8\n')
-            f.write("set key horizontal outside center bottom maxcolumns 2 font \",18\n")
+        if scale:
+            f.write(scale + '\n')
+
+        if margin:
+            f.write(margin)
+
+        if legend:
+            f.write(legend + '\n')
 
         # set styles
-        for i, s in enumerate(range(len(args.series.split(',')))):
+        for i in range(len(series)):
             f.write('set style line %d lc rgb \'%s\' lt %d lw 2 pt %d ps %.2f\n' %
-                    (i + 1, color_ids[i], line_types[i], point_ids[i], point_sizes[i]))
+                    (i + 1, colors[i], line_types[i], point_ids[i], point_sizes[i]))
 
+        f.write('set multiplot\n')
+        f.write("set size %f,%f\n" % (size_x, size_y))
         f.write('plot ')
         first = True
-        for i, v in enumerate([int(i) for i in args.series.split(',')]):
+        for i, v in enumerate([int(i) for i in series]):
             if first:
                 first = False
             else:
                 f.write(', \\\n\t')
 
-            f.write('"' + args.output + '.dat\" u 1:%d t \'%s\' w linespoints ls %d' %
-                    (v + 2, '%s' % (schemas[v]), i + 1))
+            if v >= 0:
+                f.write('"' + args.output + '.dat\" u 1:%d t \'%s\' w linespoints ls %d' %
+                        (v + 2, '%s' % (schemas[v]), i + 1))
+            else:
+                f.write('NaN lt -2 ti " "\n')
+
         f.write('\n')
+        f.write('unset multiplot\n')
+
         f.write("set output\n")
 
     call(["gnuplot", args.output + '.gpi'])
 
 
 def latex_plot(schemas, x_values, y_values, args):
-
     series = [int(i) for i in args.series.split(',')]
     entries = [schemas[i] for i in series]
 
@@ -164,7 +355,8 @@ def latex_plot(schemas, x_values, y_values, args):
         f.write('    \\nextgroupplot[title={' + args.title + '}]\n')
 
         for i, s in enumerate(series):
-            f.write('    \\addplot+[color={%s}, mark=%s, mark options={fill={%s}}]\n' % (colors[i], marks[i], colors[i]))
+            f.write(
+                '    \\addplot+[color={%s}, mark=%s, mark options={fill={%s}}]\n' % (colors[i], marks[i], colors[i]))
             f.write('    coordinates { %s };\n'
                     % ' '.join(['(' + str(x) + ', ' + y_values[j][s] + ')' for j, x in enumerate(x_values)]))
 
@@ -185,20 +377,23 @@ def latex_plot(schemas, x_values, y_values, args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', type=str, default=None)
-    parser.add_argument('--series', type=str, default=None)
     parser.add_argument('--output', type=str, default=None)
-    parser.add_argument('--title', type=str, default="Title")
-    parser.add_argument('--xlabel', type=str, default="X axis")
-    parser.add_argument('--ylabel', type=str, default="Y axis")
-    parser.add_argument('--style', type=int, default=0)
+    parser.add_argument('--name', type=str, default=None)
     parser.add_argument('--standalone', type=bool, default=False)
 
     args = parser.parse_args()
 
-    schemas, x_values, y_values = parse_input(args.input, args.series)
+    if not args.output:
+        args.output = args.input.replace('.txt', '')
+
+    if not args.name:
+        args.name = args.input.replace('.txt', '')
+
+    schemas, x_values, y_values = parse_input(args.input)
 
     gnu_plot(schemas, x_values, y_values, args)
     # latex_plot(schemas, x_values, y_values, args)
+
 
 if __name__ == '__main__':
     main()

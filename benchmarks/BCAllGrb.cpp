@@ -593,7 +593,6 @@ main
 
 
 	read_grb_mtx<Value_t>(&Ain, argv[1], true, false, true);
-	
 
 	// @formatter:off
     size_t outerIters  = std::getenv("OUTER_ITERS")  ?
@@ -631,6 +630,19 @@ main
 	srcs.resize(s);
 	std::cout << "#source vertices " << srcs.size() << std::endl;
 	GrB_Vector delta = NULL;
+
+	std::cout << std::setw(12) << "LOG-header;"
+	<< std::setw(20) << "FileName" << ";"
+	<< std::setw(50) << "Algorithm" << ";"
+	<< std::setw(5) << "Type" << ";"
+	<< std::setw(12) << "NumThreads" << ";"
+	<< std::setw(20) << "Total(ms)" << ";"
+	<< std::setw(20) << "Forward(ms)"<< ";"
+	<< std::setw(20) << "Backward(ms)" << ";"
+	<< std::setw(20) << "Forward-mxm(ms)" << ";"
+	<< std::setw(20) << "Backward-mxm(ms)" << ";"
+	<< std::setw(20) << "Result"
+	<< std::endl;
 
 	for (size_t i = 0; i < outerIters; i++)
 	{

@@ -1,0 +1,36 @@
+set term postscript eps enhanced color
+set output 'tricnt-rmat-scaling-flops.eps'
+set size 1.000000,0.500000
+unset log
+set label "Haswell" at graph  0.03, graph 0.9 font ",32" textcolor rgb "#FF0000"
+set xlabel "Number of Threads" font ", 24"
+set ylabel "GFLOPS" font ", 24"
+set key horizontal outside right center maxcolumns 1 font ",24"
+set style line 1 lc rgb '#DC143C' lt 1 lw 2 pt 5 ps 1.50
+set style line 2 lc rgb '#0000FF' lt 1 lw 2 pt 7 ps 1.50
+set style line 3 lc rgb '#FF7F50' lt 1 lw 2 pt 13 ps 1.50
+set style line 4 lc rgb '#DA70D6' lt 1 lw 2 pt 1 ps 1.50
+set style line 5 lc rgb '#3CB371' lt 1 lw 2 pt 2 ps 1.50
+set multiplot layout 1,2
+unset key
+set size 0.500000,0.500000
+set xtics("32" 32, "16" 16, "8" 8, "4" 4, "" 2, "1" 1) font ", 18"
+set label "Haswell" at graph  0.03, graph 0.9 font ",32" textcolor rgb "#FF0000"
+plot "tricnt-rmat-haswell-scaling-flops.dat" u 1:5 t 'MSA-1P' w linespoints ls 1, \
+	"tricnt-rmat-haswell-scaling-flops.dat" u 1:4 t 'Hash-1P' w linespoints ls 2, \
+	"tricnt-rmat-haswell-scaling-flops.dat" u 1:6 t 'MCA-1P' w linespoints ls 3, \
+	"tricnt-rmat-haswell-scaling-flops.dat" u 1:3 t 'SS:SAXPY-1P' w linespoints ls 4, \
+	"tricnt-rmat-haswell-scaling-flops.dat" u 1:2 t 'SS:DOT-1P' w linespoints ls 5
+unset xtic
+unset label
+
+set size 0.500000,0.5000000
+set xtics("" 68, "64" 64, "32" 32, "16" 16, "8" 8, "4" 4, "" 2, "1" 1) font ", 18"
+set label "KNL" at graph  0.03, graph 0.9 font ",32" textcolor rgb "#FF0000"
+plot "tricnt-rmat-knl-scaling-flops.dat" u 1:5 t 'MSA-1P' w linespoints ls 1, \
+	"tricnt-rmat-knl-scaling-flops.dat" u 1:4 t 'Hash-1P' w linespoints ls 2, \
+	"tricnt-rmat-knl-scaling-flops.dat" u 1:6 t 'MCA-1P' w linespoints ls 3, \
+	"tricnt-rmat-knl-scaling-flops.dat" u 1:3 t 'SS:SAXPY-1P' w linespoints ls 4, \
+	"tricnt-rmat-knl-scaling-flops.dat" u 1:2 t 'SS:DOT-1P' w linespoints ls 5
+unset multiplot
+set output
