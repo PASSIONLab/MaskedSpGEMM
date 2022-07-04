@@ -5,6 +5,13 @@ The repository contains:
 - Complemented mask variants: MSA, Hash, Heap
 - Benchmarks: Triangle Counting, K-Truss, Betweenness Centrality
 
+## Citation info
+
+The algorithms implemented in this repository are described in the following publication
+
+Srđan Milaković, Oguz Selvitopi, Israt Nisa, Zoran Budimlić, and Aydin Buluç. Parallel algorithms for masked sparse matrix-matrix products. In Proceedings of the 51st International Conference on Parallel Processing, pages 1–11, 2022.
+Preprint available at https://arxiv.org/abs/2111.09947
+
 ## Download repository
 
 This project contains submodule, so use recursive option to download them all.
